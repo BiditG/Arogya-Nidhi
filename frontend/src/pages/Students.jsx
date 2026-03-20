@@ -31,7 +31,7 @@ const Students = () => {
       case "medicine":
         return <MedicineInfo />;
       case "fda":
-        return <FdaLabel apiKey={"YFHqgDQ8OUTwiLes1zgc4lVGXogOgNj8FV5asvjI"} />;
+        return <FdaLabel apiKey={import.meta.env.VITE_OPENFDA_KEY} />;
       case "mri":
         return <MRI />;
       case "pneumonia":

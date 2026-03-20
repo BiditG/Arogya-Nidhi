@@ -13,9 +13,15 @@ export default function FdaLabel({ apiKey }) {
     setError(null);
     setLabel(null);
     try {
+      const key = apiKey || import.meta.env.VITE_OPENFDA_KEY;
+      if (!key) {
+        setError('OpenFDA API key not configured. Set VITE_OPENFDA_KEY in .env.local');
+        setLoading(false);
+        return;
+      }
       // search brand_name or generic_name for the provided query (limit 1)
       const q = encodeURIComponent(`openfda.brand_name:\"${query}\"+openfda.generic_name:\"${query}\"`);
-      const url = `https://api.fda.gov/drug/label.json?search=${q}&limit=1&api_key=${apiKey}`;
+      const url = `https://api.fda.gov/drug/label.json?search=${q}&limit=1&api_key=${encodeURIComponent(key)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const data = await res.json();
