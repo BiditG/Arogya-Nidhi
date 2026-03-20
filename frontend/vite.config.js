@@ -9,7 +9,10 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    // allow ngrok host so dev server accepts requests from that hostname
+    allowedHosts: ['unsoaked-cuspidate-karson.ngrok-free.dev'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',

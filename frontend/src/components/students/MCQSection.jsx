@@ -38,6 +38,7 @@ const MCQSection = () => {
   const [years, setYears] = useState([]);
   const [availableCount, setAvailableCount] = useState(null);
   const [metaLoading, setMetaLoading] = useState(false);
+  const [displayCount, setDisplayCount] = useState(0);
 
   // Quiz controls
   const [mode, setMode] = useState("casual"); // casual | exam
@@ -148,6 +149,28 @@ const MCQSection = () => {
     return () => { mounted = false; };
   }, [tableName]);
 
+  // Animated counter for available questions
+  useEffect(() => {
+    if (availableCount === null) {
+      setDisplayCount(0);
+      return;
+    }
+    const to = Number(availableCount) || 0;
+    const duration = 800; // ms
+    let start = null;
+    let raf = null;
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const val = Math.floor(progress * to);
+      setDisplayCount(val);
+      if (progress < 1) raf = requestAnimationFrame(step);
+      else setDisplayCount(to);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [availableCount]);
+
   // Re-fetch questions when the user changes filters or number of questions
   useEffect(() => {
     let mounted = true;
@@ -247,51 +270,52 @@ const MCQSection = () => {
   };
 
   return (
-    <div className="p-4 border border-gray-200 rounded bg-white">
-      <p className="text-sm text-gray-500 mb-3">MCQ practice — choose mode, optionally enable timed mode, set number of questions, then click <strong>Start Quiz</strong>.</p>
+    <div className="p-4 bg-white rounded-2xl shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-50 to-sky-50 flex items-center justify-center shadow-inner">
+            <div className="text-center">
+              <div className="text-2xl md:text-3xl font-bold text-indigo-600">{displayCount}</div>
+              <div className="text-xs text-gray-400">available</div>
+            </div>
+          </div>
 
-      <div className="grid gap-2 mb-4 md:grid-cols-3">
-        <select value={mode} onChange={(e) => setMode(e.target.value)} className="border px-3 py-2 rounded">
-          <option value="casual">Casual — reveal after each</option>
-          <option value="exam">Exam — reveal at end</option>
-        </select>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="timed" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
-          <label htmlFor="timed" className="text-sm">Timed</label>
+          <div>
+            <h3 className="text-lg font-semibold">MCQ Practice</h3>
+            <p className="text-sm text-gray-500">Quick practice rounds — minimal UI for focused learning.</p>
+            <div className="mt-2 text-sm text-gray-400">{metaLoading ? 'Loading metadata…' : `${availableCount ?? '—'} total questions`}</div>
+          </div>
         </div>
-        <input type="number" min={1} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="border px-3 py-2 rounded" placeholder="# questions" />
-        <input type="number" min={5} value={timerPerQuestion} onChange={(e) => setTimerPerQuestion(Number(e.target.value))} className="border px-3 py-2 rounded" placeholder="Seconds per question" />
-        <select value={tableName} onChange={(e) => setTableName(e.target.value)} className="border px-3 py-2 rounded">
-          <option value="mcqs">mcqs</option>
-        </select>
-        <div className="flex gap-2">
-          <select value={filterSubject} onChange={(e) => setFilterSubject(e.target.value)} className="flex-1 border border-gray-300 rounded px-3 py-2">
-            <option value="">Select subject</option>
-            {subjects.map((s, idx) => (<option key={idx} value={s}>{s}</option>))}
-          </select>
-          <select value={filterTopic} onChange={(e) => setFilterTopic(e.target.value)} className="flex-1 border border-gray-300 rounded px-3 py-2">
-            <option value="">Select topic</option>
-            {topics.map((t, idx) => (<option key={idx} value={t}>{t}</option>))}
-          </select>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md">
+            <label className="text-xs text-gray-500">Mode</label>
+            <select value={mode} onChange={(e) => setMode(e.target.value)} className="bg-transparent text-sm">
+              <option value="casual">Casual</option>
+              <option value="exam">Exam</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md">
+            <label className="text-xs text-gray-500">Qty</label>
+            <input type="number" min={1} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-16 bg-transparent text-sm text-right" />
+          </div>
+
+          <button onClick={startQuiz} className={`px-4 py-2 rounded-md text-white font-medium transition ${availableCount && availableCount > 0 ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'}`} disabled={!availableCount}>Start</button>
         </div>
-        <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)} className="border border-gray-300 rounded px-3 py-2">
-          <option value="">Select year</option>
-          {years.map((y, idx) => (<option key={idx} value={y}>{y}</option>))}
-        </select>
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
-        <div className="text-sm text-gray-600">Questions available: {availableCount !== null ? availableCount : '—'}</div>
-        {metaLoading ? (
-          <div className="text-sm text-gray-500">Fetching…</div>
-        ) : null}
-        <button onClick={startQuiz} className="bg-primary text-white px-4 py-2 rounded">Start Quiz</button>
+      <div className="mt-4">
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full bg-indigo-200 transition-all" style={{ width: `${availableCount ? Math.min(100, Math.round((numQuestions / (availableCount || 1)) * 100)) : 0}%` }} />
+        </div>
       </div>
 
-      {/* Auto-refetch when filters change */}
-      
-
-      <div className="p-6 border border-dashed border-gray-200 rounded text-sm text-gray-500">Only the number of available questions is shown here. Click <strong>Start Quiz</strong> to open the full quiz.</div>
+      <div className="mt-4 p-4 bg-gray-50 rounded">{questions && questions.length ? (
+        <div className="text-sm text-gray-700">Ready: {questions.length} sample questions loaded for preview.</div>
+      ) : (
+        <div className="text-sm text-gray-500">No preview questions available.</div>
+      )}</div>
     </div>
   );
 };
