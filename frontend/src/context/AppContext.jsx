@@ -1,8 +1,6 @@
-import { createContext } from "react";
-import { useState } from "react";
+import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useEffect } from "react";
 
 export const AppContext = createContext();
 
@@ -14,7 +12,7 @@ const AppContextProvider = (props) => {
   const [token, setToken] = useState(localStorage.getItem("token") || false);
   const [userData, setUserData] = useState(false);
 
-  const getDoctorsData = async () => {
+  const getDoctorsData = useCallback(async () => {
     try {
       const { data } = await axios.get(backendUrl + "/api/doctor/list");
       if (data.success) {
@@ -23,9 +21,9 @@ const AppContextProvider = (props) => {
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to fetch doctors");
     }
-  };
+  }, [backendUrl]);
 
-  const loadUserProfileData = async () => {
+  const loadUserProfileData = useCallback(async () => {
     try {
       const { data } = await axios.get(backendUrl + "/api/patient/profile", {
         headers: { Authorization: `Bearer ${token}` },
@@ -39,11 +37,11 @@ const AppContextProvider = (props) => {
         error.response?.data?.message || "Failed to load user profile"
       );
     }
-  };
+  }, [backendUrl, token]);
 
   useEffect(() => {
     getDoctorsData();
-  }, []);
+  }, [getDoctorsData]);
 
   useEffect(() => {
     if (token) {
@@ -51,19 +49,30 @@ const AppContextProvider = (props) => {
     } else {
       setUserData(false);
     }
-  }, [token]);
+  }, [token, loadUserProfileData]);
 
-  const value = {
-    doctors,
-    currencySymbol,
-    backendUrl,
-    token,
-    setToken,
-    userData,
-    setUserData,
-    loadUserProfileData,
-    getDoctorsData,
-  };
+  const value = useMemo(
+    () => ({
+      doctors,
+      currencySymbol,
+      backendUrl,
+      token,
+      setToken,
+      userData,
+      setUserData,
+      loadUserProfileData,
+      getDoctorsData,
+    }),
+    [
+      doctors,
+      currencySymbol,
+      backendUrl,
+      token,
+      userData,
+      loadUserProfileData,
+      getDoctorsData,
+    ]
+  );
 
   return (
     <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
