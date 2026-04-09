@@ -1,26 +1,25 @@
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-<<<<<<< HEAD
-import { useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-=======
->>>>>>> 81581cf1f1068226d743a0c9a01fcd5d18077ffe
 
 export const AppContext = createContext();
 
 const AppContextProvider = (props) => {
   const currencySymbol = "$";
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [doctors, setDoctors] = useState([]);
 
+  const [doctors, setDoctors] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token") || false);
   const [userData, setUserData] = useState(false);
 
+  // =========================
+  // GET DOCTORS DATA
+  // =========================
   const getDoctorsData = useCallback(async () => {
     try {
+      // 🔹 Supabase (Primary)
       if (supabase) {
-        // Fetch doctor profiles directly from Supabase
         const { data, error } = await supabase
           .from("doctor_profiles")
           .select("*")
@@ -28,14 +27,12 @@ const AppContextProvider = (props) => {
 
         if (error) throw error;
 
-        // Map DB rows to the shape expected by frontend components
         const mapped = (data || []).map((r) => ({
           _id: r.id,
           id: r.id,
           user_id: r.user_id,
           license_no: r.license_no,
           name: r.name || r.license_no || `Dr ${r.id?.slice(0, 8)}`,
-          // frontend expects `speciality` (British spelling)
           speciality: r.specialty || r.sub_specialty || "General",
           specialty: r.specialty,
           sub_speciality: r.sub_specialty,
@@ -43,11 +40,9 @@ const AppContextProvider = (props) => {
           qualifications: r.qualifications,
           is_verified: r.is_verified,
           available: !!r.is_available,
-          // keep original boolean as well
           is_available: !!r.is_available,
           created_at: r.created_at,
           updated_at: r.updated_at,
-          // placeholder image if none
           image: r.image || "/images/doctor-placeholder.png",
         }));
 
@@ -55,7 +50,7 @@ const AppContextProvider = (props) => {
         return;
       }
 
-      // Fallback: use backend API
+      // 🔹 Fallback API
       const { data } = await axios.get(backendUrl + "/api/doctor/list");
       if (data?.success) {
         setDoctors(data.doctors);
@@ -66,6 +61,9 @@ const AppContextProvider = (props) => {
     }
   }, [backendUrl]);
 
+  // =========================
+  // LOAD USER PROFILE
+  // =========================
   const loadUserProfileData = useCallback(async () => {
     try {
       const { data } = await axios.get(backendUrl + "/api/patient/profile", {
@@ -82,6 +80,9 @@ const AppContextProvider = (props) => {
     }
   }, [backendUrl, token]);
 
+  // =========================
+  // EFFECTS
+  // =========================
   useEffect(() => {
     getDoctorsData();
   }, [getDoctorsData]);
@@ -94,6 +95,9 @@ const AppContextProvider = (props) => {
     }
   }, [token, loadUserProfileData]);
 
+  // =========================
+  // CONTEXT VALUE
+  // =========================
   const value = useMemo(
     () => ({
       doctors,
@@ -118,7 +122,9 @@ const AppContextProvider = (props) => {
   );
 
   return (
-    <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
+    <AppContext.Provider value={value}>
+      {props.children}
+    </AppContext.Provider>
   );
 };
 
