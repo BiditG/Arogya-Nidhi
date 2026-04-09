@@ -24,27 +24,13 @@ const NotFound = () => {
       <p className="mt-10 text-lg font-semibold text-gray-600">
         Or discover me at
         <a
-          href="https://mahmudalam.com"
+          href="#"
           target="_blank"
           rel="noopener noreferrer"
           className="ml-2 inline-flex items-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 hover:text-purple-800 relative group font-bold hover:translate-x-1 transition-all duration-300"
         >
-          mahmudalam.com
-          <span className="block h-[2px] w-0 bg-purple-600 absolute bottom-0 left-0 group-hover:w-full transition-all duration-300"></span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="ml-2 h-5 w-5 text-purple-600 group-hover:text-purple-800 transition-all duration-300 transform group-hover:translate-x-2"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M14 5l7 7m0 0l-7 7m7-7H3"
-            />
-          </svg>
+         ArogyaNidhi
+         
         </a>
       </p>
     </div>

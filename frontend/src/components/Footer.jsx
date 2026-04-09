@@ -33,7 +33,7 @@ const Footer = () => {
           <ul className="flex flex-col gap-2 text-gray-600">
             <li>Phone: +977 9803526374</li>
             <li>Kathmandu, Nepal</li>
-            <li>info@mahmudalam.com</li>
+            <li>info@arogyanidhi.com</li>
             <li className="text-sm text-gray-500 italic">फोन: +977 9803526374</li>
           </ul>
         </div>
@@ -43,7 +43,7 @@ const Footer = () => {
         <hr />
         <p className="py-5 text-sm text-center ">
           Copyright © {new Date().getFullYear()}{" "}
-          <a className="hover:text-primary font-bold" href="https://mahmudalam.com/">Mahmud Alam</a>.
+          <a className="hover:text-primary font-bold" href="#">AarogyaNidhi</a>.
         </p>
       </div>
     </div>
