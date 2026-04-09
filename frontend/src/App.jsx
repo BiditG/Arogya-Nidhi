@@ -13,10 +13,11 @@ import Appointment from "./pages/Appointment";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import NotFound from "./pages/NotFound";
 import IoTPage from "./pages/IoT";
 import PatientPortal from "./pages/PatientPortal";
+import BookAppointment from "./pages/BookAppointment";
 
 const App = () => {
   return (
@@ -39,6 +40,10 @@ const App = () => {
         <Route path="/appointment/:docId" element={<Appointment />} />
         <Route path="/iot" element={<IoTPage />} />
         <Route path="/patient-portal" element={<PatientPortal />} />
+        <Route
+          path="/patient-portal/book-appointment"
+          element={<BookAppointment />}
+        />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
