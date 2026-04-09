@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
 import {
   CalendarDaysIcon,
@@ -15,7 +16,8 @@ import { AppContext } from "../context/AppContext";
 import "./PatientPortal.css";
 
 const PatientPortal = () => {
-  const { userData, setToken, backendUrl, token } = useContext(AppContext);
+  const { userData, setToken, setUserData, backendUrl, token } = useContext(AppContext);
+  const navigate = useNavigate();
   const [stats, setStats] = useState({ upcomingAppointments: 0, pendingTests: 0, activePrescriptions: 0, healthScore: 0 });
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [recentHistory, setRecentHistory] = useState([]);
@@ -69,6 +71,8 @@ const PatientPortal = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(false);
+    setUserData(false);
+    navigate("/login");
   };
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";

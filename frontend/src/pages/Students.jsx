@@ -7,8 +7,10 @@ import FdaLabel from "../components/students/FdaLabel";
 import MRI from "../components/students/MRI";
 import Pneumonia from "../components/students/Pneumonia";
 import DiseaseGlossary from "../components/students/DiseaseGlossary";
+import StudentDashboard from "../components/students/StudentDashboard";
 
 const NAV = [
+  { id: "dashboard", label: "Dashboard", desc: "Overview & activity" },
   { id: "mcq", label: "MCQs", desc: "Practice questions" },
   { id: "viewer", label: "3D Viewer", desc: "Explore organs" },
   { id: "diag", label: "Diagnostic", desc: "AI patient" },
@@ -24,6 +26,8 @@ const Students = () => {
 
   const renderActive = () => {
     switch (active) {
+      case "dashboard":
+        return <StudentDashboard />;
       case "mcq":
         return <MCQSection />;
       case "viewer":
@@ -46,19 +50,21 @@ const Students = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-12 px-4 md:px-10">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 py-8 px-4 md:px-10">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <div className="bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-400 text-white rounded-2xl p-8 shadow-lg">
-            <h1 className="text-3xl md:text-4xl font-bold leading-tight">Students Lab</h1>
-            <p className="mt-2 text-indigo-100 max-w-2xl">A clean playground for learning — quick practice, interactive models, and diagnostic tools.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
+        <header className="mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold">Students Lab</h1>
+              <p className="mt-1 text-sm text-gray-500 max-w-2xl">A minimal, focused workspace — practice questions, interactive models, and diagnostic tools.</p>
+            </div>
+
+            <div className="hidden md:flex items-center gap-3">
               {NAV.slice(0, 3).map((n) => (
                 <button
                   key={n.id}
                   onClick={() => setActive(n.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-shadow duration-200
-                    ${active === n.id ? "bg-white text-indigo-700 shadow" : "bg-white/20 text-white/95 hover:bg-white/30"}`}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-150 border ${active === n.id ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
                 >
                   {n.label}
                 </button>
