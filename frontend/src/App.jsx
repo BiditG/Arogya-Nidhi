@@ -24,6 +24,7 @@ import HealthQueries from "./pages/HealthQueries";
 import DiscussionDetail from "./pages/DiscussionDetail";
 import EditProfile from "./pages/EditProfile";
 import DoctorPortal from "./pages/DoctorPortal";
+import StudentPortal from "./pages/StudentPortal";
 import AdminPortal from "./pages/AdminPortal";
 
 const App = () => {
@@ -35,7 +36,7 @@ const App = () => {
   return (
     <div className={isPatientPortalRoute ? "min-h-screen" : "mx-4 sm:mx-[10%]"}>
       <ToastContainer />
-      {!isPatientPortalRoute && <Navbar />}
+      <Navbar />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -75,6 +76,7 @@ const App = () => {
         />
 
         <Route path="/doctor-portal" element={<DoctorPortal />} />
+        <Route path="/student-portal" element={<StudentPortal />} />
         <Route path="/admin-portal" element={<AdminPortal />} />
 
         <Route path="*" element={<NotFound />} />

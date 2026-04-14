@@ -1,6 +1,7 @@
 import { verifyAccessToken } from '../util/token.util.js';
 import { sendError } from '../util/response.util.js';
 import { supabase } from '../config/supabase.js';
+import repo from '../repository/auth.repository.js';
 
 // Accepts either the app's JWT or a Supabase access token (Bearer). If Supabase token
 // is provided, validates with Supabase and ensures a corresponding local user exists.
@@ -15,7 +16,36 @@ export async function authenticate(req, res, next) {
   // First try existing app access token verification
   try {
     const payload = verifyAccessToken(token);
-    req.user = payload;
+    req.user = payload || {};
+    // If the app JWT doesn't include a role, try to resolve from local users table
+    if (!req.user.role) {
+      try {
+        const id = payload?.id || payload?.sub || payload?.userId || null;
+        if (id) {
+          const user = await repo.findUserById(id);
+          if (user && user.role) {
+            req.user.role = user.role;
+            req.user.email = req.user.email || user.email;
+          }
+        }
+      } catch (e) {
+        // ignore lookup errors and try dtoken fallback below
+      }
+    }
+
+    // If still missing role, try Supabase token provided in `dtoken` header
+    if (!req.user.role && req.headers?.dtoken) {
+      try {
+        const dbRes = await supabase.auth.getUser(req.headers.dtoken);
+        if (!dbRes.error && dbRes.data?.user) {
+          req.user.role = dbRes.data.user.user_metadata?.role || req.user.role;
+          req.user.email = req.user.email || dbRes.data.user.email;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     return next();
   } catch (err) {
     // ignore and try Supabase

@@ -82,28 +82,6 @@ const PatientPortal = () => {
 
   return (
     <div className="pp-page">
-      <header className="pp-header">
-        <div className="pp-logo">PATIENT PORTAL</div>
-        <nav>
-          <ul className="pp-nav-top">
-            <li>
-              <a href="#dashboard">Dashboard</a>
-            </li>
-            <li>
-              <Link to="/patient-portal/profile">Profile</Link>
-            </li>
-            <li>
-              <a href="#">Settings</a>
-            </li>
-            <li>
-              <button type="button" className="pp-link-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="pp-container">
         <PatientSidebar />
 

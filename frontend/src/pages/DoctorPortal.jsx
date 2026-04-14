@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
+import DoctorSidebar from "../components/DoctorSidebar";
+import "./PatientPortal.css";
 
 const DoctorPortal = () => {
   const { token, userData, logout, backendUrl } = useContext(AppContext);
@@ -68,42 +70,46 @@ const DoctorPortal = () => {
   }, [backendUrl, token]);
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Doctor Dashboard</h1>
-        <div>
-          <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={logout}>Logout</button>
-        </div>
-      </div>
+    <div className="pp-page">
+      <div className="pp-container">
+        <DoctorSidebar />
 
-      {loading && <p>Loading...</p>}
+        <main className="pp-main-content" id="dashboard">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-semibold">Doctor Dashboard</h1>
+            <div>
+              <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={logout}>Logout</button>
+            </div>
+          </div>
 
-      {dash && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 border rounded shadow">
-            <p className="text-sm text-gray-500">Earnings</p>
-            <p className="text-2xl font-bold">{dash.earnings || 0}</p>
-          </div>
-          <div className="p-4 border rounded shadow">
-            <p className="text-sm text-gray-500">Patients</p>
-            <p className="text-2xl font-bold">{dash.patients}</p>
-          </div>
-          <div className="p-4 border rounded shadow">
-            <p className="text-sm text-gray-500">Appointments</p>
-            <p className="text-2xl font-bold">{dash.appointments}</p>
-          </div>
-        </div>
-      )}
+          {loading && <p>Loading...</p>}
 
-      <div className="mt-6 p-4 border rounded">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">My Profile</h2>
-          <div>
-            <button className="bg-primary text-white px-3 py-1 rounded mr-2" onClick={() => setEditMode(!editMode)}>{editMode ? 'Cancel' : 'Edit Profile'}</button>
-          </div>
-        </div>
+          {dash && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 border rounded shadow">
+                <p className="text-sm text-gray-500">Earnings</p>
+                <p className="text-2xl font-bold">{dash.earnings || 0}</p>
+              </div>
+              <div className="p-4 border rounded shadow">
+                <p className="text-sm text-gray-500">Patients</p>
+                <p className="text-2xl font-bold">{dash.patients}</p>
+              </div>
+              <div className="p-4 border rounded shadow">
+                <p className="text-sm text-gray-500">Appointments</p>
+                <p className="text-2xl font-bold">{dash.appointments}</p>
+              </div>
+            </div>
+          )}
 
-        {!profile && <p className="text-sm text-gray-500">Loading profile...</p>}
+          <div className="mt-6 p-4 border rounded">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">My Profile</h2>
+              <div>
+                <button className="bg-primary text-white px-3 py-1 rounded mr-2" onClick={() => setEditMode(!editMode)}>{editMode ? 'Cancel' : 'Edit Profile'}</button>
+              </div>
+            </div>
+
+            {!profile && <p className="text-sm text-gray-500">Loading profile...</p>}
 
         {profile && !editMode && (
           <div>
@@ -202,6 +208,8 @@ const DoctorPortal = () => {
           </ul>
         </div>
       )}
+        </main>
+      </div>
     </div>
   );
 };

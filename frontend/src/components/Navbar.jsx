@@ -1,5 +1,6 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets_frontend/assets";
+import { assets as adminAssets } from "../assets/assets_admin/assets";
 import { useState } from "react";
 import { useContext } from "react";
 import { AppContext } from "../context/AppContext";
@@ -8,7 +9,7 @@ const navLinks = [
   { title: "Home", path: "/" },
   { title: "All Doctors", path: "/doctors" },
   { title: "Chat", path: "/chat" },
-  { title: "Students", path: "/students" },
+  // Students removed from top-level nav; portal accessible via dashboard menu
   { title: "About", path: "/about" },
   { title: "Contact", path: "/contact" },
 ];
@@ -46,13 +47,24 @@ const Navbar = () => {
             className="flex items-center gap-2 cursor-pointer group relative"
             onClick={() => setOpenDropdown(!openDropdown)}
           >
-            <img
-              className="w-8 rounded-full"
-              src={
-                userData.image || userData?.user?.avatarUrl || userData?.user?.avatar_url || assets.upload_area
+            {(() => {
+              const img = userData.image || userData?.user?.avatarUrl || userData?.user?.avatar_url || null;
+              const role = userData?.role || userData?.user?.role || null;
+              const displayName = userData?.name || userData?.user?.name || userData?.email || userData?.user?.email || '';
+              const initials = (displayName || '').split(' ').filter(Boolean).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+              if (img) {
+                return <img className="w-8 h-8 rounded-full object-cover" src={img} alt="user profile pic" />;
               }
-              alt="user profile pic"
-            />
+              if (role === 'doctor') {
+                // use doctor icon for doctor users
+                return <img className="w-8 h-8 rounded-full object-cover bg-gray-100 p-1" src={adminAssets.doctor_icon} alt="doctor icon" />;
+              }
+              return (
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
+                  {initials || 'U'}
+                </div>
+              );
+            })()}
             <img className="w-2.5" src={assets.dropdown_icon} alt="" />
             <div
               className={`${

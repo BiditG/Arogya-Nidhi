@@ -19,7 +19,6 @@ const Login = () => {
   const [bloodGroup, setBloodGroup] = useState("");
   const [gender, setGender] = useState("");
   const [institution, setInstitution] = useState("");
-  const [yearOfStudy, setYearOfStudy] = useState("");
   const [faculty, setFaculty] = useState("");
   const [nmcLicenseNo, setNmcLicenseNo] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -47,7 +46,6 @@ const Login = () => {
           payload.gender = gender;
         } else if (role === 'student') {
           payload.institution = institution;
-          payload.yearOfStudy = yearOfStudy;
           payload.faculty = faculty;
         } else if (role === 'doctor') {
           payload.nmcLicenseNo = nmcLicenseNo;
@@ -198,8 +196,6 @@ const Login = () => {
           <div className="w-full">
             <p>Institution</p>
             <input className="border border-zinc-300 rounded w-full p-2 mt-1" value={institution} onChange={e => setInstitution(e.target.value)} />
-            <p className="mt-2">Year of Study</p>
-            <input className="border border-zinc-300 rounded w-full p-2 mt-1" value={yearOfStudy} onChange={e => setYearOfStudy(e.target.value)} />
             <p className="mt-2">Faculty</p>
             <input className="border border-zinc-300 rounded w-full p-2 mt-1" value={faculty} onChange={e => setFaculty(e.target.value)} />
           </div>
