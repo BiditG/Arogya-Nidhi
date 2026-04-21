@@ -1,3 +1,5 @@
+import aiAssistantService from '../services/aiAssistant.service.js';
+
 export const diagnose = async (req, res) => {
   try {
     const { messages } = req.body;
@@ -9,5 +11,23 @@ export const diagnose = async (req, res) => {
     res.json({ success: true, reply });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const assistant = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.sub || req.user?.id || null;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User id not found in token' });
+    }
+
+    const { message } = req.body;
+    const result = await aiAssistantService.processMessage(userId, message);
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    return res.status(error?.status || 500).json({
+      success: false,
+      message: error?.message || 'Server error',
+    });
   }
 };

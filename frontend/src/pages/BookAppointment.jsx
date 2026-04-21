@@ -42,6 +42,15 @@ const BookAppointment = () => {
   const [gettingAi, setGettingAi] = useState(false);
   const [booking, setBooking] = useState(false);
 
+  const getDoctorSpecialty = (doc) =>
+    doc?.specialty || doc?.specialization || doc?.speciality || selectedSpecialty;
+
+  const getDoctorExperience = (doc) =>
+    doc?.experienceYears ?? doc?.experience_years ?? doc?.experience ?? null;
+
+  const isDoctorAvailable = (doc) =>
+    doc?.isAvailable ?? doc?.is_available ?? doc?.available ?? false;
+
   const headers = { Authorization: `Bearer ${token}` };
 
   // Build calendar days for current month
@@ -60,7 +69,13 @@ const BookAppointment = () => {
         const { data } = await axios.get(backendUrl + `/api/patient/doctors?specialty=${encodeURIComponent(selectedSpecialty)}`, { headers });
         if (data.success) {
           const list = Array.isArray(data.data) ? data.data : data.data?.doctors || [];
-          setDoctors(list);
+          const normalized = list
+            .map((doc) => ({
+              ...doc,
+              id: doc?.id || doc?._id || doc?.doctorId || doc?.doctor_id || null,
+            }))
+            .filter((doc) => !!doc.id);
+          setDoctors(normalized);
         }
       } catch (err) {
         toast.error(err.response?.data?.message || "Failed to load doctors");
@@ -69,7 +84,7 @@ const BookAppointment = () => {
       }
     };
     fetchDoctors();
-  }, [selectedSpecialty, backendUrl]);
+  }, [selectedSpecialty, backendUrl, token]);
 
   const handleGetAiRecommendation = async () => {
     if (!symptomText.trim()) return;
@@ -91,6 +106,17 @@ const BookAppointment = () => {
     if (!selectedDate) return toast.error("Please select a date");
     if (!selectedTime) return toast.error("Please select a time slot");
 
+    const doctorId =
+      selectedDoctor?.id ||
+      selectedDoctor?._id ||
+      selectedDoctor?.doctorId ||
+      selectedDoctor?.doctor_id ||
+      null;
+
+    if (!doctorId || doctorId === "undefined") {
+      return toast.error("Selected doctor is invalid. Please re-select a doctor.");
+    }
+
     const [hour, minute] = selectedTime.split(":").map(Number);
     const scheduledAt = new Date(year, month, selectedDate, hour, minute);
     if (scheduledAt <= new Date()) return toast.error("Please select a future date and time");
@@ -100,7 +126,7 @@ const BookAppointment = () => {
       const { data } = await axios.post(
         backendUrl + "/api/patient/appointments",
         {
-          doctorId: selectedDoctor.id,
+          doctorId,
           scheduledAt: scheduledAt.toISOString(),
           durationMinutes: 30,
           patientNotes: patientNotes || null,
@@ -259,25 +285,28 @@ const BookAppointment = () => {
                 doctors.map((doc) => {
                   const name = doc.user?.name || doc.name || "Doctor";
                   const isSelected = selectedDoctor?.id === doc.id;
+                  const specialty = getDoctorSpecialty(doc);
+                  const experience = getDoctorExperience(doc);
+                  const available = isDoctorAvailable(doc);
                   return (
                     <div key={doc.id} className={`ba-doctor-card${isSelected ? " ba-specialist-selected" : ""}`}>
                       <div className="ba-doctor-avatar">{doctorInitials(name)}</div>
                       <div className="ba-doctor-info">
                         <div className="ba-doctor-name">Dr. {name}</div>
                         <div className="ba-doctor-specialty">
-                          {doc.specialization || selectedSpecialty}
-                          {doc.experience ? ` · ${doc.experience} years experience` : ""}
+                          {specialty}
+                          {experience ? ` · ${experience} years experience` : ""}
                         </div>
                         <div className="ba-doctor-meta">
                           {doc.rating != null && <span>Rating {doc.rating}</span>}
-                          {doc.isAvailable ? <span>Available</span> : <span>Unavailable</span>}
+                          {available ? <span>Available</span> : <span>Unavailable</span>}
                         </div>
                       </div>
                       <button
                         type="button"
                         className="ba-btn-book"
                         onClick={() => setSelectedDoctor(doc)}
-                        disabled={!doc.isAvailable}
+                        disabled={!available}
                       >
                         {isSelected ? "Selected" : "Select"}
                       </button>
@@ -353,7 +382,7 @@ const BookAppointment = () => {
                     </div>
                     <div className="ba-summary-row">
                       <span>Specialty</span>
-                      <span>{selectedDoctor.specialization || selectedSpecialty}</span>
+                      <span>{getDoctorSpecialty(selectedDoctor)}</span>
                     </div>
                     <div className="ba-summary-row">
                       <span>Date</span>

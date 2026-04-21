@@ -27,7 +27,7 @@ export const updateUserProfileSchema = z.object({
 
 export const bookAppointmentSchema = z.object({
   body: z.object({
-    docId: z.string().min(1, 'docId is required'),
+    docId: z.string().uuid('docId must be a valid UUID'),
     slotDate: z.string().min(1, 'slotDate is required'),
     slotTime: z.string().min(1, 'slotTime is required'),
   }),
@@ -35,6 +35,6 @@ export const bookAppointmentSchema = z.object({
 
 export const appointmentIdSchema = z.object({
   body: z.object({
-    appointmentId: z.string().min(1, 'appointmentId is required'),
+    appointmentId: z.string().uuid('appointmentId must be a valid UUID'),
   }),
 });

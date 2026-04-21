@@ -7,10 +7,12 @@ import { assets as adminAssets } from "../assets/assets_admin/assets";
 const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate();
   const { currencySymbol } = useContext(AppContext);
+  const doctorId = doctor?._id || doctor?.id || doctor?.doctorId || doctor?.doctor_id || null;
 
   const handleBook = (e) => {
     e?.stopPropagation();
-    navigate(`/appointment/${doctor._id}`);
+    if (!doctorId || doctorId === "undefined") return;
+    navigate(`/appointment/${doctorId}`);
     try { scrollTo(0,0); } catch(_){}
   };
 
@@ -74,6 +76,7 @@ const DoctorCard = ({ doctor }) => {
               onClick={handleBook}
               aria-label={`Book appointment with ${doctor.name}`}
               className="bg-primary text-white px-5 py-2 rounded-full text-sm w-full sm:w-auto shadow-md hover:shadow-lg transition-shadow"
+              disabled={!doctorId || doctorId === "undefined"}
             >
               <span className="inline sm:hidden">Book</span>
               <span className="hidden sm:inline">Book Appointment</span>

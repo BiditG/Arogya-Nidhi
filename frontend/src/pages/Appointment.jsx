@@ -96,23 +96,34 @@ const Appointment = () => {
       return navigate("/login");
     }
     try {
-      const date = docSlots[slotIndex][0].datetime;
-      let day = date.getDate();
-      let month = date.getMonth() + 1; // Months are zero-based
-      let year = date.getFullYear();
+      const daySlots = docSlots[slotIndex] || [];
+      const selectedSlot = daySlots.find((item) => item.time === slotTime);
+      if (!selectedSlot?.datetime) {
+        toast.error("Please select a valid date and time slot");
+        return;
+      }
 
-      const slotDate = day + "_" + month + "_" + year;
+      const doctorId = docInfo?.id || docInfo?._id || docId;
+      if (!doctorId) {
+        toast.error("Doctor information is missing");
+        return;
+      }
 
       const { data } = await axios.post(
-        backendUrl + "/api/user/book-appointment",
-        { docId, slotDate, slotTime },
-        { headers: { token } }
+        backendUrl + "/api/patient/appointments",
+        {
+          doctorId,
+          scheduledAt: new Date(selectedSlot.datetime).toISOString(),
+          durationMinutes: 30,
+          patientNotes: null,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (data.success) {
         toast.success(data.message || "Appointment booked successfully");
         getDoctorsData(); // Refresh doctors data
-        navigate("/my-appointments");
+        navigate("/patient-portal");
       }
     } catch (error) {
       toast.error(

@@ -15,6 +15,26 @@ const AppContextProvider = (props) => {
   const [token, setToken] = useState(localStorage.getItem("token") || false);
   const [userData, setUserData] = useState(false);
 
+  const syncSupabaseSessionToken = useCallback(async () => {
+    if (!supabase) return null;
+
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        return null;
+      }
+
+      const sessionToken = data?.session?.access_token || null;
+      if (sessionToken) {
+        localStorage.setItem("token", sessionToken);
+        setToken(sessionToken);
+      }
+      return sessionToken;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // =========================
   // GET DOCTORS DATA
   // =========================
@@ -112,9 +132,13 @@ const AppContextProvider = (props) => {
         setUserData(payload);
       }
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to load user profile"
-      );
+      if (error?.response?.status === 401) {
+        localStorage.removeItem("token");
+        setToken(false);
+        setUserData(false);
+        return;
+      }
+      toast.error(error.response?.data?.message || "Failed to load user profile");
     }
   }, [backendUrl, token]);
 
@@ -126,12 +150,45 @@ const AppContextProvider = (props) => {
   }, [getDoctorsData]);
 
   useEffect(() => {
+    if (!supabase) return;
+
+    syncSupabaseSessionToken();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      const sessionToken = session?.access_token || null;
+      if (sessionToken) {
+        localStorage.setItem("token", sessionToken);
+        setToken(sessionToken);
+      } else if (event === 'SIGNED_OUT') {
+        localStorage.removeItem("token");
+        setToken(false);
+        setUserData(false);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, [syncSupabaseSessionToken]);
+
+  useEffect(() => {
+    if (supabase) {
+      syncSupabaseSessionToken().finally(() => {
+        if (token) {
+          loadUserProfileData();
+        } else {
+          setUserData(false);
+        }
+      });
+      return;
+    }
+
     if (token) {
       loadUserProfileData();
     } else {
       setUserData(false);
     }
-  }, [token, loadUserProfileData]);
+  }, [token, loadUserProfileData, syncSupabaseSessionToken]);
 
   // =========================
   // CONTEXT VALUE

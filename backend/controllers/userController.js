@@ -5,6 +5,8 @@ import { supabase } from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
 import { generateAccessToken } from "../util/token.util.js";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const MAX_USERS = 100;
 
 // API to register user
@@ -108,12 +110,20 @@ const bookAppointment = async (req, res) => {
   try {
     const { userId } = req.user;
     const { docId, slotDate, slotTime } = req.body;
+    const normalizedDocId = typeof docId === 'string' ? docId.trim() : docId;
+
+    if (!normalizedDocId || normalizedDocId === 'undefined' || normalizedDocId === 'null') {
+      return res.status(400).json({ success: false, message: 'docId is required.' });
+    }
+    if (!UUID_RE.test(String(normalizedDocId))) {
+      return res.status(400).json({ success: false, message: 'docId must be a valid UUID.' });
+    }
 
     // Check existing appointment for this doctor at the same slot
     const { data: existing, error: existErr } = await supabase
       .from('appointments')
       .select('*')
-      .eq('doctor_id', docId)
+      .eq('doctor_id', normalizedDocId)
       .eq('slot_date', slotDate)
       .eq('slot_time', slotTime)
       .maybeSingle();
@@ -124,7 +134,7 @@ const bookAppointment = async (req, res) => {
 
     const appointmentData = {
       patient_id: userId,
-      doctor_id: docId,
+      doctor_id: normalizedDocId,
       slot_date: slotDate,
       slot_time: slotTime,
       amount: req.body.amount || 0,

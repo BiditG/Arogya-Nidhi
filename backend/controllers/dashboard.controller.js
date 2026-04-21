@@ -1,6 +1,10 @@
 import service from '../services/dashboard.service.js';
 import { sendSuccess, sendError } from '../util/response.util.js';
 
+function getAuthUserId(req) {
+  return req.user?.userId || req.user?.sub || req.user?.id || null;
+}
+
 // ─── Overview & Quick Actions ─────────────────────────────────────────────────
 
 /**
@@ -9,7 +13,9 @@ import { sendSuccess, sendError } from '../util/response.util.js';
  */
 export async function getOverview(req, res) {
   try {
-    const data = await service.getOverview(req.user.userId);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getOverview(userId);
     return sendSuccess(res, data, 'Dashboard overview fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -22,7 +28,9 @@ export async function getOverview(req, res) {
  */
 export async function getQuickActionsData(req, res) {
   try {
-    const data = await service.getQuickActionsData(req.user.userId);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getQuickActionsData(userId);
     return sendSuccess(res, data, 'Quick actions data fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -37,7 +45,9 @@ export async function getQuickActionsData(req, res) {
  */
 export async function getUpcomingAppointments(req, res) {
   try {
-    const data = await service.getUpcomingAppointments(req.user.userId, req.query);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getUpcomingAppointments(userId, req.query);
     return sendSuccess(res, data, 'Upcoming appointments fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -50,7 +60,9 @@ export async function getUpcomingAppointments(req, res) {
  */
 export async function getAllAppointments(req, res) {
   try {
-    const data = await service.getAllAppointments(req.user.userId, req.query);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getAllAppointments(userId, req.query);
     return sendSuccess(res, data, 'Appointments fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -62,7 +74,9 @@ export async function getAllAppointments(req, res) {
  */
 export async function getAppointmentDetails(req, res) {
   try {
-    const data = await service.getAppointmentDetails(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getAppointmentDetails(userId, req.params.id);
     return sendSuccess(res, data, 'Appointment details fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -75,7 +89,9 @@ export async function getAppointmentDetails(req, res) {
  */
 export async function bookAppointment(req, res) {
   try {
-    const data = await service.bookAppointment(req.user.userId, req.body);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.bookAppointment(userId, req.body);
     return sendSuccess(res, data, 'Appointment booked successfully', 201);
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -87,7 +103,9 @@ export async function bookAppointment(req, res) {
  */
 export async function cancelAppointment(req, res) {
   try {
-    const data = await service.cancelAppointment(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.cancelAppointment(userId, req.params.id);
     return sendSuccess(res, data, 'Appointment cancelled');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -100,7 +118,9 @@ export async function cancelAppointment(req, res) {
  */
 export async function rescheduleAppointment(req, res) {
   try {
-    const data = await service.rescheduleAppointment(req.user.userId, req.params.id, req.body);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.rescheduleAppointment(userId, req.params.id, req.body);
     return sendSuccess(res, data, 'Appointment rescheduled');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -115,7 +135,9 @@ export async function rescheduleAppointment(req, res) {
  */
 export async function getMedicalHistory(req, res) {
   try {
-    const data = await service.getMedicalHistory(req.user.userId, req.query);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getMedicalHistory(userId, req.query);
     return sendSuccess(res, data, 'Medical history fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -128,7 +150,9 @@ export async function getMedicalHistory(req, res) {
  */
 export async function getRecentMedicalHistory(req, res) {
   try {
-    const data = await service.getRecentMedicalHistory(req.user.userId);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getRecentMedicalHistory(userId);
     return sendSuccess(res, data, 'Recent medical history fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -143,7 +167,9 @@ export async function getRecentMedicalHistory(req, res) {
  */
 export async function getIotReadings(req, res) {
   try {
-    const data = await service.getIotReadings(req.user.userId, req.query);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getIotReadings(userId, req.query);
     return sendSuccess(res, data, 'IoT readings fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -156,7 +182,9 @@ export async function getIotReadings(req, res) {
  */
 export async function getRecentIotReadings(req, res) {
   try {
-    const data = await service.getRecentIotReadings(req.user.userId);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getRecentIotReadings(userId);
     return sendSuccess(res, data, 'Recent IoT readings fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -168,7 +196,9 @@ export async function getRecentIotReadings(req, res) {
  */
 export async function getIotReadingById(req, res) {
   try {
-    const data = await service.getIotReadingById(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getIotReadingById(userId, req.params.id);
     return sendSuccess(res, data, 'IoT reading fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -181,7 +211,9 @@ export async function getIotReadingById(req, res) {
  */
 export async function submitIotTest(req, res) {
   try {
-    const data = await service.submitIotTest(req.user.userId, req.body);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.submitIotTest(userId, req.body);
     return sendSuccess(res, data, 'IoT test submitted successfully', 201);
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -196,7 +228,9 @@ export async function submitIotTest(req, res) {
  */
 export async function getMyQueries(req, res) {
   try {
-    const data = await service.getMyQueries(req.user.userId, req.query);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getMyQueries(userId, req.query);
     return sendSuccess(res, data, 'Queries fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -208,7 +242,9 @@ export async function getMyQueries(req, res) {
  */
 export async function getQueryDetails(req, res) {
   try {
-    const data = await service.getQueryDetails(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.getQueryDetails(userId, req.params.id);
     return sendSuccess(res, data, 'Query details fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -221,7 +257,9 @@ export async function getQueryDetails(req, res) {
  */
 export async function createQuery(req, res) {
   try {
-    const data = await service.createQuery(req.user.userId, req.body);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.createQuery(userId, req.body);
     return sendSuccess(res, data, 'Query submitted successfully', 201);
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -234,7 +272,9 @@ export async function createQuery(req, res) {
  */
 export async function updateQuery(req, res) {
   try {
-    const data = await service.updateQuery(req.user.userId, req.params.id, req.body);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.updateQuery(userId, req.params.id, req.body);
     return sendSuccess(res, data, 'Query updated');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -247,7 +287,9 @@ export async function updateQuery(req, res) {
  */
 export async function closeQuery(req, res) {
   try {
-    const data = await service.closeQuery(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    const data = await service.closeQuery(userId, req.params.id);
     return sendSuccess(res, data, 'Query marked as resolved');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
@@ -259,7 +301,9 @@ export async function closeQuery(req, res) {
  */
 export async function deleteQuery(req, res) {
   try {
-    await service.deleteQuery(req.user.userId, req.params.id);
+    const userId = getAuthUserId(req);
+    if (!userId) return sendError(res, 'User id not found in token', 401);
+    await service.deleteQuery(userId, req.params.id);
     return sendSuccess(res, {}, 'Query deleted');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
