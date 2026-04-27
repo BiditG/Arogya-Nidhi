@@ -18,7 +18,8 @@ export async function getOverview(req, res) {
     const data = await service.getOverview(userId);
     return sendSuccess(res, data, 'Dashboard overview fetched');
   } catch (err) {
-    return sendError(res, err.message, err.status || 500);
+    console.error('createQuery error:', err);
+    return sendError(res, err, err.status || 500);
   }
 }
 
@@ -334,5 +335,33 @@ export async function getDoctorById(req, res) {
     return sendSuccess(res, data, 'Doctor profile fetched');
   } catch (err) {
     return sendError(res, err.message, err.status || 500);
+  }
+}
+
+/**
+ * GET /api/queries
+ * Public listing of health queries (no auth required)
+ */
+export async function getPublicQueries(req, res) {
+  try {
+    const data = await service.getPublicQueries(req.query);
+    return sendSuccess(res, data, 'Public queries fetched');
+  } catch (err) {
+    console.error('getPublicQueries error:', err);
+    return sendError(res, err.message || err, err.status || 500);
+  }
+}
+
+/**
+ * GET /api/queries/:id
+ * Public query details
+ */
+export async function getPublicQuery(req, res) {
+  try {
+    const data = await service.getPublicQueryById(req.params.id);
+    return sendSuccess(res, data, 'Public query fetched');
+  } catch (err) {
+    console.error('getPublicQuery error:', err);
+    return sendError(res, err.message || err, err.status || 500);
   }
 }

@@ -27,7 +27,7 @@ const MCQSection = () => {
   const [results, setResults] = useState([]); // {id, selected, correct}
 
   // Filters / options
-  const [tableName, setTableName] = useState("mcqs");
+  const [tableName, setTableName] = useState("mcq_questions");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterTopic, setFilterTopic] = useState("");
   const [filterYear, setFilterYear] = useState("");
@@ -312,10 +312,77 @@ const MCQSection = () => {
       </div>
 
       <div className="mt-4 p-4 bg-gray-50 rounded">{questions && questions.length ? (
-        <div className="text-sm text-gray-700">Ready: {questions.length} sample questions loaded for preview.</div>
+        <div className="text-sm text-gray-700">Ready: {questions.length} questions loaded.</div>
       ) : (
         <div className="text-sm text-gray-500">No preview questions available.</div>
       )}</div>
+
+      {/* Quiz view */}
+      {questions && questions.length > 0 && (
+        <div className="mt-6 p-4 bg-white rounded-lg border">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-gray-500">Question {current + 1} / {questions.length}</div>
+            <div className="text-sm text-gray-500">Score: {score}</div>
+          </div>
+
+          <div className="mb-4">
+            <div className="text-lg font-medium text-gray-800">{questions[current].question}</div>
+            {timed && quizStarted && (
+              <div className="text-sm text-red-500 mt-2">Time left: {timeLeft}s</div>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            {questions[current].options && questions[current].options.length ? (
+              questions[current].options.map((opt, idx) => {
+                const isSelected = selected === idx;
+                const isCorrect = showAnswer && idx === questions[current].answer;
+                const isWrongPick = showAnswer && isSelected && idx !== questions[current].answer;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setSelected(idx)}
+                    className={`w-full text-left px-4 py-2 rounded-md border ${isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'} ${isCorrect ? 'border-green-600 bg-green-50' : ''} ${isWrongPick ? 'border-red-600 bg-red-50' : ''}`}
+                    disabled={showAnswer || finished}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs font-medium">{String.fromCharCode(65 + idx)}</div>
+                      <div className="text-sm text-gray-700">{opt}</div>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="text-sm text-gray-500">No options provided for this question.</div>
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            {!quizStarted && !finished && (
+              <button onClick={() => { setQuizStarted(true); setCurrent(0); setScore(0); setResults([]); }} className="px-3 py-2 bg-indigo-600 text-white rounded-md">Begin</button>
+            )}
+
+            {quizStarted && !finished && (
+              <>
+                <button onClick={submitAnswer} className="px-3 py-2 bg-indigo-600 text-white rounded-md" disabled={selected === null}>Submit</button>
+                {mode === 'casual' && <button onClick={nextQuestion} className="px-3 py-2 bg-gray-100 rounded-md">Next</button>}
+              </>
+            )}
+
+            {finished && (
+              <div className="text-sm text-gray-700">Final score: {score} / {questions.length}</div>
+            )}
+
+            <div className="ml-auto text-sm text-gray-400">{showAnswer ? 'Answer shown' : ''}</div>
+          </div>
+
+          {showAnswer && (
+            <div className="mt-4 text-sm text-gray-600">
+              <div><strong>Explanation:</strong> {questions[current].explanation || '—'}</div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

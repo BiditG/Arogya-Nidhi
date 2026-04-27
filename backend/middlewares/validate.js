@@ -15,6 +15,8 @@ export const validate = (schema) => (req, res, next) => {
 
     if (!result.success) {
       const messages = result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+      // Log validation details for easier debugging
+      console.error('Validation failed for', req.originalUrl, '-', messages);
       return sendError(res, `Validation Error - ${messages}`, 400);
     }
     

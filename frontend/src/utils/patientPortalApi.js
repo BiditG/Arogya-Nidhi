@@ -140,4 +140,30 @@ export const patientPortalApi = {
     axios
       .get(`${backendUrl}/api/patient/doctors/${id}`, authConfig(token))
       .then(unwrap),
+  // Doctor endpoints (use dtoken header instead of Authorization)
+  getDoctorQueries: (backendUrl, dtoken, params = {}) =>
+    axios
+      .get(`${backendUrl}/api/doctor/queries`, { headers: { dtoken }, params })
+      .then(unwrap),
+
+  getDoctorQueryById: (backendUrl, dtoken, id) =>
+    axios
+      .get(`${backendUrl}/api/doctor/queries/${id}`, { headers: { dtoken } })
+      .then(unwrap),
+
+  createDoctorResponse: (backendUrl, dtoken, id, payload) =>
+    axios
+      .post(`${backendUrl}/api/doctor/queries/${id}/responses`, payload, { headers: { dtoken } })
+      .then(unwrap),
+
+  // Public forum endpoints (no auth required)
+  getPublicQueries: (backendUrl, params = {}) =>
+    axios
+      .get(`${backendUrl}/api/queries`, { params })
+      .then(unwrap),
+
+  getPublicQueryById: (backendUrl, id) =>
+    axios
+      .get(`${backendUrl}/api/queries/${id}`)
+      .then(unwrap),
 };

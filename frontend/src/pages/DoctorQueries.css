@@ -1,0 +1,8 @@
+.dq-page { padding: 1rem; }
+.dq-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.dq-list { display:flex; flex-direction:column; gap:0.75rem; }
+.dq-card { border:1px solid #e5e7eb; padding:0.75rem; border-radius:0.5rem; background:#fff; }
+.dq-title { font-weight:600; margin-bottom:0.25rem; }
+.dq-meta { font-size:0.85rem; color:#6b7280; margin-bottom:0.5rem; }
+.dq-actions { display:flex; gap:0.5rem; }
+.dq-btn { background:#0ea5e9; color:#fff; border:none; padding:0.4rem 0.6rem; border-radius:0.375rem; cursor:pointer; }

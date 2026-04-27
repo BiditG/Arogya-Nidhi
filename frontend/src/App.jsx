@@ -22,8 +22,12 @@ import BookAppointment from "./pages/BookAppointment";
 import MedicalHistory from "./pages/MedicalHistory";
 import HealthQueries from "./pages/HealthQueries";
 import DiscussionDetail from "./pages/DiscussionDetail";
+import PublicChat from "./pages/PublicChat";
+import PublicChatDetail from "./pages/PublicChatDetail";
 import EditProfile from "./pages/EditProfile";
 import DoctorPortal from "./pages/DoctorPortal";
+import DoctorQueries from "./pages/DoctorQueries";
+import DoctorQueryDetail from "./pages/DoctorQueryDetail";
 import StudentPortal from "./pages/StudentPortal";
 import AdminPortal from "./pages/AdminPortal";
 
@@ -43,6 +47,8 @@ const App = () => {
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/doctors/:slug" element={<Doctors />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/public-queries" element={<PublicChat />} />
+        <Route path="/public-queries/:id" element={<PublicChatDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
@@ -76,6 +82,8 @@ const App = () => {
         />
 
         <Route path="/doctor-portal" element={<DoctorPortal />} />
+        <Route path="/doctor-portal/queries" element={<DoctorQueries />} />
+        <Route path="/doctor-portal/queries/:id" element={<DoctorQueryDetail />} />
         <Route path="/student-portal" element={<StudentPortal />} />
         <Route path="/admin-portal" element={<AdminPortal />} />
 

@@ -8,7 +8,8 @@ import { AppContext } from "../context/AppContext";
 const navLinks = [
   { title: "Home", path: "/" },
   { title: "All Doctors", path: "/doctors" },
-  { title: "Chat", path: "/chat" },
+  // Redirect top-level Chat nav to patient portal's Health Queries
+  { title: "Chat", path: "/public-queries" },
   // Students removed from top-level nav; portal accessible via dashboard menu
   { title: "About", path: "/about" },
   { title: "Contact", path: "/contact" },

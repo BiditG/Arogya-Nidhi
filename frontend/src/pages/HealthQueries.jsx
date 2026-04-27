@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
 import {
@@ -13,6 +13,7 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { AppContext } from "../context/AppContext";
+import { patientPortalApi } from "../utils/patientPortalApi";
 import { usePosts } from "../context/PostsContext";
 import "./HealthQueries.css";
 
@@ -23,6 +24,7 @@ const POSTS_PER_PAGE = 5;
 const HealthQueries = () => {
   const { setToken } = useContext(AppContext);
   const { posts, addPost, votePost } = usePosts();
+  const { backendUrl, token, userData } = useContext(AppContext);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
@@ -40,29 +42,97 @@ const HealthQueries = () => {
 
   const handleCreatePost = () => {
     if (!newPost.title.trim() || !newPost.excerpt.trim()) return;
-    addPost({
-      id: Date.now(),
-      authorInitials: "Me",
-      authorName: "You",
-      authorRole: "patient",
-      title: newPost.title.trim(),
-      body: newPost.excerpt.trim(),
-      excerpt: newPost.excerpt.trim(),
-      category: newPost.category,
-      comments: 0,
-      views: "0",
-      votes: 1,
-      userVote: "up",
-      postedAt: new Date().toISOString(),
-      comments_data: [],
-    });
+    if (newPost.title.trim().length < 3) {
+      // Client-side guard to match backend validation
+      console.error('Title must be at least 3 characters');
+      return;
+    }
+    // Create via API when logged in as patient
+    if (token) {
+      patientPortalApi.createQuery(backendUrl, token, {
+        title: newPost.title.trim(),
+        symptomText: newPost.excerpt.trim(),
+        isAnonymous: false,
+      }).then((created) => {
+        // Refresh list
+        loadQueries();
+      }).catch((err) => {
+        console.error('Create query failed', err);
+      });
+    } else {
+      addPost({
+        id: Date.now(),
+        authorInitials: "Me",
+        authorName: "You",
+        authorRole: "patient",
+        title: newPost.title.trim(),
+        body: newPost.excerpt.trim(),
+        excerpt: newPost.excerpt.trim(),
+        category: newPost.category,
+        comments: 0,
+        views: "0",
+        votes: 1,
+        userVote: "up",
+        postedAt: new Date().toISOString(),
+        comments_data: [],
+      });
+    }
     setNewPost({ title: "", category: "General Health", excerpt: "" });
     setShowModal(false);
     setSortTab("New");
     setCurrentPage(1);
   };
 
-  const filtered = posts.filter((p) => {
+  const [queries, setQueries] = useState([]);
+
+  const loadQueries = async () => {
+    if (!token) return;
+    try {
+      const res = await patientPortalApi.getQueries(backendUrl, token, { page: 1, limit: 50 });
+      setQueries(res.queries || []);
+    } catch (err) {
+      console.error('Failed to load queries', err);
+    }
+  };
+
+  useEffect(() => {
+    loadQueries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const mapApiToPost = (q) => {
+    const author = q.patient?.user || { name: 'Anonymous' };
+    return {
+      id: q.id,
+      authorInitials: (author.name || '').split(' ').map(s => s[0]).slice(0,2).join('') || 'P',
+      authorName: q.isAnonymous ? 'Anonymous' : (author.name || 'Patient'),
+      authorRole: 'patient',
+      title: q.title,
+      body: q.symptomText || '',
+      excerpt: (q.symptomText || '').slice(0,200),
+      category: 'Health',
+      comments: (q.responses || []).length,
+      views: q.view_count || 0,
+      votes: 0,
+      userVote: null,
+      postedAt: q.created_at,
+      comments_data: (q.responses || []).map((r) => ({
+        id: r.id,
+        authorInitials: (r.doctor?.user?.name || 'Dr').split(' ').map(s=>s[0]).slice(0,2).join(''),
+        authorName: r.doctor?.user?.name || 'Doctor',
+        authorRole: 'doctor',
+        body: r.responseText || '',
+        votes: r.isAccepted ? 1 : 0,
+        userVote: null,
+        postedAt: r.createdAt,
+        replies: [],
+      })),
+    };
+  };
+
+  const source = token ? queries.map(mapApiToPost) : posts;
+
+  const filtered = source.filter((p) => {
     if (categoryFilter !== "All" && p.category !== categoryFilter) return false;
     if (activeSearch) {
       const q = activeSearch.toLowerCase();

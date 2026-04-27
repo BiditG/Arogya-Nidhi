@@ -289,13 +289,25 @@ async function findQueryById(id, patientId) {
 }
 
 async function createQuery(data) {
-  const { data: created, error } = await supabase.from('patient_queries').insert(data).select().maybeSingle();
+  // normalize camelCase keys to snake_case columns for PostgREST
+  const payload = {
+    patient_id: data.patientId,
+    title: data.title,
+    symptom_text: data.symptomText ?? null,
+    is_anonymous: data.isAnonymous === true || data.isAnonymous === 'true',
+  };
+  const { data: created, error } = await supabase.from('patient_queries').insert(payload).select().maybeSingle();
   if (error) throw error;
   return created;
 }
 
 async function updateQuery(id, data) {
-  const { data: updated, error } = await supabase.from('patient_queries').update(data).eq('id', id).maybeSingle();
+  // map possible camelCase fields to snake_case for update
+  const payload = {};
+  if (data.title !== undefined) payload.title = data.title;
+  if (data.symptomText !== undefined) payload.symptom_text = data.symptomText;
+  if (data.isAnonymous !== undefined) payload.is_anonymous = data.isAnonymous === true || data.isAnonymous === 'true';
+  const { data: updated, error } = await supabase.from('patient_queries').update(payload).eq('id', id).maybeSingle();
   if (error) throw error;
   return updated;
 }
@@ -314,6 +326,53 @@ async function incrementQueryView(id) {
   const { data: updated, error } = await supabase.from('patient_queries').update({ view_count: current + 1 }).eq('id', id).maybeSingle();
   if (error) throw error;
   return updated;
+}
+
+// ─── Doctor-facing query operations ──────────────────────────────────────────
+
+async function getAllQueriesForDoctor({ page = 1, limit = 10, isResolved } = {}) {
+  const offset = (page - 1) * limit;
+  let query = supabase
+    .from('patient_queries')
+    .select(`*, patient:patients(id, user:users(id,name,avatarUrl:avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatarUrl:avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+    .order('created_at', { ascending: false });
+  if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
+  if (error) throw error;
+  return { total: count || 0, page, limit, queries: data };
+}
+
+async function getPublicQueries({ page = 1, limit = 10, isResolved } = {}) {
+  const offset = (page - 1) * limit;
+  let query = supabase
+    .from('patient_queries')
+    .select(`*, patient:patients(id, user:users(id,name,avatarUrl:avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatarUrl:avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+    .order('created_at', { ascending: false });
+  if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
+  const { data, count, error } = await query.range(offset, offset + limit - 1);
+  if (error) throw error;
+  return { total: count || 0, page, limit, queries: data };
+}
+
+async function findQueryByIdForDoctor(id) {
+  const { data, error } = await supabase
+    .from('patient_queries')
+    .select(`*, patient:patients(id, user:users(id,name,avatarUrl:avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatarUrl:avatar_url))), triage_decision:triage_decisions(*)`)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function createQueryResponse({ queryId, doctorId, responseText }) {
+  const payload = {
+    query_id: queryId,
+    doctor_id: doctorId,
+    response_text: responseText || null,
+  };
+  const { data: created, error } = await supabase.from('query_responses').insert(payload).select().maybeSingle();
+  if (error) throw error;
+  return created;
 }
 
 // ─── Doctors (for booking) ────────────────────────────────────────────────────
@@ -368,10 +427,15 @@ export default {
   // queries
   getPatientQueries,
   findQueryById,
+  getPublicQueries,
   createQuery,
   updateQuery,
   deleteQuery,
   incrementQueryView,
+  // doctor-facing
+  getAllQueriesForDoctor,
+  findQueryByIdForDoctor,
+  createQueryResponse,
   // doctors
   getAvailableDoctors,
   findDoctorById,

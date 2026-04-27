@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { AppContext } from "../context/AppContext";
 import { usePosts } from "../context/PostsContext";
+import { patientPortalApi } from "../utils/patientPortalApi";
 import "./DiscussionDetail.css";
 
 const SORT_OPTIONS = ["Best", "Top", "New", "Controversial"];
@@ -167,10 +168,50 @@ const Comment = ({ comment, postId, onVoteComment, onVoteReply, onAddReply }) =>
 
 const DiscussionDetail = () => {
   const { id } = useParams();
-  const { setToken } = useContext(AppContext);
+  const { setToken, backendUrl, token } = useContext(AppContext);
   const { posts, votePost, voteComment, voteReply, addComment, addReply } = usePosts();
 
-  const post = posts.find((p) => p.id === Number(id));
+  const [apiPost, setApiPost] = useState(null);
+
+  useEffect(() => {
+    if (!token) return;
+    patientPortalApi.getQueryById(backendUrl, token, id)
+      .then((q) => setApiPost(q))
+      .catch((err) => console.error('Failed to load query', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, id]);
+
+  const mapApiToPost = (q) => {
+    if (!q) return null;
+    const author = q.patient?.user || { name: 'Anonymous', avatarUrl: null };
+    return {
+      id: q.id,
+      authorInitials: (author.name || '').split(' ').map(s => s[0]).slice(0,2).join('') || 'P',
+      authorName: q.isAnonymous ? 'Anonymous' : (author.name || 'Patient'),
+      authorRole: 'patient',
+      title: q.title,
+      body: q.symptomText || '',
+      category: 'Health',
+      comments: (q.responses || []).length,
+      views: q.view_count || 0,
+      votes: 0,
+      userVote: null,
+      postedAt: q.created_at,
+      comments_data: (q.responses || []).map((r) => ({
+        id: r.id,
+        authorInitials: (r.doctor?.user?.name || 'Dr').split(' ').map(s=>s[0]).slice(0,2).join(''),
+        authorName: r.doctor?.user?.name || 'Doctor',
+        authorRole: 'doctor',
+        body: r.responseText || '',
+        votes: r.isAccepted ? 1 : 0,
+        userVote: null,
+        postedAt: r.createdAt,
+        replies: [],
+      })),
+    };
+  };
+
+  const post = token && apiPost ? mapApiToPost(apiPost) : posts.find((p) => p.id === Number(id));
 
   const [commentText, setCommentText] = useState("");
   const [sortComments, setSortComments] = useState("Best");

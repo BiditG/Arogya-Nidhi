@@ -2,14 +2,16 @@ import fetch from "node-fetch";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
-const DEFAULT_TABLE = process.env.MCQ_TABLE || "mcqs";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const DEFAULT_TABLE = process.env.MCQ_TABLE || "mcq_questions";
 
 export const getMCQs = async (req, res) => {
   try {
     const { subject, topic, year, limit } = req.query;
     const table = req.query.table || DEFAULT_TABLE;
 
-    const select = `select=id,exam,subject,topic,q,options,answer,explanation,year,created_at`;
+    // temporarily request all columns to inspect actual column names
+    const select = `select=*`;
     const filters = [];
     if (subject) filters.push(`subject=eq.${encodeURIComponent(subject)}`);
     if (topic) filters.push(`topic=eq.${encodeURIComponent(topic)}`);
@@ -17,35 +19,75 @@ export const getMCQs = async (req, res) => {
     const filterQuery = filters.length ? `&${filters.join("&")}` : "";
     const lim = limit ? `&limit=${Number(limit)}` : "";
 
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
+    if (!SUPABASE_URL || !(SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY)) {
       return res.status(500).json({ success: false, message: "Supabase not configured on server" });
     }
 
+    // prefer service role for Authorization and anon key for apikey header
+    const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
+    const apikeyHeader = SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY;
+
     const url = `${SUPABASE_URL}/rest/v1/${table}?${select}${filterQuery}${lim}`;
+    console.log('[studentsController] Supabase URL:', url);
+    console.log('[studentsController] SUPABASE_KEY set?', Boolean(SUPABASE_KEY), 'SUPABASE_SERVICE_ROLE_KEY set?', Boolean(SUPABASE_SERVICE_ROLE_KEY));
+    console.log('[studentsController] headers chosen -> apikeyHeader is serviceRole?', apikeyHeader === SUPABASE_SERVICE_ROLE_KEY, 'authKey is serviceRole?', authKey === SUPABASE_SERVICE_ROLE_KEY);
     const r = await fetch(url, {
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: apikeyHeader,
+        Authorization: `Bearer ${authKey}`,
         Accept: "application/json",
       },
     });
     if (!r.ok) {
       const txt = await r.text();
+      console.log('[studentsController] Supabase response error', r.status, txt);
       return res.status(r.status).json({ success: false, message: txt });
     }
     const data = await r.json();
-    const mapped = data.map((row) => ({
-      id: row.id,
-      exam: row.exam,
-      subject: row.subject,
-      topic: row.topic,
-      question: row.q,
-      options: Array.isArray(row.options) ? row.options : (row.options ? JSON.parse(row.options) : []),
-      answer: typeof row.answer === "number" ? row.answer : (row.answer ? Number(row.answer) : 0),
-      explanation: row.explanation,
-      year: row.year,
-      created_at: row.created_at,
-    }));
+    // log a sample row so we can inspect actual keys returned by Supabase
+    if (Array.isArray(data) && data.length) console.log('[studentsController] sample row keys:', Object.keys(data[0]));
+    const mapped = data.map((row) => {
+      // question text
+      const questionText = row.question || "";
+
+      // options may be JSON (array) or a JSON string
+      let options = [];
+      try {
+        if (Array.isArray(row.options)) options = row.options;
+        else if (typeof row.options === "string" && row.options.trim()) options = JSON.parse(row.options);
+        else options = row.options ? [row.options] : [];
+      } catch (err) {
+        options = [];
+      }
+
+      // answer handling: Supabase schema stores `answer` which may be index or text
+      let answerIndex = 0;
+      const rawAnswer = row.answer ?? null;
+      if (rawAnswer === null || rawAnswer === undefined) {
+        answerIndex = 0;
+      } else if (typeof rawAnswer === "number") {
+        answerIndex = rawAnswer;
+      } else if (/^\d+$/.test(String(rawAnswer).trim())) {
+        answerIndex = Number(String(rawAnswer).trim());
+      } else {
+        // treat rawAnswer as option text; find its index in options
+        const idx = options.findIndex((o) => String(o).trim() === String(rawAnswer).trim());
+        answerIndex = idx >= 0 ? idx : 0;
+      }
+
+      return {
+        id: row.id,
+        exam: row.exam,
+        subject: row.subject,
+        topic: row.topic,
+        question: questionText,
+        options,
+        answer: answerIndex,
+        explanation: row.explanation || row.ai_explanation || "",
+        year: row.year,
+        created_at: row.created_at,
+      };
+    });
 
     res.json({ success: true, data: mapped });
   } catch (error) {
@@ -63,11 +105,13 @@ export const getMetadata = async (req, res) => {
 
     // helper to fetch distinct values for a column
     const fetchDistinct = async (col) => {
+      const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
+      const apikeyHeader = SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY;
       const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(col)}&distinct=${encodeURIComponent(col)}`;
       const r = await fetch(url, {
         headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          apikey: apikeyHeader,
+          Authorization: `Bearer ${authKey}`,
           Accept: "application/json",
         },
       });
@@ -82,11 +126,13 @@ export const getMetadata = async (req, res) => {
 
     // get total count using Prefer: count=exact
     const countUrl = `${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1`;
+    const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
+    const apikeyHeader = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
     const countRes = await fetch(countUrl, {
       method: "GET",
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: apikeyHeader,
+        Authorization: `Bearer ${authKey}`,
         Accept: "application/json",
         Prefer: "count=exact",
       },
