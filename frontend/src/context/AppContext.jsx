@@ -9,7 +9,7 @@ const AppContextProvider = (props) => {
   // Use Nepali Rupee sign
   const currencySymbol = "रु";
   // Default to local backend when VITE_BACKEND_URL is not provided (prevents calls to dev server)
-  const backendUrl = ((import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim()) || "http://localhost:3001").replace(/\/+$/, "");
+  const backendUrl = ((import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim()) || "http://localhost:3000").replace(/\/+$/, "");
 
   const [doctors, setDoctors] = useState([]);
   const [token, setToken] = useState(localStorage.getItem("token") || false);

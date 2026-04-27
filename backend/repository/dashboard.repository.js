@@ -168,6 +168,19 @@ async function findAppointmentByDoctorAndScheduledAt(doctorId, scheduledAt) {
   return data;
 }
 
+async function findAppointmentsByDoctorBetween(doctorId, startsAt, endsAt) {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id, status, scheduled_at')
+    .eq('doctor_id', doctorId)
+    .gte('scheduled_at', startsAt)
+    .lt('scheduled_at', endsAt)
+    .in('status', ['pending', 'confirmed'])
+    .order('scheduled_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 async function bookAppointment(data) {
   const payload = {
     patient_id: data.patientId ?? data.patient_id,
@@ -413,6 +426,7 @@ export default {
   getAllAppointments,
   findAppointmentById,
   findAppointmentByDoctorAndScheduledAt,
+  findAppointmentsByDoctorBetween,
   bookAppointment,
   cancelAppointment,
   updateAppointment,

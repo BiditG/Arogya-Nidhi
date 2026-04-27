@@ -14,6 +14,12 @@ async function findUserById(id) {
   return data;
 }
 
+async function findUserByPhone(phone) {
+  const { data, error } = await supabase.from('users').select('*').eq('phone', phone).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 async function createUser(data) {
   const { data: created, error } = await supabase.from('users').insert(data).select().maybeSingle();
   if (error) throw error;
@@ -93,6 +99,7 @@ async function revokeAllUserRefreshTokens(userId) {
 export default {
   findUserByEmail,
   findUserById,
+  findUserByPhone,
   createUser,
   upsertUser,
   createPatient,
