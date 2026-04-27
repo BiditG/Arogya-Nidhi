@@ -12,6 +12,18 @@ async function findPatientByUserId(userId) {
   return data;
 }
 
+async function findPatientByPhone(phone) {
+  const { data: user, error: userError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('phone', phone)
+    .maybeSingle();
+  if (userError) throw userError;
+  if (!user?.id) return null;
+
+  return findPatientByUserId(user.id);
+}
+
 async function findPatientById(id) {
   const { data, error } = await supabase
     .from('patients')
@@ -159,6 +171,7 @@ async function deleteMedicalReport(id) {
 export default {
   // profile
   findPatientByUserId,
+  findPatientByPhone,
   findPatientById,
   updateUserProfile,
   updatePatientProfile,

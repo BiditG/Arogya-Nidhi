@@ -4,7 +4,6 @@ import { authenticate, requireRole } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { chatSchema, assistantChatSchema } from '../validations/ai.validation.js';
 
-
 const router = express.Router();
 
 router.post("/assistant", authenticate, requireRole('patient'), validate(assistantChatSchema), assistant);
