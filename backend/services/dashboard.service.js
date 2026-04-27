@@ -1,6 +1,7 @@
 import repo from '../repository/dashboard.repository.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEFAULT_BOOKING_TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -376,6 +377,58 @@ async function getDoctorById(doctorId) {
   return doctor;
 }
 
+async function getDoctorAvailability({ doctorId, date }) {
+  const normalizedDoctorId = typeof doctorId === 'string' ? doctorId.trim() : doctorId;
+  if (!normalizedDoctorId || normalizedDoctorId === 'undefined' || normalizedDoctorId === 'null') {
+    throw { status: 400, message: 'doctorId is required' };
+  }
+  if (!UUID_RE.test(String(normalizedDoctorId))) {
+    throw { status: 400, message: 'doctorId must be a valid UUID' };
+  }
+  if (!date) {
+    throw { status: 400, message: 'date is required' };
+  }
+
+  const doctor = await repo.findDoctorById(normalizedDoctorId);
+  if (!doctor) throw _notFound('Doctor');
+
+  const startOfDay = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(startOfDay.getTime())) {
+    throw { status: 400, message: 'date must be a valid YYYY-MM-DD value' };
+  }
+
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setDate(endOfDay.getDate() + 1);
+
+  const existing = await repo.findAppointmentsByDoctorBetween(
+    normalizedDoctorId,
+    startOfDay.toISOString(),
+    endOfDay.toISOString()
+  );
+
+  const bookedSlots = new Set(
+    existing
+      .map((appointment) => {
+        const scheduledAt = new Date(appointment.scheduled_at || appointment.scheduledAt);
+        const hour = String(scheduledAt.getHours()).padStart(2, '0');
+        return `${hour}:00`;
+      })
+      .filter(Boolean)
+  );
+
+  const now = new Date();
+  const slots = DEFAULT_BOOKING_TIME_SLOTS.filter((slot) => {
+    if (bookedSlots.has(slot)) return false;
+    return new Date(`${date}T${slot}:00`) > now;
+  });
+
+  return {
+    doctorId: normalizedDoctorId,
+    date,
+    slots,
+  };
+}
+
 export default {
   getOverview,
   getQuickActionsData,
@@ -405,4 +458,5 @@ export default {
   // doctors
   getAvailableDoctors,
   getDoctorById,
+  getDoctorAvailability,
 };
