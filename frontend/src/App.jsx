@@ -25,7 +25,13 @@ import DiscussionDetail from "./pages/DiscussionDetail";
 import PublicChat from "./pages/PublicChat";
 import PublicChatDetail from "./pages/PublicChatDetail";
 import EditProfile from "./pages/EditProfile";
-import DoctorPortal from "./pages/DoctorPortal";
+import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorAppointments from "./pages/DoctorAppointments";
+import DoctorConsultations from "./pages/DoctorConsultations";
+import DoctorEarnings from "./pages/DoctorEarnings";
+import DoctorReports from "./pages/DoctorReports";
+import DoctorPatientHistory from "./pages/DoctorPatientHistory";
+import DoctorAISummaries from "./pages/DoctorAISummaries";
 import DoctorQueries from "./pages/DoctorQueries";
 import DoctorQueryDetail from "./pages/DoctorQueryDetail";
 import StudentPortal from "./pages/StudentPortal";
@@ -81,7 +87,13 @@ const App = () => {
           element={<DiscussionDetail />}
         />
 
-        <Route path="/doctor-portal" element={<DoctorPortal />} />
+        <Route path="/doctor-portal" element={<DoctorDashboard />} />
+        <Route path="/doctor-portal/appointments" element={<DoctorAppointments />} />
+        <Route path="/doctor-portal/consultations" element={<DoctorConsultations />} />
+        <Route path="/doctor-portal/patient-history" element={<DoctorPatientHistory />} />
+        <Route path="/doctor-portal/ai-summaries" element={<DoctorAISummaries />} />
+        <Route path="/doctor-portal/earnings" element={<DoctorEarnings />} />
+        <Route path="/doctor-portal/reports" element={<DoctorReports />} />
         <Route path="/doctor-portal/queries" element={<DoctorQueries />} />
         <Route path="/doctor-portal/queries/:id" element={<DoctorQueryDetail />} />
         <Route path="/student-portal" element={<StudentPortal />} />
