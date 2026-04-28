@@ -58,7 +58,6 @@ server.listen(PORT, () => {
 				}
 			});
 		}
-		console.log('Registered routes:\n', routes.join('\n') || '(none)');
 	} catch (err) {
 		console.warn('Failed to list routes', err);
 	}
