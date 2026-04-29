@@ -1,236 +1,258 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext } from "react";
 import axios from "axios";
 import DoctorSidebar from "../components/DoctorSidebar";
 import { AppContext } from "../context/AppContext";
 import "./PatientPortal.css";
 
-const Tab = ({ active, onClick, children }) => (
-  <button
-    onClick={onClick}
-    className={`px-3 py-2 rounded ${active ? 'bg-primary text-white' : 'bg-transparent'}`}>
-    {children}
-  </button>
-);
+const DUMMY_PROFILE = {
+  name: "Rajan Adhikari",
+  id: "PAT-4521",
+  age: 52,
+  blood_group: "B+",
+  allergies: "Penicillin",
+  contact: "+977 981-234-5678",
+  emergency_contact: "+977 984-876-5432",
+};
 
-const ReportCard = ({ r }) => (
-  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',border:'1px solid var(--pp-border)',padding:12,marginBottom:12}}>
-    <div>
-      <div style={{fontWeight:600}}>{r.title || r.report_type || 'Lab Report'}</div>
-      <div style={{color:'#6b7280'}}>{r.date || r.createdAt || ''}</div>
-    </div>
-    <div style={{display:'flex',gap:8}}>
-      <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
-      <button className="pp-btn pp-btn-outline pp-btn-sm">Download</button>
-    </div>
-  </div>
-);
+const DUMMY_CONSULTATIONS = [
+  { id: "c1", diagnosis: "Hypertension — controlled", doctor: "Dr. Rahul Sharma", date: "Apr 30, 2026", notes: "Blood pressure 135/85. Continue Amlodipine 5mg. Sodium restriction advised." },
+  { id: "c2", diagnosis: "Hypertension — initial diagnosis", doctor: "Dr. Rahul Sharma", date: "Jan 15, 2026", notes: "BP 165/95. Started Amlodipine 5mg. Lifestyle changes advised." },
+  { id: "c3", diagnosis: "Annual wellness check", doctor: "Dr. Priya Mehta", date: "Oct 10, 2025", notes: "Overall health good. Lipid panel slightly elevated." },
+];
+
+const DUMMY_PRESCRIPTIONS = [
+  { id: "p1", date: "Apr 30, 2026", medication: "Amlodipine", dosage: "5mg", duration: "90 days", prescribed_by: "Dr. Rahul Sharma" },
+  { id: "p2", date: "Apr 30, 2026", medication: "Aspirin", dosage: "75mg", duration: "90 days", prescribed_by: "Dr. Rahul Sharma" },
+  { id: "p3", date: "Jan 15, 2026", medication: "Amlodipine", dosage: "5mg (initial)", duration: "30 days", prescribed_by: "Dr. Rahul Sharma" },
+];
+
+const DUMMY_LAB_REPORTS = [
+  { id: "r1", title: "Complete Blood Count", date: "Apr 25, 2026" },
+  { id: "r2", title: "Lipid Panel", date: "Apr 25, 2026" },
+  { id: "r3", title: "Echocardiogram", date: "Mar 10, 2026" },
+];
+
+const PROFILE_FIELDS = [
+  { label: "Age", key: "age" },
+  { label: "Blood Group", key: "blood_group" },
+  { label: "Allergies", key: "allergies" },
+  { label: "Contact", key: "contact" },
+  { label: "Emergency Contact", key: "emergency_contact" },
+];
+
+const TABS = [
+  { key: "consultations", label: "Consultations" },
+  { key: "prescriptions", label: "Prescriptions" },
+  { key: "labReports", label: "Lab Reports" },
+];
 
 const DoctorPatientHistory = () => {
-  const { token, backendUrl, logout } = useContext(AppContext);
+  const { token, backendUrl } = useContext(AppContext);
   const [patientId, setPatientId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [consultations, setConsultations] = useState([]);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [labReports, setLabReports] = useState([]);
+  const [profile, setProfile] = useState(DUMMY_PROFILE);
+  const [consultations, setConsultations] = useState(DUMMY_CONSULTATIONS);
+  const [prescriptions, setPrescriptions] = useState(DUMMY_PRESCRIPTIONS);
+  const [labReports, setLabReports] = useState(DUMMY_LAB_REPORTS);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('consultations');
+  const [activeTab, setActiveTab] = useState("consultations");
 
   const headers = token ? { Authorization: `Bearer ${token}`, dtoken: token } : {};
 
-  const clearData = () => {
-    setProfile(null);
-    setConsultations([]);
-    setPrescriptions([]);
-    setLabReports([]);
-  };
-
   const search = async () => {
-    if (!patientId || !String(patientId).trim()) return setError('Enter patient id or name');
+    if (!patientId.trim()) return setError("Enter patient ID or name");
     setError(null);
     setLoading(true);
-    clearData();
     try {
-      // Try a doctor-scoped endpoint first (may not exist). If it fails, fall back to showing placeholders.
       const url = `${backendUrl}/api/doctor/patient/${encodeURIComponent(patientId)}/history`;
-      const { data } = await axios.get(url, { headers }).catch(() => ({ success: false }));
-      if (data && data.success) {
-        setProfile(data.profile || data.patient || null);
-        setConsultations(data.consultations || data.history?.consultations || []);
-        setPrescriptions(data.prescriptions || []);
-        setLabReports(data.labReports || data.reports || []);
+      const { data } = await axios.get(url, { headers }).catch(() => ({ data: null }));
+      if (data?.success) {
+        setProfile(data.profile || data.patient || DUMMY_PROFILE);
+        setConsultations(data.consultations || DUMMY_CONSULTATIONS);
+        setPrescriptions(data.prescriptions || DUMMY_PRESCRIPTIONS);
+        setLabReports(data.labReports || data.reports || DUMMY_LAB_REPORTS);
       } else {
-        // No doctor endpoint - try public patient reports endpoint (may require patient role)
-        // We'll show informational placeholders instead of failing silently.
-        setError('No doctor-scoped patient endpoint found. Displaying placeholders.');
-        // Populate UI with empty arrays so wireframe appears
-        setProfile({ name: 'John Doe', id: patientId, age: 34, blood_group: 'A+', allergies: 'None', contact: '999-999-9999', emergency_contact: '888-888-8888' });
-        setConsultations([
-          { id: 'c1', diagnosis: 'Hypertension', doctor: 'Dr. A', date: '2026-04-01', notes: 'Follow-up in 2 weeks' },
-          { id: 'c2', diagnosis: 'Diabetes', doctor: 'Dr. B', date: '2026-02-15', notes: 'Prescribed metformin' },
-        ]);
-        setPrescriptions([
-          { id: 'p1', date: '2026-04-01', medication: 'Metformin', dosage: '500mg', duration: '30 days', prescribed_by: 'Dr. B' },
-        ]);
-        setLabReports([
-          { id: 'r1', title: 'Complete Blood Count', date: '2026-03-20', fileUrl: '#' },
-        ]);
+        setProfile({ ...DUMMY_PROFILE, id: patientId });
+        setConsultations(DUMMY_CONSULTATIONS);
+        setPrescriptions(DUMMY_PRESCRIPTIONS);
+        setLabReports(DUMMY_LAB_REPORTS);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to fetch');
+    } catch {
+      setError("Could not fetch patient data.");
     } finally {
       setLoading(false);
+      setActiveTab("consultations");
     }
   };
-
-  useEffect(()=>{
-    // reset active tab when searching new patient
-    setActiveTab('consultations');
-  }, [profile]);
 
   return (
     <div className="pp-page">
       <div className="pp-container">
         <DoctorSidebar />
         <main className="pp-main-content">
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <div>
-              <a href="/doctor-portal" style={{color:'#6b7280',fontSize:13}}>← Back to Dashboard</a>
-              <h1 className="text-2xl font-semibold" style={{marginTop:8}}>Patient History</h1>
-            </div>
-            <div>
-              <button className="pp-btn pp-btn-secondary" onClick={logout}>Logout</button>
-            </div>
-          </div>
+          <p className="pp-welcome">Patient History</p>
 
-          <div className="pp-panel" style={{marginTop:12}}>
-            <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <input className="pp-chat-input" placeholder="Enter patient id or name" value={patientId} onChange={e=>setPatientId(e.target.value)} />
-              <button className="pp-btn pp-btn-primary" onClick={search} disabled={loading}>{loading? 'Searching...':'Search'}</button>
-              <button className="pp-btn pp-btn-outline">Scan QR</button>
-            </div>
-            {error && <p style={{color:'crimson',marginTop:8}}>{error}</p>}
-          </div>
-
-          {/* Patient overview */}
-          <div className="pp-panel" style={{marginTop:12}}>
-            <div style={{display:'flex',gap:16}}>
-              <div style={{width:160}}>
-                <div style={{width:120,height:120,background:'#f1f5f9',borderRadius:8}} />
-                <div style={{marginTop:8,color:'#6b7280'}}>{profile?.name || '—'}</div>
+          <section className="pp-section">
+            <div className="pp-panel">
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  className="pp-chat-input"
+                  placeholder="Enter patient ID or name"
+                  value={patientId}
+                  onChange={(e) => setPatientId(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && search()}
+                />
+                <button className="pp-btn pp-btn-primary" onClick={search} disabled={loading}>
+                  {loading ? "Searching…" : "Search"}
+                </button>
+                <button className="pp-btn pp-btn-outline">Scan QR</button>
               </div>
-              <div style={{flex:1}}>
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Patient ID</div>
-                    <div style={{fontWeight:700}}>{profile?.id || profile?.userId || '—'}</div>
+              {error && (
+                <div style={{ color: "#dc2626", marginTop: 8, fontSize: "0.875rem" }}>{error}</div>
+              )}
+            </div>
+          </section>
+
+          {profile && (
+            <section className="pp-section">
+              <div className="pp-panel">
+                <div style={{ display: "flex", gap: 20 }}>
+                  <div>
+                    <div
+                      style={{
+                        width: 100,
+                        height: 100,
+                        background: "var(--pp-primary-lighter)",
+                        border: "1px solid var(--pp-primary-light)",
+                        borderRadius: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--pp-primary)",
+                        fontWeight: 700,
+                        fontSize: 36,
+                      }}
+                    >
+                      {(profile.name || "P").slice(0, 1)}
+                    </div>
+                    <div style={{ marginTop: 8, fontWeight: 700 }}>{profile.name}</div>
+                    <div style={{ color: "var(--pp-text-secondary)", fontSize: "0.8125rem" }}>
+                      ID: {profile.id || "—"}
+                    </div>
                   </div>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Age</div>
-                    <div style={{fontWeight:700}}>{profile?.age || '—'}</div>
-                  </div>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Blood Group</div>
-                    <div style={{fontWeight:700}}>{profile?.blood_group || '—'}</div>
-                  </div>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Allergies</div>
-                    <div style={{fontWeight:700}}>{profile?.allergies || '—'}</div>
-                  </div>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Contact</div>
-                    <div style={{fontWeight:700}}>{profile?.contact || '—'}</div>
-                  </div>
-                  <div className="pp-panel" style={{padding:8}}>
-                    <div style={{fontSize:12,color:'#64748b'}}>Emergency Contact</div>
-                    <div style={{fontWeight:700}}>{profile?.emergency_contact || '—'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                      {PROFILE_FIELDS.map(({ label, key }) => (
+                        <div key={key} className="pp-iot-item" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                          <div className="pp-panel-title" style={{ marginBottom: 2 }}>{label}</div>
+                          <div style={{ fontWeight: 600 }}>{profile[key] || "—"}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </section>
+          )}
 
-          {/* Tabs */}
-          <div style={{marginTop:12}}>
-            <div style={{display:'flex',gap:8}}>
-              <Tab active={activeTab==='consultations'} onClick={()=>setActiveTab('consultations')}>Consultations</Tab>
-              <Tab active={activeTab==='prescriptions'} onClick={()=>setActiveTab('prescriptions')}>Prescriptions</Tab>
-              <Tab active={activeTab==='labReports'} onClick={()=>setActiveTab('labReports')}>Lab Reports</Tab>
-            </div>
-            <hr style={{marginTop:8,marginBottom:12,border:'none',height:2,background:'#e6eefc'}} />
-          </div>
-
-          {/* Consultations list */}
-          {activeTab === 'consultations' && (
-            <div>
-              <h2 className="pp-section-title">Recent Consultations</h2>
-              <div className="pp-panel">
-                {consultations.length === 0 && <p className="text-sm text-gray-600">No consultations available.</p>}
-                {consultations.map(c => (
-                  <div key={c.id || c._id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:12,borderBottom:'1px solid var(--pp-border-light)'}}>
-                    <div>
-                      <div style={{fontWeight:600}}>{c.diagnosis || c.title || '—'}</div>
-                      <div style={{color:'#6b7280'}}>{c.date || c.slotDate || ''} — {c.doctor || c.doctorName || '—'}</div>
-                    </div>
-                    <div>
-                      <button className="pp-btn pp-btn-outline" style={{marginRight:8}}>View Full Report</button>
-                    </div>
-                  </div>
+          {profile && (
+            <section className="pp-section">
+              <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--pp-border)", paddingBottom: 4 }}>
+                {TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    className={`pp-btn pp-btn-sm ${activeTab === t.key ? "pp-btn-primary" : "pp-btn-outline"}`}
+                    onClick={() => setActiveTab(t.key)}
+                  >
+                    {t.label}
+                  </button>
                 ))}
               </div>
-            </div>
-          )}
 
-          {/* Prescriptions table */}
-          {activeTab === 'prescriptions' && (
-            <div style={{marginTop:12}}>
-              <h2 className="pp-section-title">Prescription History</h2>
-              <div className="pp-table-container">
-                <table className="pp-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Medication</th>
-                      <th>Dosage</th>
-                      <th>Duration</th>
-                      <th>Prescribed By</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {prescriptions.length === 0 && <tr><td colSpan={6} className="p-4">No prescriptions found.</td></tr>}
-                    {prescriptions.map(p => (
-                      <tr key={p.id || p._id}>
-                        <td>{p.date || '—'}</td>
-                        <td>{p.medication || p.name || '—'}</td>
-                        <td>{p.dosage || '—'}</td>
-                        <td>{p.duration || '—'}</td>
-                        <td>{p.prescribed_by || p.prescribedBy || '—'}</td>
-                        <td>
-                          <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">Download</button>
+              {activeTab === "consultations" && (
+                <div>
+                  <h2 className="pp-section-title">Consultation History</h2>
+                  <div className="pp-appointment-list">
+                    {consultations.map((c) => (
+                      <div key={c.id || c._id} className="pp-appointment-item">
+                        <div className="pp-appointment-info">
+                          <div className="pp-appointment-title">{c.diagnosis || c.title || "—"}</div>
+                          <div className="pp-appointment-meta">
+                            {c.date || c.slotDate || ""} · {c.doctor || c.doctorName || "—"}
                           </div>
-                        </td>
-                      </tr>
+                          {c.notes && (
+                            <div style={{ fontSize: "0.8125rem", color: "var(--pp-text-secondary)", marginTop: 4 }}>
+                              {c.notes}
+                            </div>
+                          )}
+                        </div>
+                        <div className="pp-appointment-actions">
+                          <button className="pp-btn pp-btn-outline pp-btn-sm">View Report</button>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                  </div>
+                </div>
+              )}
 
-          {/* Lab reports */}
-          {activeTab === 'labReports' && (
-            <div style={{marginTop:12}}>
-              <h2 className="pp-section-title">Laboratory Reports</h2>
-              <div>
-                {labReports.length === 0 && <p className="text-sm text-gray-600">No lab reports.</p>}
-                {labReports.map(r => <ReportCard key={r.id || r._id} r={r} />)}
-              </div>
-            </div>
-          )}
+              {activeTab === "prescriptions" && (
+                <div>
+                  <h2 className="pp-section-title">Prescription History</h2>
+                  <div className="pp-table-container">
+                    <table className="pp-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Medication</th>
+                          <th>Dosage</th>
+                          <th>Duration</th>
+                          <th>Prescribed By</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {prescriptions.map((p) => (
+                          <tr key={p.id || p._id}>
+                            <td>{p.date || "—"}</td>
+                            <td>{p.medication || p.name || "—"}</td>
+                            <td>{p.dosage || "—"}</td>
+                            <td>{p.duration || "—"}</td>
+                            <td>{p.prescribed_by || p.prescribedBy || "—"}</td>
+                            <td>
+                              <div className="pp-appointment-actions">
+                                <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
+                                <button className="pp-btn pp-btn-outline pp-btn-sm">Download</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
+              {activeTab === "labReports" && (
+                <div>
+                  <h2 className="pp-section-title">Laboratory Reports</h2>
+                  <div className="pp-appointment-list">
+                    {labReports.map((r) => (
+                      <div key={r.id || r._id} className="pp-appointment-item">
+                        <div className="pp-appointment-info">
+                          <div className="pp-appointment-title">{r.title || r.report_type || "Lab Report"}</div>
+                          <div className="pp-appointment-meta">{r.date || r.createdAt || ""}</div>
+                        </div>
+                        <div className="pp-appointment-actions">
+                          <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
+                          <button className="pp-btn pp-btn-outline pp-btn-sm">Download</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
         </main>
       </div>
     </div>

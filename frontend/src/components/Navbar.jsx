@@ -1,32 +1,231 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets_frontend/assets";
 import { assets as adminAssets } from "../assets/assets_admin/assets";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useContext } from "react";
 import { AppContext } from "../context/AppContext";
 
 const navLinks = [
   { title: "Home", path: "/" },
   { title: "All Doctors", path: "/doctors" },
-  // Redirect top-level Chat nav to patient portal's Health Queries
   { title: "Chat", path: "/public-queries" },
-  // Students removed from top-level nav; portal accessible via dashboard menu
   { title: "About", path: "/about" },
   { title: "Contact", path: "/contact" },
 ];
 
+const PORTAL_ROUTES = ["/patient-portal", "/doctor-portal", "/student-portal", "/admin-portal", "/iot"];
+
+const Avatar = ({ userData }) => {
+  const img = userData?.image || userData?.user?.avatarUrl || userData?.user?.avatar_url || null;
+  const role = userData?.role || userData?.user?.role || null;
+  const displayName = userData?.name || userData?.user?.name || userData?.email || userData?.user?.email || "";
+  const initials = displayName.split(" ").filter(Boolean).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+
+  if (img)
+    return <img style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} src={img} alt="profile" />;
+  if (role === "doctor")
+    return (
+      <img
+        style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", background: "#f1f5f9", padding: 4 }}
+        src={adminAssets.doctor_icon}
+        alt="doctor"
+      />
+    );
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "#dbeafe",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 13,
+        fontWeight: 700,
+        color: "#1e40af",
+      }}
+    >
+      {initials || "U"}
+    </div>
+  );
+};
+
+/* ── Portal Navbar ─────────────────────────────────────────── */
+const PortalNavbar = ({ token, userData, logout }) => {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const logoutFunc = async () => { await logout(); navigate("/"); };
+
+  const role = userData?.role || userData?.user?.role;
+  const goToDashboard = () => {
+    if (role === "doctor") navigate("/doctor-portal");
+    else if (role === "admin") navigate("/admin-portal");
+    else if (role === "student") navigate("/student-portal");
+    else navigate("/patient-portal");
+  };
+
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        borderBottom: "1px solid #e2e8f0",
+        padding: "0 2rem",
+        height: 65,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      }}
+    >
+      <Link to="/" onClick={goToDashboard} style={{ lineHeight: 0 }}>
+        <img style={{ width: 140, cursor: "pointer" }} src={assets.logo} alt="ArogyaNidhi" />
+      </Link>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <Link
+          to="/public-queries"
+          style={{
+            textDecoration: "none",
+            color: "#64748b",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            padding: "0.5rem 0.875rem",
+            borderRadius: "0.375rem",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#eff6ff"; e.currentTarget.style.color = "#1e40af"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#64748b"; }}
+        >
+          All Chat
+        </Link>
+
+        {token && userData ? (
+          <div ref={ref} style={{ position: "relative" }}>
+            <button
+              onClick={() => setOpen((v) => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: open ? "#eff6ff" : "transparent",
+                border: "1px solid",
+                borderColor: open ? "#bfdbfe" : "#e2e8f0",
+                borderRadius: "0.5rem",
+                padding: "5px 10px 5px 6px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              <Avatar userData={userData} />
+              <svg
+                style={{ width: 12, height: 12, color: "#94a3b8", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {open && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "0.5rem",
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  minWidth: 160,
+                  zIndex: 200,
+                  overflow: "hidden",
+                }}
+              >
+                {[
+                  {
+                    label: "My Profile",
+                    action: () => {
+                      const r = userData?.role || userData?.user?.role;
+                      if (r === "doctor") navigate("/doctor-portal/profile");
+                      else navigate("/profile");
+                      setOpen(false);
+                    },
+                  },
+                  { label: "Logout", action: () => { logoutFunc(); setOpen(false); }, danger: true },
+                ].map(({ label, action, danger }) => (
+                  <button
+                    key={label}
+                    onClick={action}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "0.625rem 1rem",
+                      background: "transparent",
+                      border: "none",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      color: danger ? "#dc2626" : "#374151",
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = danger ? "#fef2f2" : "#f8fafc"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate("/login")}
+            style={{
+              background: "#1e40af",
+              color: "#fff",
+              border: "none",
+              borderRadius: "0.375rem",
+              padding: "0.5rem 1rem",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Login
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Main Navbar ───────────────────────────────────────────── */
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
   const { token, setToken, userData, logout } = useContext(AppContext);
   const [showMenu, setShowMenu] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
 
-  const logoutFunc = async () => {
-    await logout();
-    navigate("/");
-  };
+  const isPortal = PORTAL_ROUTES.some((r) => location.pathname.startsWith(r));
+
+  if (isPortal) {
+    return <PortalNavbar token={token} userData={userData} logout={logout} />;
+  }
+
+  const logoutFunc = async () => { await logout(); navigate("/"); };
 
   return (
     <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400 bg-white sticky top-0 z-50">
@@ -51,59 +250,34 @@ const Navbar = () => {
             {(() => {
               const img = userData.image || userData?.user?.avatarUrl || userData?.user?.avatar_url || null;
               const role = userData?.role || userData?.user?.role || null;
-              const displayName = userData?.name || userData?.user?.name || userData?.email || userData?.user?.email || '';
-              const initials = (displayName || '').split(' ').filter(Boolean).map(s=>s[0]).slice(0,2).join('').toUpperCase();
-              if (img) {
-                return <img className="w-8 h-8 rounded-full object-cover" src={img} alt="user profile pic" />;
-              }
-              if (role === 'doctor') {
-                // use doctor icon for doctor users
+              const displayName = userData?.name || userData?.user?.name || userData?.email || userData?.user?.email || "";
+              const initials = displayName.split(" ").filter(Boolean).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+              if (img) return <img className="w-8 h-8 rounded-full object-cover" src={img} alt="user profile pic" />;
+              if (role === "doctor")
                 return <img className="w-8 h-8 rounded-full object-cover bg-gray-100 p-1" src={adminAssets.doctor_icon} alt="doctor icon" />;
-              }
               return (
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
-                  {initials || 'U'}
+                  {initials || "U"}
                 </div>
               );
             })()}
             <img className="w-2.5" src={assets.dropdown_icon} alt="" />
-            <div
-              className={`${
-                openDropdown ? "block" : "hidden"
-              } absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20`}
-            >
-                  <div className="min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4">
-                    {(() => {
-                      const role = userData?.role || userData?.user?.role;
-                      const goToDashboard = () => {
-                        if (role === 'doctor') navigate('/doctor-portal');
-                        else if (role === 'admin') navigate('/admin-portal');
-                        else if (role === 'student') navigate('/student-portal');
-                        else navigate('/patient-portal');
-                      };
-                      return (
-                        <p onClick={goToDashboard} className="hover:text-black cursor-pointer">Dashboard</p>
-                      );
-                    })()}
-                    <p
-                      onClick={() => navigate("/profile")}
-                      className="hover:text-black cursor-pointer"
-                    >
-                      My Profile
-                    </p>
-                    <p
-                      onClick={() => navigate("/my-appointments")}
-                      className="hover:text-black cursor-pointer"
-                    >
-                      My Appointments
-                    </p>
-                    <p
-                      onClick={logoutFunc}
-                      className="hover:text-black cursor-pointer"
-                    >
-                      Logout
-                    </p>
-                  </div>
+            <div className={`${openDropdown ? "block" : "hidden"} absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20`}>
+              <div className="min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4">
+                {(() => {
+                  const role = userData?.role || userData?.user?.role;
+                  const goToDashboard = () => {
+                    if (role === "doctor") navigate("/doctor-portal");
+                    else if (role === "admin") navigate("/admin-portal");
+                    else if (role === "student") navigate("/student-portal");
+                    else navigate("/patient-portal");
+                  };
+                  return <p onClick={goToDashboard} className="hover:text-black cursor-pointer">Dashboard</p>;
+                })()}
+                <p onClick={() => navigate("/profile")} className="hover:text-black cursor-pointer">My Profile</p>
+                <p onClick={() => navigate("/my-appointments")} className="hover:text-black cursor-pointer">My Appointments</p>
+                <p onClick={logoutFunc} className="hover:text-black cursor-pointer">Logout</p>
+              </div>
             </div>
           </div>
         ) : (
@@ -115,52 +289,23 @@ const Navbar = () => {
           </button>
         )}
 
-        {/* ----------- Mobile Menu ------------- */}
-        <img
-          onClick={() => setShowMenu(true)}
-          className="w-6 cursor-pointer md:hidden"
-          src={assets.menu_icon}
-          alt="menu icon"
-        />
-        <div
-          className={`${showMenu ? "fixed w-full" : "h-0 w-0"} 
-          md:hidden right-0 top-0 bottom-0 z-20 overflow-hidden bg-white transition-all duration-300`}
-        >
+        <img onClick={() => setShowMenu(true)} className="w-6 cursor-pointer md:hidden" src={assets.menu_icon} alt="menu icon" />
+        <div className={`${showMenu ? "fixed w-full" : "h-0 w-0"} md:hidden right-0 top-0 bottom-0 z-20 overflow-hidden bg-white transition-all duration-300`}>
           <div className="flex items-center justify-between px-5 py-6">
-            <Link onClick={() => setShowMenu(false)} to="/">
-              <img className="w-36" src={assets.logo} />
-            </Link>
-            <img
-              className="w-7 cursor-pointer"
-              onClick={() => setShowMenu(false)}
-              src={assets.cross_icon}
-              alt="cross icon"
-            />
+            <Link onClick={() => setShowMenu(false)} to="/"><img className="w-36" src={assets.logo} /></Link>
+            <img className="w-7 cursor-pointer" onClick={() => setShowMenu(false)} src={assets.cross_icon} alt="cross icon" />
           </div>
           <ul className="flex flex-col items-center gap-2 mt-5 px-5 text-lg font-medium">
             {navLinks.map((nav, index) => (
-              <NavLink
-                onClick={() => setShowMenu(false)}
-                key={index}
-                to={nav.path}
-              >
+              <NavLink onClick={() => setShowMenu(false)} key={index} to={nav.path}>
                 <p className="px-4 py-2 rounded inline-block">{nav.title}</p>
               </NavLink>
             ))}
-
-            {/* ----- Login button for mobile device ----- */}
             {!token && (
-              <li className="">
+              <li>
                 <button
-                  onClick={() => {
-                    setShowMenu(false);
-                    navigate("/login");
-                  }}
-                  className={`px-6 py-2 rounded ${
-                    location.pathname === "/login"
-                      ? "bg-primary text-white"
-                      : "bg-transparent text-black"
-                  }`}
+                  onClick={() => { setShowMenu(false); navigate("/login"); }}
+                  className={`px-6 py-2 rounded ${location.pathname === "/login" ? "bg-primary text-white" : "bg-transparent text-black"}`}
                 >
                   Login
                 </button>
