@@ -6,6 +6,11 @@ import {
   appointmentsAdmin,
   getAllDoctors,
   loginAdmin,
+  getAllUsers,
+  addUser,
+  updateUser,
+  deleteUser,
+  verifyDoctor,
 } from "../controllers/adminController.js";
 import upload from "../middlewares/multer.js";
 import { authenticate, requireRole } from "../middlewares/auth.js";
@@ -43,5 +48,12 @@ adminRouter.post(
   appointmentCancelAdmin
 );
 adminRouter.get("/dashboard", authenticate, requireRole('admin'), adminDashboard);
+
+// User Management Routes
+adminRouter.get("/all-users", authenticate, requireRole('admin'), getAllUsers);
+adminRouter.post("/add-user", authenticate, requireRole('admin'), addUser);
+adminRouter.put("/update-user/:id", authenticate, requireRole('admin'), updateUser);
+adminRouter.delete("/delete-user/:id", authenticate, requireRole('admin'), deleteUser);
+adminRouter.post("/verify-doctor", authenticate, requireRole('admin'), verifyDoctor);
 
 export default adminRouter;

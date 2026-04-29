@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import { toast } from "react-toastify";
 
@@ -71,6 +72,45 @@ const DoctorVerification = () => {
     ));
     toast.error("Doctor application rejected!");
     setShowModal(false);
+=======
+import { useState, useContext, useEffect } from "react";
+import { toast } from "react-toastify";
+import { AdminContext } from "../../context/AdminContext";
+
+const DoctorVerification = () => {
+  const { doctors, getAllDoctors, verifyDoctor, aToken } = useContext(AdminContext);
+  
+  const [activeFilter, setActiveFilter] = useState("PENDING");
+  const [verificationNotes, setVerificationNotes] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState(null);
+
+  useEffect(() => {
+    if (aToken) {
+      getAllDoctors();
+    }
+  }, [aToken]);
+  const filters = ["PENDING", "VERIFIED", "REJECTED", "ALL"];
+
+  const filteredDoctors = doctors?.filter((doc) => {
+    const status = doc.is_verified ? "VERIFIED" : "PENDING";
+    if (activeFilter === "ALL") return true;
+    return status === activeFilter;
+  }) || [];
+
+  const handleApproveDoctor = async (doctorId) => {
+    const success = await verifyDoctor(doctorId, "verified");
+    if (success) {
+      setShowModal(false);
+    }
+  };
+
+  const handleRejectDoctor = async (doctorId) => {
+    const success = await verifyDoctor(doctorId, "rejected");
+    if (success) {
+      setShowModal(false);
+    }
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
   };
 
   const handleRequestInfo = (doctorId) => {
@@ -103,12 +143,57 @@ const DoctorVerification = () => {
           <div className="ap-card">
             <p className="ap-list-meta">No doctors found with the selected status</p>
           </div>
+<<<<<<< HEAD
         ) : (
+=======
+        ) : activeFilter === "VERIFIED" ? (
+          /* Table View for Verified Doctors */
+          <div className="ap-card overflow-hidden">
+            <table className="ap-table">
+              <thead>
+                <tr>
+                  <th>Doctor Name</th>
+                  <th>Specialty</th>
+                  <th>License No</th>
+                  <th>Fee</th>
+                  <th>Joined Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDoctors.map((doctor) => (
+                  <tr key={doctor.id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <img 
+                          src={doctor.users?.avatar_url || "https://via.placeholder.com/40"} 
+                          alt="" 
+                          className="w-8 h-8 rounded-full bg-gray-100"
+                        />
+                        <span>{doctor.users?.name}</span>
+                      </div>
+                    </td>
+                    <td>{doctor.specialty}</td>
+                    <td>{doctor.license_no}</td>
+                    <td>NPR {doctor.consultation_fee}</td>
+                    <td>{new Date(doctor.created_at).toLocaleDateString()}</td>
+                    <td>
+                      <span className="ap-badge ap-badge-verified">Verified</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          /* Card View for Pending/Rejected */
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
           <div className="ap-grid ap-grid-2">
             {filteredDoctors.map((doctor) => (
               <div key={doctor.id} className="ap-card">
                 <div className="ap-card-header">
                   <div>
+<<<<<<< HEAD
                     <h3 className="ap-card-title">{doctor.name}</h3>
                     <p className="ap-card-subtitle">{doctor.specialty}</p>
                   </div>
@@ -121,10 +206,24 @@ const DoctorVerification = () => {
                 <div className="ap-form-group">
                   <label className="ap-form-label">Email</label>
                   <p className="ap-list-meta">{doctor.email}</p>
+=======
+                    <h3 className="ap-card-title">{doctor.users?.name}</h3>
+                    <p className="ap-card-subtitle">{doctor.specialty}</p>
+                  </div>
+                  <span className={`ap-badge ap-badge-${doctor.is_verified ? 'verified' : 'pending'}`}>
+                    {doctor.is_verified ? 'VERIFIED' : 'PENDING'}
+                  </span>
+                </div>
+                
+                <div className="ap-form-group">
+                  <label className="ap-form-label">Email</label>
+                  <p className="ap-list-meta">{doctor.users?.email}</p>
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                 </div>
 
                 <div className="ap-form-group">
                   <label className="ap-form-label">Medical License</label>
+<<<<<<< HEAD
                   <p className="ap-list-meta">{doctor.medicalLicense}</p>
                 </div>
 
@@ -136,10 +235,24 @@ const DoctorVerification = () => {
                 <div className="ap-form-group">
                   <label className="ap-form-label">ID Proof</label>
                   <p className="ap-list-meta">{doctor.idProof}</p>
+=======
+                  <p className="ap-list-meta">{doctor.license_no || 'N/A'}</p>
+                </div>
+
+                <div className="ap-form-group">
+                  <label className="ap-form-label">Qualifications</label>
+                  <p className="ap-list-meta">{doctor.qualifications || 'N/A'}</p>
+                </div>
+
+                <div className="ap-form-group">
+                  <label className="ap-form-label">Consultation Fee</label>
+                  <p className="ap-list-meta">NPR {doctor.consultation_fee}</p>
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                 </div>
 
                 <div className="ap-form-group">
                   <label className="ap-form-label">Experience</label>
+<<<<<<< HEAD
                   <p className="ap-list-meta">{doctor.experience}</p>
                 </div>
 
@@ -166,6 +279,18 @@ const DoctorVerification = () => {
 
                 {/* Action Buttons */}
                 {doctor.status === "PENDING" && (
+=======
+                  <p className="ap-list-meta">{doctor.experience_years || 'N/A'} years</p>
+                </div>
+
+                <div className="ap-form-group">
+                  <label className="ap-form-label">Bio / Notes</label>
+                  <p className="ap-list-meta">{doctor.bio || 'No notes provided'}</p>
+                </div>
+
+                {/* Action Buttons */}
+                {!doctor.is_verified && (
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                   <div className="ap-button-group" style={{ marginTop: '1rem' }}>
                     <button 
                       onClick={() => handleRequestInfo(doctor.id)}
@@ -175,7 +300,11 @@ const DoctorVerification = () => {
                     </button>
                     <button 
                       onClick={() => {
+<<<<<<< HEAD
                         setSelectedAction({ type: 'reject', doctorId: doctor.id, doctorName: doctor.name });
+=======
+                        setSelectedAction({ type: 'reject', doctorId: doctor.id, doctorName: doctor.users?.name });
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                         setShowModal(true);
                       }}
                       className="ap-btn ap-btn-danger"
@@ -184,7 +313,11 @@ const DoctorVerification = () => {
                     </button>
                     <button 
                       onClick={() => {
+<<<<<<< HEAD
                         setSelectedAction({ type: 'approve', doctorId: doctor.id, doctorName: doctor.name });
+=======
+                        setSelectedAction({ type: 'approve', doctorId: doctor.id, doctorName: doctor.users?.name });
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                         setShowModal(true);
                       }}
                       className="ap-btn ap-btn-success"

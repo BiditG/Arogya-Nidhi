@@ -1,103 +1,61 @@
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { toast } from "react-toastify";
+import { AdminContext } from "../../context/AdminContext";
 
 const ManageUsers = () => {
+  const { users, getAllUsers, addUser, updateUser, deleteUser, aToken } = useContext(AdminContext);
+  
   const [activeFilter, setActiveFilter] = useState("ALL USERS");
   const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState([
-    {
-      id: "U001",
-      name: "Raj Kumar",
-      type: "Patient",
-      email: "raj.kumar@email.com",
-      status: "Active",
-      joined: "2026-01-15",
-    },
-    {
-      id: "U002",
-      name: "Dr. Priya Sharma",
-      type: "Doctor",
-      email: "priya.sharma@hospital.com",
-      status: "Active",
-      joined: "2026-02-20",
-    },
-    {
-      id: "U003",
-      name: "Amit Singh",
-      type: "Patient",
-      email: "amit.singh@email.com",
-      status: "Active",
-      joined: "2026-01-28",
-    },
-    {
-      id: "U004",
-      name: "Dr. John Smith",
-      type: "Doctor",
-      email: "john.smith@hospital.com",
-      status: "Pending",
-      joined: "2026-04-01",
-    },
-    {
-      id: "U005",
-      name: "Neha Gupta",
-      type: "Student",
-      email: "neha.gupta@university.edu",
-      status: "Active",
-      joined: "2026-03-10",
-    },
-    {
-      id: "U006",
-      name: "Admin User",
-      type: "Admin",
-      email: "admin@system.com",
-      status: "Active",
-      joined: "2025-01-01",
-    },
-  ]);
-
+  
   const [showDeleteModal, setShowDeleteModal] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", type: "Patient", status: "Active" });
+  const [editingUser, setEditingUser] = useState(null);
+
+  useEffect(() => {
+    if (aToken) {
+      getAllUsers();
+    }
+  }, [aToken]);
 
   const filters = ["ALL USERS", "PATIENTS", "DOCTORS", "STUDENTS", "ADMIN"];
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = users?.filter((user) => {
+    const roleLower = user.role?.toLowerCase() || "";
     const matchesFilter =
       activeFilter === "ALL USERS" ||
-      (activeFilter === "PATIENTS" && user.type === "Patient") ||
-      (activeFilter === "DOCTORS" && user.type === "Doctor") ||
-      (activeFilter === "STUDENTS" && user.type === "Student") ||
-      (activeFilter === "ADMIN" && user.type === "Admin");
+      (activeFilter === "PATIENTS" && roleLower === "patient") ||
+      (activeFilter === "DOCTORS" && roleLower === "doctor") ||
+      (activeFilter === "STUDENTS" && roleLower === "student") ||
+      (activeFilter === "ADMIN" && roleLower === "admin");
 
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.id.toLowerCase().includes(searchQuery.toLowerCase());
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.id?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesFilter && matchesSearch;
-  });
+  }) || [];
 
-  const handleDeleteUser = (userId) => {
-    setUsers(users.filter(u => u.id !== userId));
-    toast.error("User deleted successfully");
-    setShowDeleteModal(null);
+  const handleDeleteUser = async (userId) => {
+    const success = await deleteUser(userId);
+    if (success) {
+      setShowDeleteModal(null);
+    }
   };
 
-  const handleToggleStatus = (userId) => {
-    setUsers(users.map(u =>
-      u.id === userId
-        ? { ...u, status: u.status === "Active" ? "Inactive" : "Active" }
-        : u
-    ));
-    const user = users.find(u => u.id === userId);
-    toast.success(`${user.name} status updated`);
+  const handleToggleStatus = async (userId, currentStatus) => {
+    await updateUser(userId, { is_active: !currentStatus });
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newUser.name || !newUser.email) {
       toast.error("Please fill all fields");
       return;
     }
+<<<<<<< HEAD
     const userId = `U${String(users.length + 1).padStart(3, "0")}`;
     setUsers([...users, {
       id: userId,
@@ -107,6 +65,39 @@ const ManageUsers = () => {
     toast.success("User added successfully");
     setShowAddModal(false);
     setNewUser({ name: "", email: "", type: "Patient", status: "Active" });
+=======
+    const success = await addUser({
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.type.toLowerCase(),
+      password: "password123" // default password
+    });
+    
+    if (success) {
+      setShowAddModal(false);
+      setNewUser({ name: "", email: "", type: "Patient", status: "Active" });
+    }
+  };
+
+  const openEditModal = (user) => {
+    setEditingUser({ ...user });
+    setShowEditModal(true);
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser.name || !editingUser.email) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    const success = await updateUser(editingUser.id, {
+      name: editingUser.name,
+      email: editingUser.email,
+      role: editingUser.role
+    });
+    if (success) {
+      setShowEditModal(false);
+    }
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
   };
 
   return (
@@ -163,15 +154,24 @@ const ManageUsers = () => {
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <tr key={user.id}>
+<<<<<<< HEAD
                   <td>{user.id}</td>
                   <td className="ap-list-title">{user.name}</td>
                   <td>
                     <span className="ap-badge">
                       {user.type}
+=======
+                  <td>{user.id.substring(0,8)}...</td>
+                  <td className="ap-list-title">{user.name}</td>
+                  <td>
+                    <span className="ap-badge" style={{textTransform: 'capitalize'}}>
+                      {user.role}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                     </span>
                   </td>
                   <td className="ap-list-meta">{user.email}</td>
                   <td>
+<<<<<<< HEAD
                     <span className={`ap-badge ap-badge-${user.status.toLowerCase()}`}>
                       {user.status}
                     </span>
@@ -190,6 +190,26 @@ const ManageUsers = () => {
                         className="ap-btn ap-btn-warning ap-btn-sm"
                       >
                         {user.status === "Active" ? "Deactivate" : "Activate"}
+=======
+                    <span className={`ap-badge ap-badge-${user.is_active ? 'active' : 'inactive'}`}>
+                      {user.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="ap-list-meta">{new Date(user.created_at).toISOString().split('T')[0]}</td>
+                  <td>
+                    <div className="ap-button-group">
+                      <button 
+                        onClick={() => openEditModal(user)}
+                        className="ap-btn ap-btn-outline ap-btn-sm"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleToggleStatus(user.id, user.is_active)}
+                        className="ap-btn ap-btn-warning ap-btn-sm"
+                      >
+                        {user.is_active ? "Deactivate" : "Activate"}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                       </button>
                       <button 
                         onClick={() => setShowDeleteModal(user.id)}
@@ -215,7 +235,11 @@ const ManageUsers = () => {
       {/* Pagination */}
       <section className="ap-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p className="ap-list-meta">
+<<<<<<< HEAD
           Showing {filteredUsers.length} of {users.length} users
+=======
+          Showing {filteredUsers.length} of {users?.length || 0} users
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
         </p>
         <div className="ap-button-group">
           <button className="ap-btn ap-btn-outline ap-btn-sm">Previous</button>
@@ -312,6 +336,67 @@ const ManageUsers = () => {
           </div>
         </div>
       )}
+<<<<<<< HEAD
+=======
+
+      {/* Edit User Modal */}
+      {showEditModal && editingUser && (
+        <div className="ap-modal">
+          <div className="ap-modal-content">
+            <div className="ap-modal-header">
+              <h3 className="ap-modal-title">Edit User</h3>
+            </div>
+            <div className="ap-modal-body">
+              <div className="ap-form-group">
+                <label className="ap-form-label">Name</label>
+                <input
+                  type="text"
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="ap-form-input"
+                />
+              </div>
+              <div className="ap-form-group">
+                <label className="ap-form-label">Email</label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="ap-form-input"
+                />
+              </div>
+              <div className="ap-form-group">
+                <label className="ap-form-label">User Role</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="ap-form-select"
+                >
+                  <option value="patient">Patient</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="student">Student</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="ap-modal-footer">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="ap-btn ap-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEditUser}
+                className="ap-btn ap-btn-primary"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
     </div>
   );
 };
