@@ -1,4 +1,5 @@
 import authService from "../services/auth.service.js";
+import bcrypt from "bcrypt";
 import { sendSuccess, sendError } from "../util/response.util.js";
 import { supabase } from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
@@ -22,124 +23,111 @@ export async function register(req, res) {
       return sendError(res, "Supabase not configured on server", 500);
     }
 
-    // Prepare holders for created profiles
-    let createdDoctorProfile = null;
-    let createdStudentProfile = null;
-    let createdPatient = null;
+    // 1. Create/Ensure Auth User exists in Supabase Auth
+    let supaUser = null;
+    const { data: createdUser, error: createErr } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      user_metadata: { name, role },
+      email_confirm: true,
+    });
 
-    // Try to create Supabase user via admin API
-    try {
-      const { data: createdUser, error: createErr } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        user_metadata: { name, role, ...profile },
-        email_confirm: true,
-      });
-      if (createErr) {
-        console.warn("Supabase createUser warning", createErr.message || createErr);
-      }
-      // Ensure email is marked confirmed; attempt to update if API didn't auto-confirm
-      try {
-        const uid = createdUser?.id || createdUser?.user?.id;
-        if (uid) {
-          await supabase.auth.admin.updateUserById(uid, {
-            email_confirm: true,
-            email_confirmed_at: new Date().toISOString(),
-          });
+    if (createErr) {
+      // If user already exists in Auth, retrieve their ID using admin API
+      if (createErr.message.includes("already registered") || createErr.status === 422) {
+        const { data: listData, error: listErr } = await supabase.auth.admin.listUsers();
+        const existingUser = listData?.users?.find(u => u.email.toLowerCase() === email.toLowerCase());
+        
+        if (listErr || !existingUser) {
+          return sendError(res, "User exists in Auth but could not be retrieved", 500);
         }
-      } catch (updErr) {
-        console.warn('Supabase updateUserById warning', updErr?.message || updErr);
+        supaUser = existingUser;
+      } else {
+        return sendError(res, "Supabase Auth Error: " + createErr.message, 500);
       }
-    } catch (err) {
-      console.warn("Supabase admin.createUser exception", err?.message || err);
+    } else {
+      supaUser = createdUser.user;
     }
 
-    // Sign in to obtain session
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      return sendSuccess(res, { email }, "User created; please verify email if required", 201);
-    }
-    // Persist Supabase user metadata into users table (sync role/name)
+    if (!supaUser) return sendError(res, "Failed to retrieve Supabase user", 500);
+
+    // 2. Sync to local 'users' table
+    const resolvedRole = role || 'patient';
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const userData = {
+      id: supaUser.id,
+      email: supaUser.email,
+      role: resolvedRole,
+      name: name,
+      password_hash: hashedPassword, 
+      is_active: resolvedRole === 'doctor' ? false : true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
     try {
-      const supaUser = signInData?.user;
-      const metadata = supaUser?.user_metadata || {};
-      await repo.upsertUser({
-        id: supaUser?.id,
-        email: supaUser?.email,
-        role: metadata.role || role || 'patient',
-        name: metadata.name || name || supaUser?.email?.split('@')?.[0] || '',
-        avatar_url: metadata.avatar_url || supaUser?.avatar_url || null,
-        is_active: true,
-      });
-      // Create role-specific profile rows (doctor, student, patient)
-      const resolvedRole = metadata.role || role || 'patient';
+      await repo.upsertUser(userData);
+    } catch (dbErr) {
+      console.error("Database Sync Error (users table):", dbErr);
+      return sendError(res, "Database Sync Error: " + dbErr.message, 500);
+    }
 
+    // 3. Create role-specific profiles
+    let roleProfile = null;
+    try {
+      const now = new Date().toISOString();
       if (resolvedRole === 'doctor') {
-        try {
-          const created = await repo.createDoctorProfile({
-            user_id: supaUser?.id,
-            license_no: profile?.nmcLicenseNo || profile?.licenseNo || null,
-            specialty: profile?.specialty || profile?.speciality || null,
-            sub_specialty: profile?.subSpecialty || null,
-            consultation_fee: profile?.consultation_fee || profile?.consultationFee || 0,
-            qualifications: profile?.qualifications || null,
-            is_verified: false,
-            is_available: profile?.is_available ?? true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-          createdDoctorProfile = created || null;
-        } catch (profErr) {
-          console.warn('Failed to create doctor profile in Supabase', profErr?.message || profErr);
-        }
+        const { data: created, error: profErr } = await supabase.from('doctor_profiles').insert({
+          user_id: supaUser.id,
+          license_no: profile.nmcLicenseNo || profile.licenseNo || "PENDING",
+          specialty: profile.specialty || "General Medicine",
+          consultation_fee: Number(profile.consultationFee) || 0,
+          qualifications: profile.qualifications || null,
+          is_verified: false,
+          is_available: true,
+          created_at: now,
+          updated_at: now,
+        }).select().maybeSingle();
+        if (profErr) console.warn("Doctor profile error:", profErr.message);
+        roleProfile = created;
+      } else if (resolvedRole === 'student') {
+        const { data: created, error: profErr } = await supabase.from('student_profiles').insert({
+          user_id: supaUser.id,
+          institution: profile.institution || null,
+          faculty: profile.faculty || null,
+          created_at: now,
+          updated_at: now,
+        }).select().maybeSingle();
+        if (profErr) console.warn("Student profile error:", profErr.message);
+        roleProfile = created;
+      } else if (resolvedRole === 'patient') {
+        const { data: created, error: profErr } = await supabase.from('patients').insert({
+          user_id: supaUser.id,
+          date_of_birth: profile.dateOfBirth || null,
+          blood_group: profile.bloodGroup || null,
+          gender: profile.gender || null,
+          created_at: now,
+          updated_at: now,
+        }).select().maybeSingle();
+        if (profErr) console.warn("Patient profile error:", profErr.message);
+        roleProfile = created;
       }
-
-      if (resolvedRole === 'student') {
-        try {
-          const created = await repo.createStudentProfile({
-            user_id: supaUser?.id,
-            institution: profile?.institution || profile?.college || null,
-            year_of_study: profile?.year_of_study || profile?.year || null,
-            faculty: profile?.faculty || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-          createdStudentProfile = created || null;
-        } catch (profErr) {
-          console.warn('Failed to create student profile in Supabase', profErr?.message || profErr);
-        }
-      }
-
-      if (resolvedRole === 'patient') {
-        try {
-          const created = await repo.createPatient({
-            user_id: supaUser?.id,
-            date_of_birth: profile?.date_of_birth || profile?.dob || null,
-            blood_group: profile?.blood_group || profile?.bloodGroup || null,
-            gender: profile?.gender || null,
-            medical_history: profile?.medical_history || profile?.medicalHistory || null,
-            allergies: profile?.allergies || null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
-          createdPatient = created || null;
-        } catch (profErr) {
-          console.warn('Failed to create patient profile in Supabase', profErr?.message || profErr);
-        }
-      }
-    } catch (err) {
-      console.warn('Failed to sync Supabase user to users table', err?.message || err);
+    } catch (profErr) {
+      console.warn("Profile creation warning:", profErr.message);
     }
 
-    const session = signInData?.session || null;
-    const responseData = { session, user: signInData.user };
-    if (typeof createdDoctorProfile !== 'undefined' && createdDoctorProfile) responseData.doctorProfile = createdDoctorProfile;
-    if (typeof createdStudentProfile !== 'undefined' && createdStudentProfile) responseData.studentProfile = createdStudentProfile;
-    if (typeof createdPatient !== 'undefined' && createdPatient) responseData.patientProfile = createdPatient;
-    return sendSuccess(res, responseData, "Registration successful", 201);
+    // 4. Return success with a session token
+    const { data: authData } = await supabase.auth.signInWithPassword({ email, password });
+    
+    return sendSuccess(res, { 
+      session: authData?.session, 
+      user: supaUser,
+      profile: roleProfile 
+    }, "Registration successful", 201);
   } catch (err) {
-    console.error("Registration error", err);
-    return sendError(res, err.message || "Registration failed", err.status || 500);
+    console.error("Registration Exception:", err);
+    return sendError(res, err.message || "Registration failed", 500);
   }
 }
 
@@ -159,13 +147,19 @@ export async function login(req, res) {
     try {
       const supaUser = data?.user;
       const metadata = supaUser?.user_metadata || {};
+      const role = metadata.role || 'patient';
+
+      // Find the current user status to avoid overriding it
+      const existingUser = await repo.findUserById(supaUser.id);
+      
       await repo.upsertUser({
         id: supaUser?.id,
         email: supaUser?.email,
-        role: metadata.role || 'patient',
+        role: role,
         name: metadata.name || supaUser?.email?.split('@')?.[0] || '',
         avatar_url: metadata.avatar_url || supaUser?.avatar_url || null,
-        is_active: true,
+        // Keep existing is_active status if it exists, otherwise default for non-doctors
+        is_active: existingUser ? existingUser.is_active : (role !== 'doctor'),
       });
     } catch (err) {
       console.warn('Failed to sync Supabase user to users table on login', err?.message || err);

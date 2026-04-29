@@ -99,6 +99,93 @@ export const AdminContextProvider = ({ children }) => {
     }
   };
 
+  const [users, setUsers] = useState([]);
+
+  const getAllUsers = async () => {
+    try {
+      const { data } = await axios.get(backendUrl + "/api/admin/all-users", {
+        headers: { Authorization: `Bearer ${aToken}` },
+      });
+      if (data.success) {
+        setUsers(data.users);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to fetch users");
+    }
+  };
+
+  const addUser = async (userData) => {
+    try {
+      const { data } = await axios.post(
+        backendUrl + "/api/admin/add-user",
+        userData,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+      if (data.success) {
+        toast.success(data.message);
+        getAllUsers();
+        return true;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to add user");
+      return false;
+    }
+  };
+
+  const updateUser = async (userId, updateData) => {
+    try {
+      const { data } = await axios.put(
+        backendUrl + `/api/admin/update-user/${userId}`,
+        updateData,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+      if (data.success) {
+        toast.success(data.message);
+        getAllUsers();
+        return true;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update user");
+      return false;
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    try {
+      const { data } = await axios.delete(
+        backendUrl + `/api/admin/delete-user/${userId}`,
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+      if (data.success) {
+        toast.success(data.message);
+        getAllUsers();
+        return true;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete user");
+      return false;
+    }
+  };
+
+  const verifyDoctor = async (doctorId, status) => {
+    try {
+      const { data } = await axios.post(
+        backendUrl + "/api/admin/verify-doctor",
+        { doctorId, status },
+        { headers: { Authorization: `Bearer ${aToken}` } }
+      );
+      if (data.success) {
+        toast.success(data.message);
+        getAllDoctors(); // Refresh doctors list
+        getAllUsers(); // Refresh users list (since is_active changed)
+        return true;
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to verify doctor");
+      return false;
+    }
+  };
+
   const value = {
     aToken,
     setAToken,
@@ -112,6 +199,12 @@ export const AdminContextProvider = ({ children }) => {
     cancelAppointment,
     dashData,
     getDashData,
+    users,
+    getAllUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+    verifyDoctor,
   };
   return (
     <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
