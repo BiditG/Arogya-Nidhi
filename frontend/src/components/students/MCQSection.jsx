@@ -49,11 +49,28 @@ const MCQSection = () => {
   const [finished, setFinished] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
   const timerRef = useRef(null);
+  const questionStartRef = useRef(Date.now());
 
   useEffect(() => {
     setSelected(null);
     setShowAnswer(false);
+    questionStartRef.current = Date.now();
   }, [current]);
+
+  const sendProgress = async (mcqId, selectedOption, isCorrect, timeTakenSeconds) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      await fetch('/api/students/progress', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ mcq_id: mcqId, selected_option: selectedOption, is_correct: Boolean(isCorrect), time_taken_seconds: timeTakenSeconds }),
+      });
+    } catch (err) {
+      console.error('Failed to send progress', err);
+    }
+  };
 
   useEffect(() => {
     setTimeLeft(timerPerQuestion);
@@ -211,6 +228,9 @@ const MCQSection = () => {
     const correct = sel === q.answer;
     setResults((r) => [...r, { id: q.id, selected: sel, correct }]);
     if (correct) setScore((s) => s + 1);
+    // record progress to backend
+    const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
+    sendProgress(q.id, sel === null ? null : String(sel), Boolean(correct), timeTaken).catch(() => {});
     if (current < questions.length - 1) {
       setCurrent((c) => c + 1);
       setSelected(null);
@@ -231,6 +251,8 @@ const MCQSection = () => {
       const correct = selected === q.answer;
       setResults((r) => [...r, { id: q.id, selected, correct }]);
       if (correct) setScore((s) => s + 1);
+      const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
+      sendProgress(q.id, selected === null ? null : String(selected), Boolean(correct), timeTaken).catch(() => {});
     } else {
       // exam mode: record and advance without revealing
       recordAndAdvance(selected);
@@ -253,6 +275,9 @@ const MCQSection = () => {
   const handleTimeExpired = () => {
     // treat as no answer (incorrect) and advance
     setResults((r) => [...r, { id: questions[current].id, selected: null, correct: false }]);
+    const qid = questions[current].id;
+    const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
+    sendProgress(qid, null, false, timeTaken).catch(() => {});
     if (current < questions.length - 1) {
       setCurrent((c) => c + 1);
       setSelected(null);
@@ -262,6 +287,7 @@ const MCQSection = () => {
       finishQuiz();
     }
   };
+
 
   const revealAll = () => {
     setShowAnswer(true);
@@ -287,7 +313,7 @@ const MCQSection = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md">
             <label className="text-xs text-gray-500">Mode</label>
             <select value={mode} onChange={(e) => setMode(e.target.value)} className="bg-transparent text-sm">
@@ -300,8 +326,6 @@ const MCQSection = () => {
             <label className="text-xs text-gray-500">Qty</label>
             <input type="number" min={1} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-16 bg-transparent text-sm text-right" />
           </div>
-
-          <button onClick={startQuiz} className={`px-4 py-2 rounded-md text-white font-medium transition ${availableCount && availableCount > 0 ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-300 cursor-not-allowed'}`} disabled={!availableCount}>Start</button>
         </div>
       </div>
 
@@ -347,7 +371,7 @@ const MCQSection = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs font-medium">{String.fromCharCode(65 + idx)}</div>
-                      <div className="text-sm text-gray-700">{opt}</div>
+                      <div className="text-sm text-gray-700">{typeof opt === 'string' ? opt : (opt && (opt.text ?? opt.label ?? opt.value)) || JSON.stringify(opt)}</div>
                     </div>
                   </button>
                 );

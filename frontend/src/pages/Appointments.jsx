@@ -1,19 +1,19 @@
 import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
-import ConfirmModal from "../components/ConfirmModal";
+// ConfirmModal not used for the new appointment flow
 
 const Appointments = () => {
-  const { backendUrl, token, getDoctorsData, currencySymbol } =
-    useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext);
 
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
-  const [modalContext, setModalContext] = useState(null);
 
   const formatDateString = (dateStr) => {
-    const [day, month, year] = dateStr.split("_");
-    const date = new Date(`${year}-${month}-${day}`);
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
     return date.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
@@ -21,14 +21,21 @@ const Appointments = () => {
     });
   };
 
+  const formatTimeString = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const getUserAppointments = async () => {
     try {
-      const { data } = await axios.get(backendUrl + "/api/user/appointments", {
-        headers: { token },
+      const { data } = await axios.get(backendUrl + "/api/appointments?status=confirmed", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (data.success) {
-        setAppointments(data.appointments.reverse());
-      }
+      setAppointments(data.reverse());
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to fetch appointments"
@@ -36,53 +43,16 @@ const Appointments = () => {
     }
   };
 
-  const cancelAppointment = async (appointmentId) => {
-    try {
-      const { data } = await axios.post(
-        backendUrl + "/api/user/cancel-appointment",
-        { appointmentId },
-        { headers: { token } }
-      );
-      if (data.success) {
-        toast.success(data.message || "Appointment cancelled successfully");
-        getUserAppointments();
-        getDoctorsData();
-      }
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to cancel appointment"
-      );
-    }
-  };
-
-  const makePayment = async (appointmentId) => {
-    try {
-      const { data } = await axios.post(
-        backendUrl + "/api/user/make-payment",
-        { appointmentId },
-        { headers: { token } }
-      );
-      if (data.success) {
-        toast.success(data.message || "Payment successful");
-        getUserAppointments();
-        setModalContext(null);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to make payment");
-    }
-  };
-
   const handlePayClick = (appointmentId) => {
-    setModalContext({ type: "payment", appointmentId });
+    navigate(`/payment/${appointmentId}`);
   };
 
-  const handleCancelClick = (appointmentId) => {
-    setModalContext({ type: "cancel", appointmentId });
-  };
-
-  const getSelectedAppointment = () => {
-    if (!modalContext) return null;
-    return appointments.find((a) => a._id === modalContext.appointmentId);
+  const handleJoinClick = (meetingLink) => {
+    if (meetingLink) {
+      window.open(meetingLink, "_blank");
+    } else {
+      toast.error("Meeting link not available");
+    }
   };
 
   useEffect(() => {
@@ -92,108 +62,92 @@ const Appointments = () => {
   }, [token]);
 
   return (
-    <div>
-      <p className="pb-3 mt-12 font-medium text-zinc-700 border-b">
-        My Appointments
-      </p>
-      <div>
-        {appointments.map((doc, index) => (
-          <div
-            className="grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-2 border-b"
-            key={index}
-          >
-            <div>
-              <img
-                className="w-32 bg-indigo-50 rounded"
-                src={doc.docData.image}
-                alt=""
-              />
-            </div>
-            <div className="md:flex-1 text-sm text-zinc-600">
-              <p className="text-neutral-800 font-semibold">
-                {doc.docData.name}
-              </p>
-              <p>{doc.docData.speciality}</p>
-              <p className="text-zinc-700 font-medium mt-1">Address:</p>
-              <p className="text-xs">{doc.docData.address.line1}</p>
-              <p className="text-xs">{doc.docData.address.line2}</p>
-              <p className="text-xs mt-1">
-                <span className="text-sm text-neutral-700 font-medium">
-                  Date & Time:
-                </span>{" "}
-                {formatDateString(doc.slotDate)} | {doc.slotTime}
-              </p>
-            </div>
-            <div></div>
-            <div className="flex flex-col gap-2 justify-end">
-              {!doc.payment && !doc.cancelled && !doc.isCompleted && (
-                <button
-                  onClick={() => handlePayClick(doc._id)}
-                  className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300"
-                >
-                  Pay Online
-                </button>
-              )}
-
-              {doc.payment && !doc.cancelled && !doc.isCompleted && (
-                <button className="text-sm text-white bg-green-500 text-center sm:min-w-48 py-2 border border-green-500 rounded">
-                  Payment Completed
-                </button>
-              )}
-
-              {!doc.cancelled && !doc.isCompleted && (
-                <button
-                  onClick={() => handleCancelClick(doc._id)}
-                  className="text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300"
-                >
-                  Cancel appointment
-                </button>
-              )}
-
-              {doc.cancelled && !doc.isCompleted && (
-                <button className="text-sm text-red-500 text-center sm:min-w-48 py-2 border border-red-500 rounded">
-                  Appointment Cancelled
-                </button>
-              )}
-
-              {doc.isCompleted && (
-                <button className="text-sm text-green-500 text-center sm:min-w-48 py-2 border border-green-500 rounded">
-                  Appointment Completed
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">My Appointments</h1>
+        <p className="text-gray-600 mt-1">View your confirmed appointments</p>
       </div>
 
-      {/* Global Confirmation Modal */}
-      {modalContext && getSelectedAppointment() && (
-        <ConfirmModal
-          title={
-            modalContext.type === "payment"
-              ? "Confirm Payment"
-              : "Cancel Appointment"
-          }
-          message={
-            modalContext.type === "payment"
-              ? `Do you want to proceed with the consultation fee of ${currencySymbol}${
-                  getSelectedAppointment().docData.fees
-                }?`
-              : "Are you sure you want to cancel this appointment?"
-          }
-          confirmText={
-            modalContext.type === "payment" ? "Make Payment" : "Yes, Cancel"
-          }
-          cancelText={modalContext.type === "payment" ? "Cancel" : "No"}
-          onConfirm={() => {
-            modalContext.type === "payment"
-              ? makePayment(modalContext.appointmentId)
-              : cancelAppointment(modalContext.appointmentId);
-            setModalContext(null);
-          }}
-          onCancel={() => setModalContext(null)}
-        />
-      )}
+      <div className="space-y-4">
+        {appointments.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No confirmed appointments found</p>
+            <p className="text-gray-400 mt-2">Book an appointment to get started</p>
+          </div>
+        ) : (
+          appointments.map((appointment, index) => (
+            <div
+              className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+              key={appointment.id || index}
+            >
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex-shrink-0">
+                  <img
+                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
+                    src={
+                      appointment.doctor?.user?.avatar_url ||
+                      appointment.doctor?.avatar_url ||
+                      "https://via.placeholder.com/96"
+                    }
+                    alt={appointment.doctor?.user?.name || "Doctor"}
+                  />
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-800">
+                        {appointment.doctor?.user?.name || "Doctor Name"}
+                      </h3>
+                      <p className="text-gray-600">
+                        {appointment.doctor?.specialty || "General Physician"}
+                      </p>
+                    </div>
+                    <div className="mt-2 sm:mt-0">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        Confirmed
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Date:</span>{" "}
+                      {formatDateString(appointment.scheduled_at)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Time:</span>{" "}
+                      {formatTimeString(appointment.scheduled_at)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Duration:</span>{" "}
+                      {appointment.duration_minutes || 30} minutes
+                    </div>
+                    {appointment.reason && (
+                      <div>
+                        <span className="font-medium">Reason:</span>{" "}
+                        {appointment.reason}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 mt-4 md:mt-0">
+                  <button
+                    onClick={() => handleJoinClick(appointment.meeting_link)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+                  >
+                    Join Meeting
+                  </button>
+                  <button className="px-6 py-2 bg-green-600 text-white rounded-lg font-medium cursor-default">
+                    Payment Completed
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };

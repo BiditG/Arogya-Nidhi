@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
 import {
   HeartIcon,
@@ -27,8 +27,9 @@ const SPECIALTIES = [
 const TIME_SLOTS = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"];
 
 const BookAppointment = () => {
-  const { setToken, backendUrl, token } = useContext(AppContext);
+  const { setToken, backendUrl, token, doctors: allDoctors } = useContext(AppContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [doctors, setDoctors] = useState([]);
@@ -53,6 +54,23 @@ const BookAppointment = () => {
 
   const headers = { Authorization: `Bearer ${token}` };
 
+  // If a doctorId is provided via query param, pre-select that doctor (if available)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const qDoctorId = params.get("doctorId") || params.get("doctor_id");
+    if (!qDoctorId) return;
+
+    const found = (allDoctors || []).find((d) => {
+      const id = d?.id || d?._id || d?.doctor_id || d?.user_id || d?.user?.id || d?.doctorId;
+      return id && id.toString() === qDoctorId.toString();
+    });
+    if (found) {
+      const sp = getDoctorSpecialty(found) || selectedSpecialty;
+      if (sp) setSelectedSpecialty(sp);
+      setSelectedDoctor({ ...found, id: found?.id || found?._id || found?.doctor_id });
+    }
+  }, [location.search, allDoctors]);
+
   // Build calendar days for current month
   const today = new Date();
   const year = today.getFullYear();
@@ -62,29 +80,47 @@ const BookAppointment = () => {
 
   useEffect(() => {
     if (!selectedSpecialty) return;
+
+    const normalize = (list) =>
+      (list || [])
+        .map((doc) => ({
+          ...doc,
+          id: doc?.id || doc?._id || doc?.doctorId || doc?.doctor_id || null,
+        }))
+        .filter((doc) => !!doc.id);
+
+    const filterBySpecialty = (list) =>
+      normalize(list).filter((doc) =>
+        (doc.specialty || doc.speciality || "")
+          .toLowerCase()
+          .includes(selectedSpecialty.toLowerCase())
+      );
+
+    // Prefer locally cached doctors to ensure accurate filtering
+    if (Array.isArray(allDoctors) && allDoctors.length > 0) {
+      setDoctors(filterBySpecialty(allDoctors));
+      return;
+    }
+
     const fetchDoctors = async () => {
       setLoadingDoctors(true);
       setSelectedDoctor(null);
       try {
-        const { data } = await axios.get(backendUrl + `/api/patient/doctors?specialty=${encodeURIComponent(selectedSpecialty)}`, { headers });
-        if (data.success) {
-          const list = Array.isArray(data.data) ? data.data : data.data?.doctors || [];
-          const normalized = list
-            .map((doc) => ({
-              ...doc,
-              id: doc?.id || doc?._id || doc?.doctorId || doc?.doctor_id || null,
-            }))
-            .filter((doc) => !!doc.id);
-          setDoctors(normalized);
-        }
+        const { data } = await axios.get(
+          backendUrl + `/api/patient/doctors?specialty=${encodeURIComponent(selectedSpecialty)}`,
+          { headers }
+        );
+        const list = Array.isArray(data?.data) ? data.data : data?.data?.doctors || data?.doctors || [];
+        setDoctors(filterBySpecialty(list));
       } catch (err) {
         toast.error(err.response?.data?.message || "Failed to load doctors");
       } finally {
         setLoadingDoctors(false);
       }
     };
+
     fetchDoctors();
-  }, [selectedSpecialty, backendUrl, token]);
+  }, [selectedSpecialty, backendUrl, token, allDoctors]);
 
   const handleGetAiRecommendation = async () => {
     if (!symptomText.trim()) return;
@@ -107,36 +143,40 @@ const BookAppointment = () => {
     if (!selectedTime) return toast.error("Please select a time slot");
 
     const doctorId =
+      selectedDoctor?.user_id ||
+      selectedDoctor?.userId ||
+      selectedDoctor?.doctor_id ||
+      selectedDoctor?.doctorId ||
       selectedDoctor?.id ||
       selectedDoctor?._id ||
-      selectedDoctor?.doctorId ||
-      selectedDoctor?.doctor_id ||
       null;
 
     if (!doctorId || doctorId === "undefined") {
       return toast.error("Selected doctor is invalid. Please re-select a doctor.");
     }
 
-    const [hour, minute] = selectedTime.split(":").map(Number);
-    const scheduledAt = new Date(year, month, selectedDate, hour, minute);
-    if (scheduledAt <= new Date()) return toast.error("Please select a future date and time");
+    const appointmentDate = new Date(year, month, selectedDate);
+    if (appointmentDate <= new Date() && selectedTime < new Date().toTimeString().slice(0,5)) {
+      return toast.error("Please select a future date and time");
+    }
 
     setBooking(true);
     try {
+      const appointmentDateOnly = appointmentDate.toISOString().split("T")[0];
       const { data } = await axios.post(
-        backendUrl + "/api/patient/appointments",
+        `${backendUrl}/api/appointments`,
         {
-          doctorId,
-          scheduledAt: scheduledAt.toISOString(),
-          durationMinutes: 30,
-          patientNotes: patientNotes || null,
+          doctor_id: doctorId,
+          appointment_date: appointmentDateOnly,
+          appointment_time: selectedTime,
+          reason: patientNotes || null,
         },
         { headers }
       );
-      if (data.success) {
-        toast.success("Appointment booked successfully!");
-        navigate("/patient-portal");
-      }
+      
+      toast.success("Appointment booked successfully! Proceeding to payment.");
+      navigate(`/payment/${data.id}`);
+      
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to book appointment");
     } finally {

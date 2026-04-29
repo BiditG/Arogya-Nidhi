@@ -11,4 +11,4 @@ if (url && serviceKey) {
   console.warn('Supabase not configured for backend (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)');
 }
 
-export { supabase };
+export default supabase;

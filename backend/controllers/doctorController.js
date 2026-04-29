@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 import { generateAccessToken } from "../util/token.util.js";
 import repo from "../repository/auth.repository.js";
 

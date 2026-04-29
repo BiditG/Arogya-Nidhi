@@ -1,7 +1,7 @@
 import validator from "validator";
 import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
-import { supabase } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
 import { generateAccessToken } from "../util/token.util.js";
 

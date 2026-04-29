@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const StatCard = ({ label, value }) => (
   <div className="flex-1 border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
@@ -43,6 +43,25 @@ const ActivityRow = ({ title, subtitle }) => (
 );
 
 const StudentDashboard = () => {
+  const [progress, setProgress] = useState({ total_attempts: 0, unique_mcqs: 0, correct_count: 0 });
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/students/progress', { headers });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (payload.success && payload.data) setProgress(payload.data);
+      } catch (err) {
+        console.error('Failed to load progress', err);
+      }
+    };
+    fetchProgress();
+  }, []);
+
   return (
     <div>
       <section className="mb-6">
@@ -55,9 +74,9 @@ const StudentDashboard = () => {
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard label="Total Courses" value={12} />
-          <StatCard label="MCQ Completed" value={256} />
-          <StatCard label="Study Hours" value={'48h'} />
-          <StatCard label="Cases Viewed" value={34} />
+          <StatCard label="MCQ Completed" value={progress.unique_mcqs} />
+          <StatCard label="Correct MCQs" value={progress.correct_count} />
+          <StatCard label="Attempts" value={progress.total_attempts} />
         </div>
       </section>
 

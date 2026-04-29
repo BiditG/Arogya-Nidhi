@@ -1,6 +1,6 @@
 import { verifyAccessToken } from '../util/token.util.js';
 import { sendError } from '../util/response.util.js';
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 import repo from '../repository/auth.repository.js';
 
 // Accepts either the app's JWT or a Supabase access token (Bearer). If Supabase token

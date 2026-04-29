@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import { supabase } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 
 // Doctor authentication middleware
 const authDoctor = async (req, res, next) => {

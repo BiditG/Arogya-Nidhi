@@ -1,4 +1,5 @@
 import repo from '../repository/patient.repository.js';
+import { generateBarcodeValue } from '../util/barcode.util.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -42,6 +43,21 @@ function _deleteFile(filePath) {
 
 async function _getProfile(userId) {
   const patient = await _requirePatient(userId);
+  if (patient?.user && !patient.user.barcode) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const candidate = generateBarcodeValue();
+      try {
+        const updatedUser = await repo.updateUserProfile(userId, { barcode: candidate });
+        patient.user = { ...patient.user, ...updatedUser };
+        break;
+      } catch (err) {
+        const message = String(err?.message || '').toLowerCase();
+        if (!message.includes('duplicate') && !message.includes('unique')) {
+          throw err;
+        }
+      }
+    }
+  }
   return patient;
 }
 

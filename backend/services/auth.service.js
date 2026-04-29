@@ -1,5 +1,5 @@
 import repo from '../repository/auth.repository.js';
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 import { hashPassword, comparePassword } from '../util/password.util.js';
 import {
   generateAccessToken,

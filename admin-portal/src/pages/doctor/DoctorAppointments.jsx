@@ -37,43 +37,43 @@ const DoctorAppointments = () => {
             <div className="flex items-center gap-2">
               <img
                 className="w-8 rounded-full"
-                src={item.userData.image}
+                src={item.patient.avatarUrl || item.patient.avatar_url || assets.person_icon}
                 alt=""
               />
-              <p>{item.userData.name}</p>
+              <p>{item.patient.name}</p>
             </div>
             <p
               className={`text-xs w-fit border px-2 rounded-full ${
-                item.payment
+                item.payment && item.payment.length > 0 && item.payment[0].status === 'COMPLETED'
                   ? "bg-green-400 text-white border-green-600"
                   : "text-primary border-primary"
               }`}
             >
-              {item.payment ? "ONLINE" : "CASH"}
+              {item.payment && item.payment.length > 0 && item.payment[0].status === 'COMPLETED' ? "PAID" : "UNPAID"}
             </p>
-            <p className="max-sm:hidden">{calculateAge(item.userData.dob)}</p>
+            <p className="max-sm:hidden">{calculateAge(item.patient.dateOfBirth)}</p>
             <p>
-              {formatDateString(item.slotDate)}, {item.slotTime}
+              {formatDateString(item.appointment_date)}, {item.appointment_time}
             </p>
             <p>
               {currencySymbol}
-              {item.amount}
+              {item.doctor?.doctor_profile?.[0]?.consultation_fee || "-"}
             </p>
 
-            {item.cancelled ? (
+            {item.status === 'CANCELLED' ? (
               <p className="text-red-400 text-xs font-medium">Cancelled</p>
-            ) : item.isCompleted ? (
+            ) : item.status === 'COMPLETED' ? (
               <p className="text-green-500 text-xs font-medium">Completed</p>
             ) : (
               <div className="flex">
                 <img
-                  onClick={() => cancelAppointment(item._id)}
+                  onClick={() => cancelAppointment(item.id)}
                   className="w-10 cursor-pointer"
                   src={assets.cancel_icon}
                   alt=""
                 />
                 <img
-                  onClick={() => completeAppointment(item._id)}
+                  onClick={() => completeAppointment(item.id)}
                   className="w-10 cursor-pointer"
                   src={assets.tick_icon}
                   alt=""

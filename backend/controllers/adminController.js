@@ -1,7 +1,6 @@
 import validator from "validator";
-import bcrypt from "bcrypt";
 import { v2 as cloudinary } from "cloudinary";
-import { supabase } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
 import { generateAccessToken } from "../util/token.util.js";
 import jwt from "jsonwebtoken";
@@ -55,9 +54,7 @@ const addDoctor = async (req, res) => {
       });
     }
 
-    // hashing the password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Passwords are managed by Supabase Auth; avoid storing password hashes
 
     // upload image to cloudinary
     const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' });
@@ -79,7 +76,6 @@ const addDoctor = async (req, res) => {
       name,
       email,
       role: 'doctor',
-      password_hash: hashedPassword,
       is_active: true, // Admin-added doctors are active immediately
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -258,15 +254,11 @@ const addUser = async (req, res) => {
     });
     if (createErr) return res.status(500).json({ success: false, message: createErr.message });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // Insert user into users table
     const newUser = {
       id: createdUser?.user?.id || createdUser?.id,
       name,
       email,
-      password_hash: hashedPassword,
       role,
       is_active: true,
       created_at: new Date().toISOString(),

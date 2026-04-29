@@ -12,7 +12,7 @@ const DoctorCard = ({ doctor }) => {
   const handleBook = (e) => {
     e?.stopPropagation();
     if (!doctorId || doctorId === "undefined") return;
-    navigate(`/appointment/${doctorId}`);
+    navigate(`/patient-portal/book-appointment?doctorId=${doctorId}`);
     try { scrollTo(0,0); } catch(_){}
   };
 

@@ -1,11 +1,11 @@
-import { supabase } from '../config/supabase.js';
+import supabase from '../config/supabase.js';
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
 async function findPatientByUserId(userId) {
   const { data, error } = await supabase
     .from('patients')
-    .select(`*, user:users(id,email,name,phone,avatar_url:avatarUrl,role,is_active:isActive,created_at)`)
+    .select(`*, user:users(id,email,name,phone,avatar_url,role,is_active,barcode,created_at)`)
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
@@ -27,7 +27,7 @@ async function findPatientByPhone(phone) {
 async function findPatientById(id) {
   const { data, error } = await supabase
     .from('patients')
-    .select('*, user:users(id,email,name,phone,avatar_url:avatarUrl)')
+    .select('*, user:users(id,email,name,phone,avatar_url,barcode)')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -40,7 +40,7 @@ async function updateUserProfile(userId, data) {
     .from('users')
     .update(data)
     .eq('id', userId)
-    .select('id,email,name,phone,avatar_url:avatarUrl,updated_at:updatedAt')
+    .select('id,email,name,phone,avatar_url,barcode,updated_at')
     .maybeSingle();
   if (error) throw error;
   return updated;

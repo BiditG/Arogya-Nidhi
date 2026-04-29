@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --public-ink: #0f172a;
+  --public-muted: #64748b;
+  --public-accent: #1d4ed8;
+  --public-soft: #eff6ff;
+  --public-line: #e2e8f0;
+  --public-surface: #ffffff;
+}
+
+.public-shell {
+  min-height: 100vh;
+  padding: 3.5rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  background: radial-gradient(circle at 15% 20%, #e0f2fe, transparent 45%),
+    radial-gradient(circle at 85% 0%, #fde68a, transparent 40%),
+    linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: 'Space Grotesk', sans-serif;
+  color: var(--public-ink);
+}
+
+.public-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--public-surface);
+  border-radius: 28px;
+  padding: 2.5rem;
+  border: 1px solid var(--public-line);
+  box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.5);
+}
+
+.public-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin-bottom: 0.4rem;
+}
+
+.public-subtitle {
+  color: var(--public-muted);
+  margin: 0 0 2rem;
+}
+
+.public-identity {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.public-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--public-soft);
+  border: 2px solid #bfdbfe;
+}
+
+.public-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.public-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.public-field {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  border: 1px solid #eef2f7;
+}
+
+.public-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--public-muted);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.public-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.public-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--public-muted);
+  font-size: 0.85rem;
+}
+
+.public-pill {
+  background: #dbeafe;
+  color: #1e3a8a;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.public-loading {
+  text-align: center;
+  color: var(--public-muted);
+  padding: 3rem 1rem;
+}
+
+@media (max-width: 640px) {
+  .public-shell {
+    padding: 2.5rem 1.5rem 3rem;
+  }
+
+  .public-identity {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

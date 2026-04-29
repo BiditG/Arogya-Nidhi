@@ -1,9 +1,53 @@
 import fetch from "node-fetch";
+import supabase from '../config/supabase.js';
+import { randomUUID } from 'crypto';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DEFAULT_TABLE = process.env.MCQ_TABLE || "mcq_questions";
+
+// Cache a working header pair to avoid repeated 401 tests
+let cachedSupabaseHeaders = null;
+let headerCheckPromise = null;
+
+async function resolveWorkingSupabaseHeaders(table = 'mcq_questions') {
+  if (cachedSupabaseHeaders) return cachedSupabaseHeaders;
+  if (headerCheckPromise) return headerCheckPromise;
+
+  headerCheckPromise = (async () => {
+    if (!SUPABASE_URL) return null;
+    const combos = [
+      { auth: SUPABASE_SERVICE_ROLE_KEY, apikey: SUPABASE_SERVICE_ROLE_KEY, name: 'service/service' },
+      { auth: SUPABASE_SERVICE_ROLE_KEY, apikey: SUPABASE_KEY, name: 'service/anon' },
+      { auth: SUPABASE_KEY, apikey: SUPABASE_KEY, name: 'anon/anon' },
+      { auth: SUPABASE_KEY, apikey: SUPABASE_SERVICE_ROLE_KEY, name: 'anon/service' },
+    ];
+
+    for (const c of combos) {
+      if (!c.auth || !c.apikey) continue;
+      try {
+        const testUrl = `${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1`;
+        const r = await fetch(testUrl, { headers: { apikey: c.apikey, Authorization: `Bearer ${c.auth}`, Accept: 'application/json' }, method: 'GET' });
+        if (r.ok) {
+          cachedSupabaseHeaders = { auth: c.auth, apikey: c.apikey, name: c.name };
+          console.log('[studentsController] resolved Supabase headers:', c.name);
+          break;
+        } else {
+          const txt = await r.text();
+          console.log('[studentsController] supabase test failed for', c.name, r.status, txt.slice(0,200));
+        }
+      } catch (err) {
+        console.log('[studentsController] supabase test error for', c.name, err && err.message);
+      }
+    }
+
+    headerCheckPromise = null;
+    return cachedSupabaseHeaders;
+  })();
+
+  return headerCheckPromise;
+}
 
 export const getMCQs = async (req, res) => {
   try {
@@ -23,12 +67,16 @@ export const getMCQs = async (req, res) => {
       return res.status(500).json({ success: false, message: "Supabase not configured on server" });
     }
 
-    // prefer service role for Authorization and anon key for apikey header
+    // use the same key for both headers to avoid mismatched-key rejections
     const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
-    const apikeyHeader = SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY;
+    const apikeyHeader = authKey;
 
     const url = `${SUPABASE_URL}/rest/v1/${table}?${select}${filterQuery}${lim}`;
     console.log('[studentsController] Supabase URL:', url);
+    console.log('[studentsController] keys present:', { has_url: !!SUPABASE_URL, has_key: !!SUPABASE_KEY, has_service: !!SUPABASE_SERVICE_ROLE_KEY });
+    // log masked header sources
+    console.log('[studentsController] using headers:', { apikey_from: SUPABASE_SERVICE_ROLE_KEY ? 'service' : (SUPABASE_KEY ? 'anon' : 'none'), auth_from: SUPABASE_SERVICE_ROLE_KEY ? 'service' : (SUPABASE_KEY ? 'anon' : 'none') });
+    console.log('[studentsController] header preview (masked):', { apikey: apikeyHeader ? `${String(apikeyHeader).slice(0,8)}...` : null, authorization: authKey ? `${String(authKey).slice(0,8)}...` : null });
     console.log('[studentsController] SUPABASE_KEY set?', Boolean(SUPABASE_KEY), 'SUPABASE_SERVICE_ROLE_KEY set?', Boolean(SUPABASE_SERVICE_ROLE_KEY));
     console.log('[studentsController] headers chosen -> apikeyHeader is serviceRole?', apikeyHeader === SUPABASE_SERVICE_ROLE_KEY, 'authKey is serviceRole?', authKey === SUPABASE_SERVICE_ROLE_KEY);
     const r = await fetch(url, {
@@ -148,5 +196,95 @@ export const getMetadata = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+export const recordProgress = async (req, res) => {
+  try {
+    const { mcq_id, selected_option = null, is_correct, time_taken_seconds = null } = req.body;
+    // determine authenticated user id (users.id)
+    const user = req.user || {};
+    const userId = user.userId || user.id || user.sub || user?.user_id || null;
+    if (!userId) return res.status(401).json({ success: false, message: 'User not authenticated' });
+
+    // resolve student_profiles.id by user_id (student_profiles.user_id -> users.id)
+    let studentProfileId = null;
+    try {
+      const { data: existingProfile, error: profileErr } = await supabase.from('student_profiles').select('id').eq('user_id', userId).maybeSingle();
+      if (profileErr) console.log('[recordProgress] profile lookup error', profileErr.message || profileErr);
+      if (existingProfile && existingProfile.id) studentProfileId = existingProfile.id;
+      else {
+        // create a minimal student_profiles row (generate id)
+        const newId = randomUUID();
+        const minimal = { id: newId, user_id: userId };
+        const { data: createdProfile, error: createErr } = await supabase.from('student_profiles').insert([minimal]).select().maybeSingle();
+        if (createErr) {
+          console.error('[recordProgress] failed to create student_profiles', createErr);
+          return res.status(500).json({ success: false, message: 'Failed to ensure student profile exists', details: createErr.message || createErr });
+        }
+        studentProfileId = createdProfile.id;
+      }
+    } catch (e) {
+      console.error('[recordProgress] profile resolution error', e);
+      return res.status(500).json({ success: false, message: 'Failed to resolve student profile' });
+    }
+
+    if (!supabase) return res.status(500).json({ success: false, message: 'Supabase client not configured' });
+
+    const payload = {
+      student_id: studentProfileId,
+      mcq_id,
+      selected_option,
+      is_correct,
+      time_taken_seconds,
+    };
+
+    const { data, error } = await supabase.from('student_progress').insert([payload]).select().single();
+    if (error) {
+      console.error('supabase insert error', error);
+      // foreign key violation when student profile is missing
+      if (error.code === '23503') {
+        return res.status(400).json({ success: false, message: 'Invalid student or mcq reference', details: error.details || error.message });
+      }
+      return res.status(500).json({ success: false, message: 'Failed to record progress', details: error.message || error });
+    }
+
+    return res.json({ success: true, data });
+  } catch (err) {
+    console.error('recordProgress error', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+export const getProgressSummary = async (req, res) => {
+  try {
+    const user = req.user || {};
+    const userId = user.userId || user.id || user.sub || user?.user_id || null;
+    if (!userId) return res.status(401).json({ success: false, message: 'User not authenticated' });
+
+    // find student profile id
+    const { data: profile, error: profileErr } = await supabase.from('student_profiles').select('id').eq('user_id', userId).maybeSingle();
+    if (profileErr) {
+      console.error('[getProgressSummary] profile lookup error', profileErr);
+      return res.status(500).json({ success: false, message: 'Failed to lookup profile' });
+    }
+    if (!profile || !profile.id) return res.json({ success: true, data: { total_attempts: 0, unique_mcqs: 0, correct_count: 0, recent: [] } });
+
+    const studentId = profile.id;
+    const { data: rows, error } = await supabase.from('student_progress').select('mcq_id,is_correct,attempted_at').eq('student_id', studentId).order('attempted_at', { ascending: false }).limit(50);
+    if (error) {
+      console.error('[getProgressSummary] supabase error', error);
+      return res.status(500).json({ success: false, message: 'Failed to fetch progress' });
+    }
+
+    const total_attempts = Array.isArray(rows) ? rows.length : 0;
+    const unique_mcqs = Array.isArray(rows) ? new Set(rows.map((r) => r.mcq_id)).size : 0;
+    const correct_count = Array.isArray(rows) ? rows.filter((r) => r.is_correct).length : 0;
+    const recent = (rows || []).slice(0, 10).map((r) => ({ mcq_id: r.mcq_id, is_correct: r.is_correct, attempted_at: r.attempted_at }));
+
+    return res.json({ success: true, data: { total_attempts, unique_mcqs, correct_count, recent } });
+  } catch (err) {
+    console.error('[getProgressSummary] error', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 };

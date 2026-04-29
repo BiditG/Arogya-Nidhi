@@ -55,6 +55,17 @@ const ManageUsers = () => {
       toast.error("Please fill all fields");
       return;
     }
+<<<<<<< HEAD
+    const userId = `U${String(users.length + 1).padStart(3, "0")}`;
+    setUsers([...users, {
+      id: userId,
+      ...newUser,
+      joined: new Date().toISOString().split('T')[0]
+    }]);
+    toast.success("User added successfully");
+    setShowAddModal(false);
+    setNewUser({ name: "", email: "", type: "Patient", status: "Active" });
+=======
     const success = await addUser({
       name: newUser.name,
       email: newUser.email,
@@ -86,6 +97,7 @@ const ManageUsers = () => {
     if (success) {
       setShowEditModal(false);
     }
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
   };
 
   return (
@@ -142,15 +154,43 @@ const ManageUsers = () => {
             {filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <tr key={user.id}>
+<<<<<<< HEAD
+                  <td>{user.id}</td>
+                  <td className="ap-list-title">{user.name}</td>
+                  <td>
+                    <span className="ap-badge">
+                      {user.type}
+=======
                   <td>{user.id.substring(0,8)}...</td>
                   <td className="ap-list-title">{user.name}</td>
                   <td>
                     <span className="ap-badge" style={{textTransform: 'capitalize'}}>
                       {user.role}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                     </span>
                   </td>
                   <td className="ap-list-meta">{user.email}</td>
                   <td>
+<<<<<<< HEAD
+                    <span className={`ap-badge ap-badge-${user.status.toLowerCase()}`}>
+                      {user.status}
+                    </span>
+                  </td>
+                  <td className="ap-list-meta">{user.joined}</td>
+                  <td>
+                    <div className="ap-button-group">
+                      <button 
+                        onClick={() => toast.info(`Viewing ${user.name}`)}
+                        className="ap-btn ap-btn-outline ap-btn-sm"
+                      >
+                        View
+                      </button>
+                      <button 
+                        onClick={() => handleToggleStatus(user.id)}
+                        className="ap-btn ap-btn-warning ap-btn-sm"
+                      >
+                        {user.status === "Active" ? "Deactivate" : "Activate"}
+=======
                     <span className={`ap-badge ap-badge-${user.is_active ? 'active' : 'inactive'}`}>
                       {user.is_active ? 'Active' : 'Inactive'}
                     </span>
@@ -169,6 +209,7 @@ const ManageUsers = () => {
                         className="ap-btn ap-btn-warning ap-btn-sm"
                       >
                         {user.is_active ? "Deactivate" : "Activate"}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
                       </button>
                       <button 
                         onClick={() => setShowDeleteModal(user.id)}
@@ -194,7 +235,11 @@ const ManageUsers = () => {
       {/* Pagination */}
       <section className="ap-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p className="ap-list-meta">
+<<<<<<< HEAD
+          Showing {filteredUsers.length} of {users.length} users
+=======
           Showing {filteredUsers.length} of {users?.length || 0} users
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
         </p>
         <div className="ap-button-group">
           <button className="ap-btn ap-btn-outline ap-btn-sm">Previous</button>
@@ -291,6 +336,8 @@ const ManageUsers = () => {
           </div>
         </div>
       )}
+<<<<<<< HEAD
+=======
 
       {/* Edit User Modal */}
       {showEditModal && editingUser && (
@@ -349,6 +396,7 @@ const ManageUsers = () => {
           </div>
         </div>
       )}
+>>>>>>> faaa6941737f830510b23ce6328c2e7a7b0e7b9f
     </div>
   );
 };

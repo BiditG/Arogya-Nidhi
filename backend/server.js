@@ -7,6 +7,7 @@ import cors from "cors";
 // import connectDB from "./config/mongodb.js";
 import authRoutes from "./routes/authRoute.js"
 import patientRoutes from "./routes/patient.route.js"
+import profileRoutes from "./routes/profile.route.js"
 import dashboardRoutes from "./routes/dashboard.routes.js"
 import aiRoutes from "./routes/aiRoute.js"
 import twilioVoiceRoutes from "./routes/twilioVoice.route.js"
@@ -15,6 +16,7 @@ import doctorRoutes from "./routes/doctorRoute.js"
 import { attachTwilioConversationRelayServer } from "./services/twilioConversationRelay.service.js";
 import publicRoutes from "./routes/public.routes.js"
 import studentsRoutes from "./routes/studentsRoute.js"
+import appointmentRoutes from "./routes/appointment.route.js"
 
 const app = express();
 
@@ -25,7 +27,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// simple request logger for debugging
+app.use((req, res, next) => {
+	console.log('[request]', req.method, req.originalUrl);
+	next();
+});
+
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/patient', patientRoutes);
 app.use('/api/patient', dashboardRoutes);
 app.use('/api/ai', aiRoutes);
@@ -34,6 +43,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/students', studentsRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);

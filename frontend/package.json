@@ -19,6 +19,7 @@
     "dotenv": "^16.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-qr-code": "^2.0.12",
     "react-router-dom": "^7.3.0",
     "react-toastify": "^11.0.5",
     "recharts": "^3.8.1",

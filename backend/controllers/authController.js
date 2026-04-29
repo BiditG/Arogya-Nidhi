@@ -1,8 +1,8 @@
 import authService from "../services/auth.service.js";
-import bcrypt from "bcrypt";
 import { sendSuccess, sendError } from "../util/response.util.js";
-import { supabase } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
+import { generateBarcodeValue } from "../util/barcode.util.js";
 
 function getMeta(req) {
   return {
@@ -53,14 +53,15 @@ export async function register(req, res) {
 
     // 2. Sync to local 'users' table
     const resolvedRole = role || 'patient';
-    const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Do not store passwords locally when using Supabase Auth; keep user record
+    // in the `users` table limited to public/profile fields that exist in the
+    // remote schema (avoids PostgREST schema cache mismatch for password_hash).
     const userData = {
       id: supaUser.id,
       email: supaUser.email,
       role: resolvedRole,
       name: name,
-      password_hash: hashedPassword, 
       is_active: resolvedRole === 'doctor' ? false : true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -226,6 +227,21 @@ export async function me(req, res) {
     }
 
     if (!user) return sendError(res, 'User not found', 404);
+
+    if (!user.barcode) {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const candidate = generateBarcodeValue();
+        try {
+          user = await repo.updateUserById(id, { barcode: candidate });
+          break;
+        } catch (err) {
+          const message = String(err?.message || '').toLowerCase();
+          if (!message.includes('duplicate') && !message.includes('unique')) {
+            throw err;
+          }
+        }
+      }
+    }
 
     return sendSuccess(res, { user }, 'User profile');
   } catch (err) {

@@ -16,13 +16,10 @@ export const DoctorContextProvider = ({ children }) => {
   const getAppointments = async () => {
     try {
       const { data } = await axios.get(
-        backendUrl + "/api/doctor/appointments",
+        backendUrl + "/api/appointments",
         { headers: { Authorization: `Bearer ${dToken}` } }
       );
-
-      if (data.success) {
-        setAppointments(data.appointments.reverse());
-      }
+      setAppointments(data.reverse());
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Failed to fetch appointments"
