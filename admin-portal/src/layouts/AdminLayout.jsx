@@ -42,11 +42,11 @@ const AdminTopbar = () => {
 };
 
 const AdminLayout = () => (
-  <div className="ap-page" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+  <div className="ap-page" style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
     <AdminTopbar />
-    <div style={{ display: "flex", flex: 1 }}>
+    <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <Sidebar />
-      <main className="ap-main-content" style={{ marginLeft: "280px", flex: 1, marginTop: 0 }}>
+      <main className="ap-main-content" style={{ marginLeft: "280px", flex: 1, marginTop: 0, minHeight: 0, height: "100%" }}>
         <Routes>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="all-appointments" element={<AllAppointments />} />

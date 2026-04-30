@@ -1,0 +1,1002 @@
+/* ========================================================
+   Student Portal — Design System
+   Mirrors PatientPortal.css visual language exactly
+   ======================================================== */
+
+/* ── Variables (same as PatientPortal.css) ──────────────── */
+:root {
+  --pp-primary: #1e40af;
+  --pp-primary-dark: #1e3a8a;
+  --pp-primary-light: #dbeafe;
+  --pp-primary-lighter: #eff6ff;
+  --pp-background: #f8fafc;
+  --pp-surface: #ffffff;
+  --pp-text-primary: #0f172a;
+  --pp-text-secondary: #64748b;
+  --pp-text-muted: #94a3b8;
+  --pp-border: #e2e8f0;
+  --pp-border-light: #f1f5f9;
+  --pp-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --pp-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --sp-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── ps-menu-link as button (sidebar uses <button> not <a>) ─ */
+button.ps-menu-link {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--sp-font);
+  text-align: left;
+}
+
+.sp-content-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--pp-border-light);
+}
+
+.sp-content-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--pp-text-primary);
+}
+
+.sp-content-desc {
+  font-size: 0.875rem;
+  color: var(--pp-text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* ── Panel ───────────────────────────────────────────────── */
+.sp-panel {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  box-shadow: var(--pp-shadow-sm);
+}
+
+.sp-panel-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+/* ── Section ─────────────────────────────────────────────── */
+.sp-section { margin-bottom: 2rem; }
+
+.sp-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.sp-section-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--pp-text-primary);
+}
+
+.sp-section-action {
+  font-size: 0.8125rem;
+  color: var(--pp-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--sp-font);
+}
+
+/* ── Stat cards ──────────────────────────────────────────── */
+.sp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.sp-stat-card {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  box-shadow: var(--pp-shadow-sm);
+  transition: box-shadow 0.2s;
+}
+
+.sp-stat-card:hover { box-shadow: var(--pp-shadow); }
+
+.sp-stat-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--pp-primary-lighter);
+  border: 1px solid var(--pp-primary-light);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pp-primary);
+  margin-bottom: 0.75rem;
+}
+
+.sp-stat-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--pp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.375rem;
+}
+
+.sp-stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--pp-primary);
+  line-height: 1;
+}
+
+/* ── Resource cards ──────────────────────────────────────── */
+.sp-resources-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.sp-resource-card {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  box-shadow: var(--pp-shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-resource-img {
+  height: 7rem;
+  background: var(--pp-primary-lighter);
+  border-radius: 0.375rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pp-primary);
+  font-size: 2rem;
+}
+
+.sp-resource-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--pp-text-primary);
+}
+
+.sp-resource-desc {
+  font-size: 0.8125rem;
+  color: var(--pp-text-secondary);
+  margin-top: 0.25rem;
+  flex: 1;
+}
+
+.sp-resource-footer { margin-top: 1rem; }
+
+/* ── Two-col grid (AI cards) ─────────────────────────────── */
+.sp-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Activity list ───────────────────────────────────────── */
+.sp-activity-list {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  box-shadow: var(--pp-shadow-sm);
+  overflow: hidden;
+}
+
+.sp-activity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--pp-border-light);
+}
+
+.sp-activity-item:last-child { border-bottom: none; }
+
+.sp-activity-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+}
+
+.sp-activity-meta {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+  margin-top: 0.125rem;
+}
+
+.sp-activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pp-primary-light);
+  flex-shrink: 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.sp-btn-primary {
+  background: var(--pp-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--sp-font);
+  white-space: nowrap;
+}
+
+.sp-btn-primary:hover { background: var(--pp-primary-dark); }
+.sp-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sp-btn-secondary {
+  background: var(--pp-surface);
+  color: var(--pp-text-secondary);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sp-font);
+  white-space: nowrap;
+}
+
+.sp-btn-secondary:hover { background: var(--pp-background); color: var(--pp-text-primary); }
+.sp-btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sp-btn-warning {
+  background: #fefce8;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sp-font);
+}
+
+.sp-btn-warning:hover { background: #fef9c3; }
+
+/* ── Form inputs ─────────────────────────────────────────── */
+.sp-input {
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  background: var(--pp-surface);
+  font-family: var(--sp-font);
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.sp-input:focus {
+  outline: none;
+  border-color: var(--pp-primary);
+  box-shadow: 0 0 0 3px var(--pp-primary-lighter);
+}
+
+.sp-select {
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  background: var(--pp-surface);
+  font-family: var(--sp-font);
+  cursor: pointer;
+}
+
+.sp-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pp-text-secondary);
+  display: block;
+  margin-bottom: 0.375rem;
+}
+
+.sp-control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+}
+
+.sp-control-label {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+  white-space: nowrap;
+}
+
+.sp-control-input {
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  font-family: var(--sp-font);
+  width: 4rem;
+  text-align: right;
+}
+
+.sp-control-input:focus { outline: none; }
+
+.sp-control-select {
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  font-family: var(--sp-font);
+}
+
+.sp-control-select:focus { outline: none; }
+
+/* ── Row / flex helpers ──────────────────────────────────── */
+.sp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sp-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sp-col { display: flex; flex-direction: column; }
+
+/* ── MCQ specific ────────────────────────────────────────── */
+.sp-mcq-counter {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: var(--pp-primary-lighter);
+  border: 2px solid var(--pp-primary-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sp-mcq-counter-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--pp-primary);
+  line-height: 1;
+}
+
+.sp-mcq-counter-label {
+  font-size: 0.625rem;
+  color: var(--pp-text-muted);
+  margin-top: 0.125rem;
+}
+
+.sp-mcq-progress {
+  height: 0.5rem;
+  background: var(--pp-border-light);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.sp-mcq-progress-fill {
+  height: 100%;
+  background: var(--pp-primary-light);
+  transition: width 0.4s;
+}
+
+.sp-mcq-status {
+  padding: 0.875rem 1rem;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--pp-text-secondary);
+}
+
+.sp-mcq-question-card {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.sp-mcq-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: var(--pp-text-muted);
+  margin-bottom: 1rem;
+}
+
+.sp-mcq-score {
+  background: var(--pp-primary-lighter);
+  color: var(--pp-primary);
+  border: 1px solid var(--pp-primary-light);
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sp-mcq-question {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--pp-text-primary);
+  margin-bottom: 1rem;
+}
+
+.sp-mcq-timer {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  margin-bottom: 0.75rem;
+}
+
+.sp-mcq-options { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.sp-mcq-option {
+  width: 100%;
+  text-align: left;
+  padding: 0.625rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--pp-border);
+  background: var(--pp-surface);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--sp-font);
+}
+
+.sp-mcq-option:hover:not(:disabled) {
+  border-color: var(--pp-primary-light);
+  background: var(--pp-primary-lighter);
+}
+
+.sp-mcq-option.selected {
+  border-color: var(--pp-primary);
+  background: var(--pp-primary-lighter);
+  color: var(--pp-primary);
+}
+
+.sp-mcq-option.correct {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.sp-mcq-option.wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.sp-mcq-option:disabled { cursor: not-allowed; }
+
+.sp-mcq-option-badge {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  color: var(--pp-text-secondary);
+}
+
+.sp-mcq-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.sp-mcq-result {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--pp-text-secondary);
+}
+
+.sp-explanation {
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  background: var(--pp-primary-lighter);
+  border-left: 3px solid var(--pp-primary);
+  border-radius: 0 0.375rem 0.375rem 0;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+}
+
+/* ── Diagnostic Lab (chat) ───────────────────────────────── */
+.sp-chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding-right: 0.25rem;
+}
+
+.sp-chat-bubble {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.sp-chat-bubble.patient {
+  background: var(--pp-primary-lighter);
+  border: 1px solid var(--pp-primary-light);
+}
+
+.sp-chat-bubble.system {
+  background: #fefce8;
+  border: 1px solid #fef08a;
+}
+
+.sp-chat-bubble.student {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+}
+
+.sp-chat-role {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pp-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.sp-chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sp-chat-input-row .sp-input { flex: 1; }
+
+.sp-diag-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Medicine Info ───────────────────────────────────────── */
+.sp-search-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sp-search-row .sp-input { flex: 1; }
+
+.sp-medicine-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--pp-text-secondary);
+}
+
+.sp-medicine-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  background: var(--pp-surface);
+  margin-bottom: 0.75rem;
+}
+
+.sp-medicine-img {
+  width: 100%;
+  height: 10rem;
+  object-fit: contain;
+  border-radius: 0.375rem;
+  border: 1px solid var(--pp-border);
+  background: var(--pp-background);
+}
+
+.sp-medicine-img-placeholder {
+  width: 100%;
+  height: 10rem;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+}
+
+.sp-medicine-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pp-text-primary);
+}
+
+.sp-medicine-field {
+  font-size: 0.8125rem;
+  color: var(--pp-text-primary);
+  margin-top: 0.375rem;
+}
+
+.sp-medicine-mfr {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+  margin-top: 0.375rem;
+}
+
+.sp-review-bar {
+  height: 0.375rem;
+  background: var(--pp-border-light);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 0.375rem;
+  display: flex;
+}
+
+.sp-review-bar-ex { background: #4ade80; }
+.sp-review-bar-av { background: #facc15; }
+.sp-review-bar-po { background: #f87171; }
+
+/* ── Organ Viewer ────────────────────────────────────────── */
+.sp-viewer-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sp-viewer-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--pp-text-secondary);
+}
+
+.sp-viewer-canvas {
+  width: 100%;
+  height: 24rem;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sp-viewer-empty {
+  font-size: 0.875rem;
+  color: var(--pp-text-muted);
+}
+
+/* ── FDA Label ───────────────────────────────────────────── */
+.sp-fda-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sp-fda-search .sp-input { flex: 1; }
+
+.sp-label-card {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  box-shadow: var(--pp-shadow-sm);
+  margin-top: 1rem;
+}
+
+.sp-label-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--pp-border-light);
+}
+
+.sp-label-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--pp-text-primary);
+}
+
+.sp-label-source {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+  margin-top: 0.25rem;
+}
+
+.sp-label-updated {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+  flex-shrink: 0;
+}
+
+.sp-label-body {
+  font-size: 0.8125rem;
+  color: var(--pp-text-primary);
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.sp-label-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--pp-border-light);
+}
+
+.sp-raw-debug {
+  font-size: 0.75rem;
+  color: var(--pp-text-muted);
+}
+
+.sp-raw-pre {
+  white-space: pre-wrap;
+  font-size: 0.6875rem;
+  background: var(--pp-background);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  overflow: auto;
+  max-height: 20rem;
+  margin-top: 0.5rem;
+}
+
+.sp-error-text {
+  font-size: 0.875rem;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+
+.sp-empty-hint {
+  font-size: 0.875rem;
+  color: var(--pp-text-muted);
+  margin-top: 1rem;
+}
+
+/* ── MRI / Pneumonia ─────────────────────────────────────── */
+.sp-image-frame {
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--pp-border);
+  overflow: hidden;
+  background: var(--pp-background);
+}
+
+.sp-image-frame img {
+  width: 100%;
+  max-height: 24rem;
+  object-fit: contain;
+  display: block;
+}
+
+.sp-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sp-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--pp-text-primary);
+  transition: all 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+  background: var(--pp-surface);
+}
+
+.sp-radio-option:hover { background: var(--pp-background); }
+
+.sp-radio-option.selected {
+  background: var(--pp-primary-lighter);
+  border-color: var(--pp-primary);
+  color: var(--pp-primary);
+  font-weight: 500;
+}
+
+.sp-result-panel {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+}
+
+.sp-result-title {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--pp-text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.sp-result-row {
+  font-size: 0.875rem;
+  color: var(--pp-text-secondary);
+  margin-bottom: 0.375rem;
+}
+
+.sp-result-verdict {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.sp-result-verdict.correct { color: #16a34a; }
+.sp-result-verdict.wrong { color: #dc2626; }
+
+/* ── Disease Glossary ────────────────────────────────────── */
+.sp-glossary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.sp-glossary-card {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--pp-border);
+  border-radius: 0.5rem;
+  background: var(--pp-surface);
+  transition: box-shadow 0.15s;
+}
+
+.sp-glossary-card:hover { box-shadow: var(--pp-shadow-sm); }
+
+.sp-glossary-lang {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pp-text-muted);
+}
+
+.sp-glossary-word {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--pp-text-primary);
+  margin-top: 0.125rem;
+}
+
+.sp-glossary-word.nepali { color: var(--pp-primary); }
+
+.sp-glossary-divider {
+  height: 1px;
+  background: var(--pp-border-light);
+  margin: 0.5rem 0;
+}
+
+/* ── Pagination ──────────────────────────────────────────── */
+.sp-pagination-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--pp-border-light);
+}
+
+.sp-page-info {
+  font-size: 0.8125rem;
+  color: var(--pp-text-secondary);
+}
+
+.sp-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.sp-page-btn {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--pp-border);
+  border-radius: 0.375rem;
+  font-size: 0.8125rem;
+  background: var(--pp-surface);
+  color: var(--pp-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sp-font);
+  min-width: 2rem;
+  text-align: center;
+}
+
+.sp-page-btn:hover:not(:disabled) {
+  background: var(--pp-primary-lighter);
+  color: var(--pp-primary);
+  border-color: var(--pp-primary-light);
+}
+
+.sp-page-btn.active {
+  background: var(--pp-primary);
+  color: #ffffff;
+  border-color: var(--pp-primary);
+}
+
+.sp-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.sp-page-ellipsis {
+  font-size: 0.875rem;
+  color: var(--pp-text-muted);
+  padding: 0 0.25rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .sp-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .sp-resources-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+  .sp-sidebar { display: none; }
+  .sp-main-content { padding: 1rem; }
+  .sp-header { padding: 1rem; }
+  .sp-stats-grid { grid-template-columns: 1fr 1fr; }
+  .sp-resources-grid { grid-template-columns: 1fr; }
+  .sp-two-col { grid-template-columns: 1fr; }
+  .sp-glossary-grid { grid-template-columns: 1fr; }
+  .sp-medicine-card { flex-direction: column; }
+}

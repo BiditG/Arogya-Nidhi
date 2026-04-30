@@ -79,6 +79,9 @@
 .ep-container {
   display: flex;
   min-height: calc(100vh - 65px);
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 .ep-main-content {
@@ -452,6 +455,7 @@
 
 /* ─── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .ep-container { margin-left: 0; width: 100%; }
   .ep-header { padding: 1rem; }
   .ep-nav-top { display: none; }
   .ep-main-content { padding: 1rem; }

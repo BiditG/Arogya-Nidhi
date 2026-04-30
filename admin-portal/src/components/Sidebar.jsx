@@ -84,6 +84,7 @@ const sidebarStyle = {
   position: "fixed",
   left: 0,
   top: "65px",
+  height: "calc(100vh - 65px)",
   overflowY: "auto",
   zIndex: 40,
 };

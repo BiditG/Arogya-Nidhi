@@ -5,6 +5,12 @@
   border-right: 1px solid #e2e8f0;
   padding: 1.5rem 1rem;
   flex-shrink: 0;
+  position: fixed;
+  top: 65px;
+  left: 0;
+  height: calc(100vh - 65px);
+  overflow-y: auto;
+  z-index: 40;
 }
 
 .ps-menu-title {
@@ -53,5 +59,10 @@
 }
 
 @media (max-width: 768px) {
-  .ps-sidebar { display: none; }
+  .ps-sidebar {
+    display: none;
+    position: relative;
+    height: auto;
+    top: 0;
+  }
 }

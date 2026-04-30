@@ -102,27 +102,19 @@ export const diagnose = async (req, res) => {
           errText || '(empty body)'
         );
 
-        // Friendly fallback
-        if (response.status === 404) {
-          const fallback =
-            last?.length && last.slice(-1)[0].text
-              ? `Fallback reply: Based on your symptoms: "${
-                  last.slice(-1)[0].text.slice(0, 120)
-                }" — model not found. Check GEMINI_MODEL.`
-              : 'Fallback reply: Model unavailable.';
+        const STATUS_MESSAGES = {
+          400: `Invalid request to Gemini API (400). The model name "${model}" may be incorrect — update GEMINI_MODEL in backend .env (e.g. gemini-1.5-flash).`,
+          401: 'Invalid Gemini API key (401). Check GEMINI_API_KEY in backend .env.',
+          403: 'Access denied to Gemini API (403). The API may not be enabled for this key, or there may be region restrictions.',
+          404: `Gemini model "${model}" not found (404). Update GEMINI_MODEL in backend .env (e.g. gemini-1.5-flash).`,
+          429: 'Gemini API rate limit reached (429). Please wait a moment and try again.',
+        };
 
-          return res.json({ success: true, reply: fallback });
-        }
+        const reply =
+          STATUS_MESSAGES[response.status] ||
+          `Gemini API returned an unexpected error (${response.status}). Check the backend logs.`;
 
-        if (response.status === 403) {
-          return res.json({
-            success: true,
-            reply:
-              'Access denied to Gemini API (403). This is likely due to region or project restrictions. Try enabling the API, using a different project, or using a VPN.',
-          });
-        }
-
-        throw new Error(`Gemini API error: ${response.status}`);
+        return res.json({ success: true, reply });
       }
 
       const data = await response.json();

@@ -38,7 +38,7 @@ function reportIcon(category) {
 }
 
 const EditProfile = () => {
-  const { setToken, backendUrl, token } = useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const reportInputRef = useRef(null);
@@ -285,11 +285,6 @@ const EditProfile = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
-
   const filteredReports = reportCategoryFilter === "all"
     ? reports
     : reports.filter((r) => r.category === reportCategoryFilter);
@@ -303,18 +298,6 @@ const EditProfile = () => {
 
   return (
     <div className="ep-page">
-      <header className="ep-header">
-        <Link to="/patient-portal" className="ep-logo">PATIENT PORTAL</Link>
-        <nav>
-          <ul className="ep-nav-top">
-            <li><Link to="/patient-portal">Dashboard</Link></li>
-            <li><Link to="/patient-portal/profile" style={{ color: "var(--ep-primary)", fontWeight: 600 }}>Profile</Link></li>
-            <li><a href="#">Settings</a></li>
-            <li><button type="button" className="ep-link-button" onClick={handleLogout}>Logout</button></li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="ep-container">
         <PatientSidebar />
 

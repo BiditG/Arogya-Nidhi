@@ -103,6 +103,9 @@
 .paa-container {
   display: flex;
   min-height: calc(100vh - 65px);
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 
@@ -647,6 +650,11 @@
 }
 
 @media (max-width: 768px) {
+  .paa-container {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .paa-header {
     padding: 1rem;
   }

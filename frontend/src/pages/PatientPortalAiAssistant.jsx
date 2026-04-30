@@ -121,12 +121,6 @@ const PatientPortalAiAssistant = () => {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-    navigate("/login");
-  };
-
   const getLiveToken = async () => {
     const { data: sessionData } = supabase ? await supabase.auth.getSession() : { data: null };
     return sessionData?.session?.access_token || token;
@@ -488,31 +482,6 @@ const PatientPortalAiAssistant = () => {
 
   return (
     <div className="paa-page">
-      <header className="paa-header">
-        <Link to="/patient-portal" className="paa-logo">
-          PATIENT PORTAL
-        </Link>
-
-        <nav>
-          <ul className="paa-nav-top">
-            <li>
-              <Link to="/patient-portal">Dashboard</Link>
-            </li>
-            <li>
-              <Link to="/patient-portal/profile">Profile</Link>
-            </li>
-            <li>
-              <a href="#">Settings</a>
-            </li>
-            <li>
-              <button type="button" className="paa-link-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="paa-container">
         <PatientSidebar />
 

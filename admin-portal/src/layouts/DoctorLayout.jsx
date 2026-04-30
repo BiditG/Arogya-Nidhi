@@ -5,19 +5,21 @@ import DoctorDashboard from "../pages/doctor/DoctorDashboard";
 import DoctorAppointments from "../pages/doctor/DoctorAppointments";
 import DoctorProfile from "../pages/doctor/DoctorProfile";
 import NotAuthorized from "../pages/auth/NotAuthorized";
+import "../styles/AdminPortal.css";
 
 const DoctorLayout = () => (
-  <div className="bg-[#F8F9FD]">
+  <div className="ap-page" style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
     <Navbar />
-    <div className="flex items-start">
+    <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
       <Sidebar />
-      <Routes>
-        <Route path="dashboard" element={<DoctorDashboard />} />
-        <Route path="appointments" element={<DoctorAppointments />} />
-        <Route path="profile" element={<DoctorProfile />} />
-        
-        <Route path="*" element={<NotAuthorized />} />
-      </Routes>
+      <main className="ap-main-content" style={{ marginLeft: "280px", flex: 1, minHeight: 0, height: "100%" }}>
+        <Routes>
+          <Route path="dashboard" element={<DoctorDashboard />} />
+          <Route path="appointments" element={<DoctorAppointments />} />
+          <Route path="profile" element={<DoctorProfile />} />
+          <Route path="*" element={<NotAuthorized />} />
+        </Routes>
+      </main>
     </div>
   </div>
 );

@@ -582,7 +582,7 @@ const TremorCard = ({ onSaveResult, lastSaved }) => {
 // ─── Main IoT Page ────────────────────────────────────────────────────────────
 
 const IoTPage = () => {
-  const { setToken, backendUrl, token } = useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext);
   const [recentResults, setRecentResults] = useState([]);
   const [loadingResults, setLoadingResults] = useState(true);
   const [lastReaction, setLastReaction] = useState(null);
@@ -665,11 +665,6 @@ const IoTPage = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
-
   const fmtDate = (d) =>
     d
       ? new Date(d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
@@ -698,24 +693,6 @@ const IoTPage = () => {
 
   return (
     <div className="iot-page">
-      <header className="iot-header">
-        <Link to="/patient-portal" className="iot-logo">
-          PATIENT PORTAL
-        </Link>
-        <nav>
-          <ul className="iot-nav-top">
-            <li><Link to="/patient-portal">Dashboard</Link></li>
-            <li><Link to="/patient-portal/profile">Profile</Link></li>
-            <li><a href="#">Settings</a></li>
-            <li>
-              <button type="button" className="iot-link-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="iot-container">
         <PatientSidebar />
 

@@ -22,7 +22,6 @@ const SORT_TABS = ["Hot", "New", "Top", "Trending"];
 const POSTS_PER_PAGE = 5;
 
 const HealthQueries = () => {
-  const { setToken } = useContext(AppContext);
   const { posts, addPost, votePost } = usePosts();
   const { backendUrl, token, userData } = useContext(AppContext);
   const navigate = useNavigate();
@@ -34,11 +33,6 @@ const HealthQueries = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [newPost, setNewPost] = useState({ title: "", category: "General Health", excerpt: "" });
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
 
   const handleCreatePost = () => {
     if (!newPost.title.trim() || !newPost.excerpt.trim()) return;
@@ -163,18 +157,6 @@ const HealthQueries = () => {
 
   return (
     <div className="hq-page">
-      <header className="hq-header">
-        <Link to="/patient-portal" className="hq-logo">PATIENT PORTAL</Link>
-        <nav>
-          <ul className="hq-nav-top">
-            <li><Link to="/patient-portal">Dashboard</Link></li>
-            <li><Link to="/patient-portal/profile">Profile</Link></li>
-            <li><a href="#">Settings</a></li>
-            <li><button type="button" className="hq-link-button" onClick={handleLogout}>Logout</button></li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="hq-container">
         <PatientSidebar />
 

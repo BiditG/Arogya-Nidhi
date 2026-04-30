@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import modelsList from "../../utils/modelsList";
 
-// Uses <model-viewer> via CDN for .glb preview. Loads available models from modelsList.
 const OrganViewer = () => {
   const [modelUrl, setModelUrl] = useState(modelsList[0]?.url || "");
   const [selected, setSelected] = useState(modelsList[0]?.id || "");
@@ -11,10 +10,8 @@ const OrganViewer = () => {
   const viewerRef = useRef(null);
 
   useEffect(() => {
-    // load model-viewer script if not present
     if (!window.customElements?.get("model-viewer")) {
       const s = document.createElement("script");
-      // model-viewer distributed as an ES module; load with type="module"
       s.type = 'module';
       s.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
       document.head.appendChild(s);
@@ -26,10 +23,7 @@ const OrganViewer = () => {
     const url = m ? m.url : "";
     setModelUrl(url);
     if (url) {
-      // quick HEAD check to ensure file exists
-      fetch(url, { method: 'HEAD' }).then((res) => {
-        setAvailable(res.ok);
-      }).catch(() => setAvailable(false));
+      fetch(url, { method: 'HEAD' }).then((res) => setAvailable(res.ok)).catch(() => setAvailable(false));
     } else {
       setAvailable(false);
     }
@@ -53,32 +47,54 @@ const OrganViewer = () => {
   };
 
   return (
-    <div className="p-4 border border-gray-200 rounded bg-white">
-      <p className="text-sm text-gray-500 mb-3">Select a 3D organ to preview. Models are served from the project's public/models folder.</p>
+    <div className="sp-panel">
+      <p style={{ fontSize: '0.8125rem', color: 'var(--pp-text-secondary)', marginBottom: '1rem' }}>
+        Select a 3D organ to preview. Models are served from the project's public/models folder.
+      </p>
 
-      <div className="flex gap-2 mb-3 items-center flex-wrap">
-        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="border border-gray-300 rounded px-3 py-2">
+      <div className="sp-viewer-controls">
+        <select value={selected} onChange={(e) => setSelected(e.target.value)} className="sp-select">
           {modelsList.map((m) => (
             <option key={m.id} value={m.id}>{m.name}</option>
           ))}
         </select>
-        <div className="flex items-center gap-2">
-          <label className="text-sm">Auto-rotate</label>
+
+        <label className="sp-viewer-control">
           <input type="checkbox" checked={autoRotate} onChange={(e) => setAutoRotate(e.target.checked)} />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm">Exposure</label>
-          <input type="range" min="0.2" max="2" step="0.1" value={exposure} onChange={(e) => setExposure(Number(e.target.value))} />
-        </div>
-        <button onClick={downloadModel} className="ml-2 text-sm bg-gray-100 px-3 py-2 rounded">Download</button>
+          <span>Auto-rotate</span>
+        </label>
+
+        <label className="sp-viewer-control">
+          <span>Exposure</span>
+          <input
+            type="range"
+            min="0.2"
+            max="2"
+            step="0.1"
+            value={exposure}
+            onChange={(e) => setExposure(Number(e.target.value))}
+            style={{ width: '6rem' }}
+          />
+          <span style={{ fontSize: '0.75rem', color: 'var(--pp-text-muted)' }}>{exposure.toFixed(1)}</span>
+        </label>
+
+        <button onClick={downloadModel} className="sp-btn-secondary">Download</button>
       </div>
 
-      <div className="w-full h-96 bg-gray-50 rounded flex items-center justify-center overflow-hidden">
+      <div className="sp-viewer-canvas">
         {modelUrl && available ? (
           // eslint-disable-next-line react/no-unknown-property
-          <model-viewer ref={viewerRef} src={modelUrl} alt="3D model" camera-controls style={{ width: '100%', height: '100%' }} shadow-intensity="1" exposure={exposure}></model-viewer>
+          <model-viewer
+            ref={viewerRef}
+            src={modelUrl}
+            alt="3D model"
+            camera-controls
+            style={{ width: '100%', height: '100%' }}
+            shadow-intensity="1"
+            exposure={exposure}
+          />
         ) : (
-          <div className="text-sm text-gray-400">No model available or file not found.</div>
+          <span className="sp-viewer-empty">No model available or file not found.</span>
         )}
       </div>
     </div>

@@ -76,6 +76,9 @@
 .iot-container {
   display: flex;
   min-height: calc(100vh - 65px);
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 
@@ -596,6 +599,7 @@
 }
 
 @media (max-width: 768px) {
+.iot-container { margin-left: 0; width: 100%; }
 .iot-header { padding: 1rem; }
   .iot-main-content { padding: 1rem; }
   .iot-result-card { flex-direction: column; align-items: flex-start; }

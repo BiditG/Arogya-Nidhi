@@ -168,7 +168,7 @@ const Comment = ({ comment, postId, onVoteComment, onVoteReply, onAddReply }) =>
 
 const DiscussionDetail = () => {
   const { id } = useParams();
-  const { setToken, backendUrl, token } = useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext);
   const { posts, votePost, voteComment, voteReply, addComment, addReply } = usePosts();
 
   const [apiPost, setApiPost] = useState(null);
@@ -217,11 +217,6 @@ const DiscussionDetail = () => {
   const [sortComments, setSortComments] = useState("Best");
   const [saved, setSaved]   = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
-
   const handleAddComment = () => {
     if (!commentText.trim()) return;
     addComment(post.id, commentText.trim());
@@ -242,18 +237,6 @@ const DiscussionDetail = () => {
 
   return (
     <div className="dd-page">
-      <header className="dd-header">
-        <Link to="/patient-portal" className="dd-logo">PATIENT PORTAL</Link>
-        <nav>
-          <ul className="dd-nav-top">
-            <li><Link to="/patient-portal">Dashboard</Link></li>
-            <li><Link to="/patient-portal/profile">Profile</Link></li>
-            <li><a href="#">Settings</a></li>
-            <li><button type="button" className="dd-link-button" onClick={handleLogout}>Logout</button></li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="dd-container">
         <PatientSidebar />
 

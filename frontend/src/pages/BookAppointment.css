@@ -70,6 +70,9 @@
 .ba-container {
   display: flex;
   min-height: calc(100vh - 65px);
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 
@@ -385,6 +388,13 @@
   font-weight: 700;
 }
 
+.ba-doctor-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .ba-doctor-info {
   flex: 1;
 }
@@ -624,6 +634,11 @@
 }
 
 @media (max-width: 768px) {
+  .ba-container {
+    margin-left: 0;
+    width: 100%;
+  }
+
   .ba-specialist-grid {
     grid-template-columns: 1fr;
   }

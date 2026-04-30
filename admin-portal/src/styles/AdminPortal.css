@@ -23,6 +23,10 @@
   color: var(--ap-text-primary);
   line-height: 1.5;
   min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .ap-sidebar {
@@ -148,6 +152,8 @@
   padding: 2rem;
   overflow-y: auto;
   background: var(--ap-background);
+  min-height: 0;
+  height: 100%;
 }
 
 .ap-welcome {
@@ -688,12 +694,19 @@
   .ap-main-content {
     margin-left: 0;
     padding: 1rem;
+    height: auto;
   }
 
   .ap-sidebar {
     width: 100%;
     height: auto;
     position: relative;
+    top: 0;
+  }
+
+  .ap-page {
+    height: auto;
+    overflow: auto;
   }
 
   .ap-sidebar-nav ul {
@@ -723,6 +736,10 @@
   color: var(--ap-text-primary);
   line-height: 1.5;
   min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .ap-header {
@@ -772,13 +789,17 @@
 
 .ap-container {
   display: flex;
-  min-height: calc(100vh - 65px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .ap-main-content {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  min-height: 0;
+  height: 100%;
 }
 
 .ap-welcome {
@@ -1291,8 +1312,27 @@
 }
 
 @media (max-width: 768px) {
+  .ap-page {
+    height: auto;
+    overflow: auto;
+  }
+
+  .ap-container {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .ap-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+
   .ap-main-content {
+    margin-left: 0;
     padding: 1rem;
+    height: auto;
   }
 
   .ap-stats-grid,

@@ -77,6 +77,9 @@
 .mh-container {
   display: flex;
   min-height: calc(100vh - 65px);
+  margin-left: 240px;
+  width: calc(100% - 240px);
+  box-sizing: border-box;
 }
 
 
@@ -389,6 +392,7 @@
 
 /* ─── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+.mh-container { margin-left: 0; width: 100%; }
 .mh-header { padding: 1rem; }
   .mh-main-content { padding: 1rem; }
   .mh-timeline { padding-left: 1.5rem; }

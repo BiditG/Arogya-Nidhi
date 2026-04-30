@@ -111,84 +111,97 @@ const PortalNavbar = ({ token, userData, logout }) => {
           All Chat
         </Link>
 
-        {token && userData ? (
-          <div ref={ref} style={{ position: "relative" }}>
-            <button
-              onClick={() => setOpen((v) => !v)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                background: open ? "#eff6ff" : "transparent",
-                border: "1px solid",
-                borderColor: open ? "#bfdbfe" : "#e2e8f0",
-                borderRadius: "0.5rem",
-                padding: "5px 10px 5px 6px",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              <Avatar userData={userData} />
-              <svg
-                style={{ width: 12, height: 12, color: "#94a3b8", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {open && (
-              <div
+        {token ? (
+          userData ? (
+            <div ref={ref} style={{ position: "relative" }}>
+              <button
+                onClick={() => setOpen((v) => !v)}
                 style={{
-                  position: "absolute",
-                  top: "calc(100% + 8px)",
-                  right: 0,
-                  background: "#ffffff",
-                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: open ? "#eff6ff" : "transparent",
+                  border: "1px solid",
+                  borderColor: open ? "#bfdbfe" : "#e2e8f0",
                   borderRadius: "0.5rem",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  minWidth: 160,
-                  zIndex: 200,
-                  overflow: "hidden",
+                  padding: "5px 10px 5px 6px",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
                 }}
               >
-                {[
-                  {
-                    label: "My Profile",
-                    action: () => {
-                      const r = userData?.role || userData?.user?.role;
-                      if (r === "doctor") navigate("/doctor-portal/profile");
-                      else navigate("/profile");
-                      setOpen(false);
+                <Avatar userData={userData} />
+                <svg
+                  style={{ width: 12, height: 12, color: "#94a3b8", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {open && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    minWidth: 160,
+                    zIndex: 200,
+                    overflow: "hidden",
+                  }}
+                >
+                  {[
+                    {
+                      label: "My Profile",
+                      action: () => {
+                        const r = userData?.role || userData?.user?.role;
+                        if (r === "doctor") navigate("/doctor-portal/profile");
+                        else navigate("/profile");
+                        setOpen(false);
+                      },
                     },
-                  },
-                  { label: "Logout", action: () => { logoutFunc(); setOpen(false); }, danger: true },
-                ].map(({ label, action, danger }) => (
-                  <button
-                    key={label}
-                    onClick={action}
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "0.625rem 1rem",
-                      background: "transparent",
-                      border: "none",
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                      color: danger ? "#dc2626" : "#374151",
-                      cursor: "pointer",
-                      transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = danger ? "#fef2f2" : "#f8fafc"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+                    { label: "Logout", action: () => { logoutFunc(); setOpen(false); }, danger: true },
+                  ].map(({ label, action, danger }) => (
+                    <button
+                      key={label}
+                      onClick={action}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "0.625rem 1rem",
+                        background: "transparent",
+                        border: "none",
+                        fontSize: "0.875rem",
+                        fontWeight: 500,
+                        color: danger ? "#dc2626" : "#374151",
+                        cursor: "pointer",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = danger ? "#fef2f2" : "#f8fafc"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* token exists but userData still loading — show placeholder so Login never flashes */
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "#e2e8f0",
+                animation: "sp-pulse 1.5s ease-in-out infinite",
+              }}
+            />
+          )
         ) : (
           <button
             onClick={() => navigate("/login")}

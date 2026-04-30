@@ -27,7 +27,7 @@ const SPECIALTIES = [
 const TIME_SLOTS = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"];
 
 const BookAppointment = () => {
-  const { setToken, backendUrl, token, doctors: allDoctors } = useContext(AppContext);
+  const { backendUrl, token, doctors: allDoctors } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -184,11 +184,6 @@ const BookAppointment = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
-
   const doctorInitials = (name = "") =>
     name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "D";
 
@@ -200,30 +195,6 @@ const BookAppointment = () => {
 
   return (
     <div className="ba-page">
-      <header className="ba-header">
-        <Link to="/patient-portal" className="ba-logo">
-          PATIENT PORTAL
-        </Link>
-        <nav>
-          <ul className="ba-nav-top">
-            <li>
-              <Link to="/patient-portal">Dashboard</Link>
-            </li>
-            <li>
-              <Link to="/patient-portal/profile">Profile</Link>
-            </li>
-            <li>
-              <a href="#">Settings</a>
-            </li>
-            <li>
-              <button type="button" className="ba-link-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="ba-container">
         <PatientSidebar />
 
@@ -328,9 +299,25 @@ const BookAppointment = () => {
                   const specialty = getDoctorSpecialty(doc);
                   const experience = getDoctorExperience(doc);
                   const available = isDoctorAvailable(doc);
+                  const imgSrc = doc.user?.profile_image || doc.profile_image || doc.image || null;
                   return (
                     <div key={doc.id} className={`ba-doctor-card${isSelected ? " ba-specialist-selected" : ""}`}>
-                      <div className="ba-doctor-avatar">{doctorInitials(name)}</div>
+                      <div className="ba-doctor-avatar">
+                        {imgSrc ? (
+                          <img
+                            src={imgSrc}
+                            alt={name}
+                            className="ba-doctor-avatar-img"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              e.currentTarget.nextElementSibling.style.display = "";
+                            }}
+                          />
+                        ) : null}
+                        <span style={{ display: imgSrc ? "none" : "" }}>
+                          {doctorInitials(name)}
+                        </span>
+                      </div>
                       <div className="ba-doctor-info">
                         <div className="ba-doctor-name">Dr. {name}</div>
                         <div className="ba-doctor-specialty">

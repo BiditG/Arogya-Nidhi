@@ -79,16 +79,11 @@ const RECORDS = [
 ];
 
 const MedicalHistory = () => {
-  const { setToken } = useContext(AppContext);
+  const { backendUrl, token } = useContext(AppContext);
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("All Dates");
   const [typeFilter, setTypeFilter] = useState("All Types");
   const [activeFilter, setActiveFilter] = useState({ search: "", date: "All Dates", type: "All Types" });
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-  };
 
   const applyFilters = () => {
     setActiveFilter({ search, date: dateFilter, type: typeFilter });
@@ -110,24 +105,6 @@ const MedicalHistory = () => {
 
   return (
     <div className="mh-page">
-      <header className="mh-header">
-        <Link to="/patient-portal" className="mh-logo">
-          PATIENT PORTAL
-        </Link>
-        <nav>
-          <ul className="mh-nav-top">
-            <li><Link to="/patient-portal">Dashboard</Link></li>
-            <li><Link to="/patient-portal/profile">Profile</Link></li>
-            <li><a href="#">Settings</a></li>
-            <li>
-              <button type="button" className="mh-link-button" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="mh-container">
         <PatientSidebar />
 

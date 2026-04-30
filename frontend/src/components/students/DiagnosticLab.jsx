@@ -35,8 +35,7 @@ const DiagnosticLab = () => {
 
   const startCase = (c) => {
     if (!c) return;
-    const patientMsg = { role: 'patient', text: c.patient };
-    setConversation([{ role: 'system', text: SYSTEM_PROMPT }, patientMsg]);
+    setConversation([{ role: 'system', text: SYSTEM_PROMPT }, { role: 'patient', text: c.patient }]);
     setCaseId(c.id);
     setCaseAnswer(c.answer);
   };
@@ -53,7 +52,11 @@ const DiagnosticLab = () => {
       const replyText = data?.reply || 'No response';
       setConversation((c) => [...c, { role: 'patient', text: replyText }]);
     } catch (err) {
-      setConversation((c) => [...c, { role: 'system', text: 'Error contacting AI service.' }]);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Could not reach the AI service. Is the backend running?';
+      setConversation((c) => [...c, { role: 'system', text: msg }]);
     } finally {
       setLoading(false);
     }
@@ -65,34 +68,55 @@ const DiagnosticLab = () => {
   };
 
   return (
-    <div className="p-4 border border-gray-200 rounded bg-white">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-        <p className="text-sm text-gray-500">Interact with an AI patient. Use the controls to start a seeded case or role-play with the model. Enable GEMINI_API_KEY in backend for model responses.</p>
-        <div className="flex items-center gap-2">
-          <select value={caseId} onChange={(e) => {
-            const c = CASES.find(x => x.id === e.target.value);
-            if (c) startCase(c);
-          }} className="border rounded px-2 py-1 text-sm">
-            <option value="">Start seeded case...</option>
+    <div className="sp-panel">
+      <div className="sp-diag-controls">
+        <p style={{ fontSize: '0.8125rem', color: 'var(--pp-text-secondary)', flex: 1, minWidth: '200px' }}>
+          Interact with an AI patient. Start a seeded case or free-form role-play. Enable GEMINI_API_KEY in backend for model responses.
+        </p>
+        <div className="sp-row" style={{ flexWrap: 'wrap' }}>
+          <select
+            value={caseId}
+            onChange={(e) => {
+              const c = CASES.find(x => x.id === e.target.value);
+              if (c) startCase(c);
+            }}
+            className="sp-select"
+          >
+            <option value="">Start seeded case…</option>
             {CASES.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
           </select>
-          <button onClick={() => { startCase(CASES[Math.floor(Math.random()*CASES.length)]) }} className="bg-gray-100 px-3 py-1 rounded text-sm">Random</button>
-          <button onClick={revealAnswer} className="bg-yellow-50 border border-yellow-200 px-3 py-1 rounded text-sm">Reveal Answer</button>
+          <button
+            onClick={() => startCase(CASES[Math.floor(Math.random() * CASES.length)])}
+            className="sp-btn-secondary"
+          >
+            Random
+          </button>
+          <button onClick={revealAnswer} className="sp-btn-warning">
+            Reveal Answer
+          </button>
         </div>
       </div>
 
-      <div className="space-y-3 mb-3 max-h-72 overflow-y-auto">
+      <div className="sp-chat-history">
         {conversation.map((m, i) => (
-          <div key={i} className={`p-3 rounded ${m.role === 'patient' ? 'bg-indigo-50 border border-indigo-100' : m.role==='system' ? 'bg-yellow-50 border border-yellow-100' : 'bg-white border border-gray-100'}`}>
-            <div className="text-xs text-gray-500 mb-1">{m.role.toUpperCase()}</div>
-            <div className="text-sm text-gray-800">{m.text}</div>
+          <div key={i} className={`sp-chat-bubble ${m.role}`}>
+            <div className="sp-chat-role">{m.role}</div>
+            <div>{m.text}</div>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask the patient..." className="flex-1 border border-gray-300 rounded px-3 py-2" />
-        <button onClick={sendMessage} disabled={loading} className="bg-primary text-white px-4 py-2 rounded">Send</button>
+      <div className="sp-chat-input-row">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Ask the patient a question…"
+          className="sp-input"
+        />
+        <button onClick={sendMessage} disabled={loading} className="sp-btn-primary">
+          {loading ? 'Sending…' : 'Send'}
+        </button>
       </div>
     </div>
   );

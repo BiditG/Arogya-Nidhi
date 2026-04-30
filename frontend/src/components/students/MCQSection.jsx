@@ -24,9 +24,8 @@ const MCQSection = () => {
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
-  const [results, setResults] = useState([]); // {id, selected, correct}
+  const [results, setResults] = useState([]);
 
-  // Filters / options
   const [tableName, setTableName] = useState("mcq_questions");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterTopic, setFilterTopic] = useState("");
@@ -40,8 +39,7 @@ const MCQSection = () => {
   const [metaLoading, setMetaLoading] = useState(false);
   const [displayCount, setDisplayCount] = useState(0);
 
-  // Quiz controls
-  const [mode, setMode] = useState("casual"); // casual | exam
+  const [mode, setMode] = useState("casual");
   const [timed, setTimed] = useState(false);
   const [timerPerQuestion, setTimerPerQuestion] = useState(30);
   const [timeLeft, setTimeLeft] = useState(timerPerQuestion);
@@ -72,25 +70,19 @@ const MCQSection = () => {
     }
   };
 
-  useEffect(() => {
-    setTimeLeft(timerPerQuestion);
-  }, [timerPerQuestion]);
+  useEffect(() => { setTimeLeft(timerPerQuestion); }, [timerPerQuestion]);
 
   useEffect(() => {
     if (quizStarted && timed) {
       clearInterval(timerRef.current);
       setTimeLeft(timerPerQuestion);
-      timerRef.current = setInterval(() => {
-        setTimeLeft((t) => t - 1);
-      }, 1000);
+      timerRef.current = setInterval(() => { setTimeLeft((t) => t - 1); }, 1000);
     }
     return () => clearInterval(timerRef.current);
   }, [quizStarted, timed, current]);
 
   useEffect(() => {
-    if (timeLeft <= 0 && quizStarted && timed) {
-      handleTimeExpired();
-    }
+    if (timeLeft <= 0 && quizStarted && timed) handleTimeExpired();
   }, [timeLeft, quizStarted, timed]);
 
   const buildFilterQuery = () => {
@@ -121,17 +113,13 @@ const MCQSection = () => {
         }));
         setAllQuestions(mapped.length ? mapped : sampleQuestions);
         setQuestions(mapped.length ? mapped : sampleQuestions);
-        setCurrent(0);
-        setScore(0);
-        setResults([]);
+        setCurrent(0); setScore(0); setResults([]);
       } else {
-        setAllQuestions(sampleQuestions);
-        setQuestions(sampleQuestions);
+        setAllQuestions(sampleQuestions); setQuestions(sampleQuestions);
       }
     } catch (err) {
       console.error(err);
-      setAllQuestions(sampleQuestions);
-      setQuestions(sampleQuestions);
+      setAllQuestions(sampleQuestions); setQuestions(sampleQuestions);
     } finally {
       setLoading(false);
     }
@@ -158,29 +146,21 @@ const MCQSection = () => {
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
-      await fetchMetadata();
-      if (mounted) await fetchFromBackend();
-    };
+    const load = async () => { await fetchMetadata(); if (mounted) await fetchFromBackend(); };
     load();
     return () => { mounted = false; };
   }, [tableName]);
 
-  // Animated counter for available questions
   useEffect(() => {
-    if (availableCount === null) {
-      setDisplayCount(0);
-      return;
-    }
+    if (availableCount === null) { setDisplayCount(0); return; }
     const to = Number(availableCount) || 0;
-    const duration = 800; // ms
+    const duration = 800;
     let start = null;
     let raf = null;
     const step = (timestamp) => {
       if (!start) start = timestamp;
       const progress = Math.min((timestamp - start) / duration, 1);
-      const val = Math.floor(progress * to);
-      setDisplayCount(val);
+      setDisplayCount(Math.floor(progress * to));
       if (progress < 1) raf = requestAnimationFrame(step);
       else setDisplayCount(to);
     };
@@ -188,12 +168,9 @@ const MCQSection = () => {
     return () => cancelAnimationFrame(raf);
   }, [availableCount]);
 
-  // Re-fetch questions when the user changes filters or number of questions
   useEffect(() => {
     let mounted = true;
-    const refetch = async () => {
-      if (mounted) await fetchFromBackend();
-    };
+    const refetch = async () => { if (mounted) await fetchFromBackend(); };
     refetch();
     return () => { mounted = false; };
   }, [filterSubject, filterTopic, filterYear, numQuestions, tableName]);
@@ -201,19 +178,7 @@ const MCQSection = () => {
   const navigate = useNavigate();
 
   const startQuiz = async () => {
-    // navigate to dedicated quiz page, passing selected filters and mode
-    navigate('/students/quiz', {
-      state: {
-        tableName,
-        filterSubject,
-        filterTopic,
-        filterYear,
-        numQuestions,
-        mode,
-        timed,
-        timerPerQuestion,
-      }
-    });
+    navigate('/students/quiz', { state: { tableName, filterSubject, filterTopic, filterYear, numQuestions, mode, timed, timerPerQuestion } });
   };
 
   const finishQuiz = () => {
@@ -228,7 +193,6 @@ const MCQSection = () => {
     const correct = sel === q.answer;
     setResults((r) => [...r, { id: q.id, selected: sel, correct }]);
     if (correct) setScore((s) => s + 1);
-    // record progress to backend
     const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
     sendProgress(q.id, sel === null ? null : String(sel), Boolean(correct), timeTaken).catch(() => {});
     if (current < questions.length - 1) {
@@ -244,9 +208,7 @@ const MCQSection = () => {
   const submitAnswer = () => {
     if (selected === null) return;
     if (mode === "casual") {
-      // reveal immediately, don't advance until user presses Next
       setShowAnswer(true);
-      // record result now
       const q = questions[current];
       const correct = selected === q.answer;
       setResults((r) => [...r, { id: q.id, selected, correct }]);
@@ -254,7 +216,6 @@ const MCQSection = () => {
       const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
       sendProgress(q.id, selected === null ? null : String(selected), Boolean(correct), timeTaken).catch(() => {});
     } else {
-      // exam mode: record and advance without revealing
       recordAndAdvance(selected);
     }
   };
@@ -273,7 +234,6 @@ const MCQSection = () => {
   };
 
   const handleTimeExpired = () => {
-    // treat as no answer (incorrect) and advance
     setResults((r) => [...r, { id: questions[current].id, selected: null, correct: false }]);
     const qid = questions[current].id;
     const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
@@ -288,75 +248,84 @@ const MCQSection = () => {
     }
   };
 
-
-  const revealAll = () => {
-    setShowAnswer(true);
-    setFinished(true);
-    setQuizStarted(false);
-  };
+  const revealAll = () => { setShowAnswer(true); setFinished(true); setQuizStarted(false); };
 
   return (
-    <div className="p-4 bg-white rounded-2xl shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-50 to-sky-50 flex items-center justify-center shadow-inner">
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-bold text-indigo-600">{displayCount}</div>
-              <div className="text-xs text-gray-400">available</div>
-            </div>
+    <div className="sp-panel">
+      {/* Header row: counter + controls */}
+      <div className="sp-row-between" style={{ flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="sp-row">
+          <div className="sp-mcq-counter">
+            <span className="sp-mcq-counter-value">{displayCount}</span>
+            <span className="sp-mcq-counter-label">available</span>
           </div>
-
           <div>
-            <h3 className="text-lg font-semibold">MCQ Practice</h3>
-            <p className="text-sm text-gray-500">Quick practice rounds — minimal UI for focused learning.</p>
-            <div className="mt-2 text-sm text-gray-400">{metaLoading ? 'Loading metadata…' : `${availableCount ?? '—'} total questions`}</div>
+            <div className="sp-section-title" style={{ marginBottom: '0.25rem' }}>MCQ Practice</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--pp-text-secondary)' }}>
+              Focused practice rounds for medical students.
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--pp-text-muted)', marginTop: '0.25rem' }}>
+              {metaLoading ? 'Loading metadata…' : `${availableCount ?? '—'} total questions`}
+            </div>
           </div>
         </div>
 
-          <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md">
-            <label className="text-xs text-gray-500">Mode</label>
-            <select value={mode} onChange={(e) => setMode(e.target.value)} className="bg-transparent text-sm">
+        <div className="sp-row" style={{ flexWrap: 'wrap' }}>
+          <div className="sp-control-group">
+            <span className="sp-control-label">Mode</span>
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              className="sp-control-select"
+            >
               <option value="casual">Casual</option>
               <option value="exam">Exam</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-md">
-            <label className="text-xs text-gray-500">Qty</label>
-            <input type="number" min={1} value={numQuestions} onChange={(e) => setNumQuestions(Number(e.target.value))} className="w-16 bg-transparent text-sm text-right" />
+          <div className="sp-control-group">
+            <span className="sp-control-label">Qty</span>
+            <input
+              type="number"
+              min={1}
+              value={numQuestions}
+              onChange={(e) => setNumQuestions(Number(e.target.value))}
+              className="sp-control-input"
+            />
           </div>
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className="h-full bg-indigo-200 transition-all" style={{ width: `${availableCount ? Math.min(100, Math.round((numQuestions / (availableCount || 1)) * 100)) : 0}%` }} />
-        </div>
+      {/* Progress bar */}
+      <div className="sp-mcq-progress">
+        <div
+          className="sp-mcq-progress-fill"
+          style={{ width: `${availableCount ? Math.min(100, Math.round((numQuestions / (availableCount || 1)) * 100)) : 0}%` }}
+        />
       </div>
 
-      <div className="mt-4 p-4 bg-gray-50 rounded">{questions && questions.length ? (
-        <div className="text-sm text-gray-700">Ready: {questions.length} questions loaded.</div>
-      ) : (
-        <div className="text-sm text-gray-500">No preview questions available.</div>
-      )}</div>
+      {/* Loaded status */}
+      <div className="sp-mcq-status">
+        {questions && questions.length
+          ? `Ready: ${questions.length} questions loaded.`
+          : 'No preview questions available.'}
+      </div>
 
       {/* Quiz view */}
       {questions && questions.length > 0 && (
-        <div className="mt-6 p-4 bg-white rounded-lg border">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm text-gray-500">Question {current + 1} / {questions.length}</div>
-            <div className="text-sm text-gray-500">Score: {score}</div>
+        <div className="sp-mcq-question-card">
+          <div className="sp-mcq-meta">
+            <span>Question {current + 1} / {questions.length}</span>
+            <span className="sp-mcq-score">Score: {score}</span>
           </div>
 
-          <div className="mb-4">
-            <div className="text-lg font-medium text-gray-800">{questions[current].question}</div>
-            {timed && quizStarted && (
-              <div className="text-sm text-red-500 mt-2">Time left: {timeLeft}s</div>
-            )}
-          </div>
+          <div className="sp-mcq-question">{questions[current].question}</div>
 
-          <div className="grid gap-2">
+          {timed && quizStarted && (
+            <div className="sp-mcq-timer">Time left: {timeLeft}s</div>
+          )}
+
+          <div className="sp-mcq-options">
             {questions[current].options && questions[current].options.length ? (
               questions[current].options.map((opt, idx) => {
                 const isSelected = selected === idx;
@@ -366,43 +335,54 @@ const MCQSection = () => {
                   <button
                     key={idx}
                     onClick={() => setSelected(idx)}
-                    className={`w-full text-left px-4 py-2 rounded-md border ${isSelected ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 bg-white'} ${isCorrect ? 'border-green-600 bg-green-50' : ''} ${isWrongPick ? 'border-red-600 bg-red-50' : ''}`}
+                    className={`sp-mcq-option${isSelected ? ' selected' : ''}${isCorrect ? ' correct' : ''}${isWrongPick ? ' wrong' : ''}`}
                     disabled={showAnswer || finished}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs font-medium">{String.fromCharCode(65 + idx)}</div>
-                      <div className="text-sm text-gray-700">{typeof opt === 'string' ? opt : (opt && (opt.text ?? opt.label ?? opt.value)) || JSON.stringify(opt)}</div>
-                    </div>
+                    <span className="sp-mcq-option-badge">{String.fromCharCode(65 + idx)}</span>
+                    <span>{typeof opt === 'string' ? opt : (opt && (opt.text ?? opt.label ?? opt.value)) || JSON.stringify(opt)}</span>
                   </button>
                 );
               })
             ) : (
-              <div className="text-sm text-gray-500">No options provided for this question.</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--pp-text-muted)' }}>No options provided for this question.</div>
             )}
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="sp-mcq-actions">
             {!quizStarted && !finished && (
-              <button onClick={() => { setQuizStarted(true); setCurrent(0); setScore(0); setResults([]); }} className="px-3 py-2 bg-indigo-600 text-white rounded-md">Begin</button>
+              <button
+                onClick={() => { setQuizStarted(true); setCurrent(0); setScore(0); setResults([]); }}
+                className="sp-btn-primary"
+              >
+                Begin
+              </button>
             )}
 
             {quizStarted && !finished && (
               <>
-                <button onClick={submitAnswer} className="px-3 py-2 bg-indigo-600 text-white rounded-md" disabled={selected === null}>Submit</button>
-                {mode === 'casual' && <button onClick={nextQuestion} className="px-3 py-2 bg-gray-100 rounded-md">Next</button>}
+                <button onClick={submitAnswer} className="sp-btn-primary" disabled={selected === null}>Submit</button>
+                {mode === 'casual' && (
+                  <button onClick={nextQuestion} className="sp-btn-secondary">Next</button>
+                )}
               </>
             )}
 
             {finished && (
-              <div className="text-sm text-gray-700">Final score: {score} / {questions.length}</div>
+              <div className="sp-mcq-result">
+                Final score: <strong>{score} / {questions.length}</strong>
+              </div>
             )}
 
-            <div className="ml-auto text-sm text-gray-400">{showAnswer ? 'Answer shown' : ''}</div>
+            {showAnswer && (
+              <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--pp-text-muted)' }}>
+                Answer shown
+              </span>
+            )}
           </div>
 
           {showAnswer && (
-            <div className="mt-4 text-sm text-gray-600">
-              <div><strong>Explanation:</strong> {questions[current].explanation || '—'}</div>
+            <div className="sp-explanation">
+              <strong>Explanation:</strong> {questions[current].explanation || '—'}
             </div>
           )}
         </div>
