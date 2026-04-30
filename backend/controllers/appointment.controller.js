@@ -88,18 +88,33 @@ export const createAppointment = async (req, res) => {
 export const getAppointments = async (req, res) => {
   try {
     const filters = {};
+
     if (req.user.role === 'patient') {
       filters.patient_id = req.user.id;
-    } else if (req.user.role === 'doctor') {
-      filters.doctor_id = req.user.id;
+    } 
+    else if (req.user.role === 'doctor') {
+      const userId = req.user?.id || req.user?.sub;
+
+      const { data: doctorProfile, error } = await supabase
+        .from('doctor_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !doctorProfile) {
+        return res.status(404).json({ error: 'Doctor profile not found' });
+      }
+
+      filters.doctor_id = doctorProfile.id;
     }
+
     const appointments = await getAppointmentsService(filters);
     res.status(200).json(appointments);
+
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
-
 export const getAppointmentById = async (req, res) => {
   try {
     const appointment = await getAppointmentByIdService(req.params.id);

@@ -15,7 +15,8 @@ const NAV_ITEMS = [
   { label: "Appointments",    to: "/patient-portal/book-appointment",               Icon: CalendarDaysIcon },
   { label: "Medical History", to: "/patient-portal/medical-history",                Icon: ClipboardDocumentListIcon },
   { label: "IoT Devices",     to: "/iot",                                end: true, Icon: SignalIcon },
-  { label: "Health Queries",  to: "/patient-portal/health-queries",                 Icon: ChatBubbleLeftRightIcon },
+  { label: "Health Queries",  to: "/patient-portal/health-queries",                Icon: ChatBubbleLeftRightIcon  },
+  {label: "Prescriptions",  to: "/patient-portal/prescriptions",                Icon: ClipboardDocumentListIcon  },
 ];
 
 const PatientSidebar = () => (

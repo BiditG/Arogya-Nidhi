@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
@@ -6,99 +6,165 @@ import { AppContext } from "../context/AppContext";
 import { UserCircleIcon } from "@heroicons/react/24/outline";
 import "./PatientPortal.css";
 
-const DUMMY_APPOINTMENTS = [
-  { id: "da1", user: { name: "Bikash Shrestha" }, slotDate: "May 1, 2026", slotTime: "11:30 AM", status: "pending", type: "Follow-up" },
-  { id: "da2", user: { name: "Deepak Karki" }, slotDate: "May 3, 2026", slotTime: "4:00 PM", status: "pending", type: "New Patient" },
-  { id: "da3", user: { name: "Anita Thapa" }, slotDate: "May 1, 2026", slotTime: "10:00 AM", status: "scheduled", type: "General Checkup" },
-  { id: "da4", user: { name: "Priya Gautam" }, slotDate: "May 2, 2026", slotTime: "9:00 AM", status: "scheduled", type: "Consultation" },
-  { id: "da5", user: { name: "Rajan Adhikari" }, slotDate: "Apr 30, 2026", slotTime: "2:00 PM", status: "completed", type: "Routine Checkup", diagnosis: "Hypertension — controlled" },
-  { id: "da6", user: { name: "Sunita Poudel" }, slotDate: "Apr 29, 2026", slotTime: "3:30 PM", status: "completed", type: "Follow-up", diagnosis: "Post-surgery recovery" },
-];
-
 const DoctorAppointments = () => {
   const { token, backendUrl } = useContext(AppContext);
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const headers = token ? { Authorization: `Bearer ${token}`, dtoken: token } : {};
+  const headers = token
+    ? {
+        Authorization: `Bearer ${token}`,
+        dtoken: token,
+      }
+    : {};
 
-  const load = async () => {
+  const normalizeStatus = (status) => String(status || "").toLowerCase();
+
+  const getPatientName = (appointment) => {
+    return (
+      appointment?.patient?.users?.name ||
+      appointment?.patient?.user?.name ||
+      appointment?.patient_name ||
+      "Unknown Patient"
+    );
+  };
+
+  const getAppointmentDate = (appointment) => {
+    if (!appointment?.scheduled_at) return "—";
+
+    return new Date(appointment.scheduled_at).toLocaleDateString([], {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const getAppointmentTime = (appointment) => {
+    if (!appointment?.scheduled_at) return "—";
+
+    return new Date(appointment.scheduled_at).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getAppointmentType = (appointment) => {
+    return appointment?.type || appointment?.reason || appointment?.patient_notes || "Consultation";
+  };
+
+  const loadAppointments = useCallback(async () => {
+    if (!token) return;
+
     setLoading(true);
+
     try {
-      const { data } = await axios.get(backendUrl + "/api/doctor/appointments", { headers });
-      if (data.success) setAppointments((data.appointments || []).reverse());
+      const { data } = await axios.get(`${backendUrl}/api/doctor/appointments`, {
+        headers,
+      });
+
+      if (data?.success) {
+        setAppointments(data.appointments || []);
+      } else {
+        setAppointments([]);
+        toast.error(data?.message || "Failed to load appointments");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Load appointments error:", err);
+      setAppointments([]);
+      toast.error(err?.response?.data?.message || "Failed to load appointments");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, backendUrl]);
 
   useEffect(() => {
-    if (token) load();
-  }, [token]);
+    loadAppointments();
+  }, [loadAppointments]);
 
-  const displayList = appointments.length > 0 ? appointments : DUMMY_APPOINTMENTS;
+  const filtered = appointments.filter((appointment) => {
+    const appointmentStatus = normalizeStatus(appointment.status);
+    const patientName = getPatientName(appointment).toLowerCase();
 
-  const filtered = displayList.filter((a) => {
-    if (statusFilter && (a.status || "").toLowerCase() !== statusFilter) return false;
-    if (searchQ && !(a.user?.name || a.patient_name || "").toLowerCase().includes(searchQ.toLowerCase()))
-      return false;
+    if (statusFilter && appointmentStatus !== statusFilter) return false;
+    if (searchQ && !patientName.includes(searchQ.toLowerCase())) return false;
+
     return true;
   });
 
-  const pending = filtered.filter((a) => (a.status || "").toLowerCase() === "pending");
-  const scheduled = filtered.filter((a) => (a.status || "").toLowerCase() === "scheduled");
-  const completed = filtered.filter((a) => (a.status || "").toLowerCase() === "completed");
+  const pending = filtered.filter(
+    (appointment) => normalizeStatus(appointment.status) === "pending"
+  );
 
-  const accept = (a) => {
-    setAppointments((prev) =>
-      (prev.length > 0 ? prev : DUMMY_APPOINTMENTS).map((x) =>
-        x.id === a.id ? { ...x, status: "scheduled" } : x
-      )
-    );
-    toast.success("Appointment accepted");
-  };
+  const scheduled = filtered.filter((appointment) =>
+    ["confirmed", "scheduled"].includes(normalizeStatus(appointment.status))
+  );
 
-  const reject = async (a) => {
+  const completed = filtered.filter(
+    (appointment) => normalizeStatus(appointment.status) === "completed"
+  );
+
+  const cancelled = filtered.filter(
+    (appointment) => normalizeStatus(appointment.status) === "cancelled"
+  );
+
+  const accept = async (appointment) => {
     try {
-      const { data } = await axios.post(
-        backendUrl + "/api/doctor/cancel-appointment",
-        { appointmentId: a.id },
+      const { data } = await axios.patch(
+        `${backendUrl}/api/appointments/${appointment.id}`,
+        { status: "CONFIRMED" },
         { headers }
       );
-      if (data.success) {
-        toast.success(data.message || "Rejected");
-        load();
+
+      if (data) {
+        toast.success("Appointment accepted");
+        loadAppointments();
       }
-    } catch {
-      setAppointments((prev) =>
-        (prev.length > 0 ? prev : DUMMY_APPOINTMENTS).filter((x) => x.id !== a.id)
-      );
-      toast.success("Appointment rejected");
+    } catch (err) {
+      console.error("Accept appointment error:", err);
+      toast.error(err?.response?.data?.error || "Failed to accept appointment");
     }
   };
 
-  const complete = async (a) => {
+  const reject = async (appointment) => {
     try {
       const { data } = await axios.post(
-        backendUrl + "/api/doctor/complete-appointment",
-        { appointmentId: a.id },
+        `${backendUrl}/api/doctor/cancel-appointment`,
+        { appointmentId: appointment.id },
         { headers }
       );
-      if (data.success) {
-        toast.success(data.message || "Marked completed");
-        load();
+
+      if (data?.success) {
+        toast.success(data.message || "Appointment rejected");
+        loadAppointments();
+      } else {
+        toast.error(data?.message || "Failed to reject appointment");
       }
-    } catch {
-      setAppointments((prev) =>
-        (prev.length > 0 ? prev : DUMMY_APPOINTMENTS).map((x) =>
-          x.id === a.id ? { ...x, status: "completed" } : x
-        )
+    } catch (err) {
+      console.error("Reject appointment error:", err);
+      toast.error(err?.response?.data?.message || "Failed to reject appointment");
+    }
+  };
+
+  const complete = async (appointment) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/doctor/complete-appointment`,
+        { appointmentId: appointment.id },
+        { headers }
       );
-      toast.success("Marked as completed");
+
+      if (data?.success) {
+        toast.success(data.message || "Appointment marked completed");
+        loadAppointments();
+      } else {
+        toast.error(data?.message || "Failed to complete appointment");
+      }
+    } catch (err) {
+      console.error("Complete appointment error:", err);
+      toast.error(err?.response?.data?.message || "Failed to complete appointment");
     }
   };
 
@@ -106,6 +172,7 @@ const DoctorAppointments = () => {
     <div className="pp-page">
       <div className="pp-container">
         <DoctorSidebar />
+
         <main className="pp-main-content">
           <p className="pp-welcome">Manage Appointments</p>
 
@@ -117,6 +184,7 @@ const DoctorAppointments = () => {
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
               />
+
               <select
                 className="pp-chat-input"
                 value={statusFilter}
@@ -124,10 +192,11 @@ const DoctorAppointments = () => {
               >
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
-                <option value="scheduled">Scheduled</option>
+                <option value="confirmed">Scheduled</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
+
               {statusFilter && (
                 <button
                   className="pp-btn pp-btn-outline pp-btn-sm"
@@ -136,11 +205,19 @@ const DoctorAppointments = () => {
                   Clear
                 </button>
               )}
+
+              <button
+                className="pp-btn pp-btn-outline pp-btn-sm"
+                onClick={loadAppointments}
+              >
+                Refresh
+              </button>
             </div>
           </section>
 
           <section className="pp-section">
             <h2 className="pp-section-title">Pending Requests</h2>
+
             {loading ? (
               <div className="pp-appointment-list">
                 <div className="pp-appointment-item">
@@ -153,30 +230,47 @@ const DoctorAppointments = () => {
               <div className="pp-appointment-list">
                 <div className="pp-appointment-item">
                   <div className="pp-appointment-info">
-                    <div className="pp-appointment-title">No pending requests</div>
+                    <div className="pp-appointment-title">
+                      No pending requests
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="pp-appointment-list">
-                {pending.map((a) => (
-                  <div key={a.id || a._id} className="pp-appointment-item">
+                {pending.map((appointment) => (
+                  <div
+                    key={appointment.id || appointment._id}
+                    className="pp-appointment-item"
+                  >
                     <div className="pp-appointment-icon">
                       <UserCircleIcon style={{ width: 22, height: 22 }} />
                     </div>
+
                     <div className="pp-appointment-info">
                       <div className="pp-appointment-title">
-                        {a.user?.name || a.patient_name || "Unknown"}
+                        {getPatientName(appointment)}
                       </div>
+
                       <div className="pp-appointment-meta">
-                        {a.slotDate || a.date} {a.slotTime || a.time} · {a.type || "Consultation"}
+                        {getAppointmentDate(appointment)}{" "}
+                        {getAppointmentTime(appointment)} ·{" "}
+                        {getAppointmentType(appointment)}
                       </div>
                     </div>
+
                     <div className="pp-appointment-actions">
-                      <button className="pp-btn pp-btn-primary pp-btn-sm" onClick={() => accept(a)}>
+                      <button
+                        className="pp-btn pp-btn-primary pp-btn-sm"
+                        onClick={() => accept(appointment)}
+                      >
                         Accept
                       </button>
-                      <button className="pp-btn pp-btn-outline pp-btn-sm" onClick={() => reject(a)}>
+
+                      <button
+                        className="pp-btn pp-btn-outline pp-btn-sm"
+                        onClick={() => reject(appointment)}
+                      >
                         Reject
                       </button>
                     </div>
@@ -188,6 +282,7 @@ const DoctorAppointments = () => {
 
           <section className="pp-section">
             <h2 className="pp-section-title">Scheduled Appointments</h2>
+
             <div className="pp-table-container">
               <table className="pp-table">
                 <thead>
@@ -196,27 +291,33 @@ const DoctorAppointments = () => {
                     <th>Date</th>
                     <th>Time</th>
                     <th>Type</th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {scheduled.length === 0 ? (
                     <tr>
-                      <td colSpan={5}>No scheduled appointments.</td>
+                      <td colSpan={6}>No scheduled appointments.</td>
                     </tr>
                   ) : (
-                    scheduled.map((a) => (
-                      <tr key={a.id || a._id}>
-                        <td>{a.user?.name || a.patient_name || "—"}</td>
-                        <td>{a.slotDate || a.date || "—"}</td>
-                        <td>{a.slotTime || a.time || "—"}</td>
-                        <td>{a.type || "—"}</td>
+                    scheduled.map((appointment) => (
+                      <tr key={appointment.id || appointment._id}>
+                        <td>{getPatientName(appointment)}</td>
+                        <td>{getAppointmentDate(appointment)}</td>
+                        <td>{getAppointmentTime(appointment)}</td>
+                        <td>{getAppointmentType(appointment)}</td>
+                        <td>{appointment.status}</td>
                         <td>
                           <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
+                            <button className="pp-btn pp-btn-outline pp-btn-sm">
+                              View
+                            </button>
+
                             <button
                               className="pp-btn pp-btn-primary pp-btn-sm"
-                              onClick={() => complete(a)}
+                              onClick={() => complete(appointment)}
                             >
                               Complete
                             </button>
@@ -232,32 +333,38 @@ const DoctorAppointments = () => {
 
           <section className="pp-section">
             <h2 className="pp-section-title">Completed</h2>
+
             <div className="pp-table-container">
               <table className="pp-table">
                 <thead>
                   <tr>
                     <th>Patient</th>
                     <th>Date</th>
+                    <th>Time</th>
                     <th>Type</th>
                     <th>Diagnosis</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {completed.length === 0 ? (
                     <tr>
-                      <td colSpan={5}>No completed appointments.</td>
+                      <td colSpan={6}>No completed appointments.</td>
                     </tr>
                   ) : (
-                    completed.map((a) => (
-                      <tr key={a.id || a._id}>
-                        <td>{a.user?.name || a.patient_name || "—"}</td>
-                        <td>{a.slotDate || a.date || "—"}</td>
-                        <td>{a.type || "—"}</td>
-                        <td>{a.diagnosis || "—"}</td>
+                    completed.map((appointment) => (
+                      <tr key={appointment.id || appointment._id}>
+                        <td>{getPatientName(appointment)}</td>
+                        <td>{getAppointmentDate(appointment)}</td>
+                        <td>{getAppointmentTime(appointment)}</td>
+                        <td>{getAppointmentType(appointment)}</td>
+                        <td>{appointment.diagnosis || "—"}</td>
                         <td>
                           <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
+                            <button className="pp-btn pp-btn-outline pp-btn-sm">
+                              View
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -267,6 +374,38 @@ const DoctorAppointments = () => {
               </table>
             </div>
           </section>
+
+          {cancelled.length > 0 && (
+            <section className="pp-section">
+              <h2 className="pp-section-title">Cancelled</h2>
+
+              <div className="pp-table-container">
+                <table className="pp-table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {cancelled.map((appointment) => (
+                      <tr key={appointment.id || appointment._id}>
+                        <td>{getPatientName(appointment)}</td>
+                        <td>{getAppointmentDate(appointment)}</td>
+                        <td>{getAppointmentTime(appointment)}</td>
+                        <td>{getAppointmentType(appointment)}</td>
+                        <td>{appointment.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
         </main>
       </div>
     </div>

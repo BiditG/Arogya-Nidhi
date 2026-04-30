@@ -291,6 +291,10 @@
 .ba-specialist-card {
   background: var(--ba-surface);
   border: 1px solid var(--ba-border);
+  
+  .ba-container {
+    margin-left: 0;
+    width: 100%;
   border-radius: 0.5rem;
   padding: 1.25rem;
   text-align: center;

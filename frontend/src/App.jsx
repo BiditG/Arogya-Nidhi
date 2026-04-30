@@ -39,6 +39,9 @@ import DoctorProfile from "./pages/DoctorProfile";
 import StudentPortal from "./pages/StudentPortal";
 import AdminPortal from "./pages/AdminPortal";
 import Payment from "./pages/Payment";
+import PatientPrescriptions from "./pages/PatientPrescriptions";
+
+
 
 const App = () => {
   const location = useLocation();
@@ -48,6 +51,8 @@ const App = () => {
     location.pathname.startsWith("/student-portal") ||
     location.pathname.startsWith("/admin-portal") ||
     location.pathname === "/iot";
+
+
 
   return (
     <div className={isPatientPortalRoute ? "min-h-screen" : "mx-4 sm:mx-[10%]"}>
@@ -61,6 +66,9 @@ const App = () => {
         <Route path="/chat" element={<Chat />} />
         <Route path="/public-queries" element={<PublicChat />} />
         <Route path="/public-queries/:id" element={<PublicChatDetail />} />
+        <Route
+          path="/patient-portal/prescriptions"
+          element={<PatientPrescriptions />}/>
         <Route path="/login" element={<Login />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />

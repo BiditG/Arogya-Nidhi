@@ -122,7 +122,7 @@ async function getUpcomingAppointments(patientId, { page = 1, limit = 10 } = {})
   const offset = (page - 1) * limit;
   const base = supabase
     .from('appointments')
-      .select(`*, doctor:doctor_profiles(id,specialty,consultation_fee:consultationFee, user:users(name,avatar_url)), consultation_summary:consultation_summaries(diagnosis,prescription,followup_date:followUpDate), payment:payments(status,amount,currency)`, { count: 'exact' })
+      .select(`*, doctor:doctor_profiles(id,specialty,consultation_fee:consultationFee, user:users(name,avatar_url)), consultation_summary:consultation_summaries(diagnosis,prescription,follow_up_date:followUpDate), payment:payments(status,amount,currency)`, { count: 'exact' })
     .eq('patient_id', patientId)
     .gte('scheduled_at', now)
     .in('status', ['pending', 'confirmed'])
@@ -223,7 +223,7 @@ async function getMedicalHistory(patientId, { page = 1, limit = 10 } = {}) {
   const offset = (page - 1) * limit;
   const { data, count, error } = await supabase
     .from('appointments')
-    .select(`*, doctor:doctor_profiles(specialty, user:users(name,avatar_url)), consultation_summary:consultation_summaries(ai_summary:aiSummary,doctor_notes:doctorNotes,diagnosis,prescription,followup_date:followUpDate,created_at:createdAt)`, { count: 'exact' })
+    .select(`*, doctor:doctor_profiles(specialty, user:users(name,avatar_url)), consultation_summary:consultation_summaries(ai_summary:aiSummary,doctor_notes:doctorNotes,diagnosis,prescription,follow_up_date:followUpDate,created_at:createdAt)`, { count: 'exact' })
     .eq('patient_id', patientId)
     .eq('status', 'completed')
     .not('consultation_summary', 'is', null)
@@ -236,7 +236,7 @@ async function getMedicalHistory(patientId, { page = 1, limit = 10 } = {}) {
 async function getRecentMedicalHistory(patientId, take = 3) {
   const { data, error } = await supabase
     .from('appointments')
-    .select(`*, doctor:doctor_profiles(specialty, user:users(name,avatar_url)), consultation_summary:consultation_summaries(diagnosis,prescription,followup_date:followUpDate,created_at:createdAt)`) 
+    .select(`*, doctor:doctor_profiles(specialty, user:users(name,avatar_url)), consultation_summary:consultation_summaries(diagnosis,prescription,follow_up_date:followUpDate,created_at:createdAt)`) 
     .eq('patient_id', patientId)
     .eq('status', 'completed')
     .not('consultation_summary', 'is', null)
@@ -281,7 +281,7 @@ async function getPatientQueries(patientId, { page = 1, limit = 10, isResolved }
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:createdAt, doctor:doctor_profiles(specialty, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(specialty, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .eq('patient_id', patientId)
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
@@ -293,7 +293,7 @@ async function getPatientQueries(patientId, { page = 1, limit = 10, isResolved }
 async function findQueryById(id, patientId) {
   const { data, error } = await supabase
     .from('patient_queries')
-      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:createdAt, doctor:doctor_profiles(id,specialty,isVerified:isVerified, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
+      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,isVerified:isVerified, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
     .eq('id', id)
     .eq('patient_id', patientId)
     .maybeSingle();
@@ -347,7 +347,7 @@ async function getAllQueriesForDoctor({ page = 1, limit = 10, isResolved } = {})
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-      .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+      .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
   const { data, count, error } = await query.range(offset, offset + limit - 1);
@@ -359,7 +359,7 @@ async function getPublicQueries({ page = 1, limit = 10, isResolved } = {}) {
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
   const { data, count, error } = await query.range(offset, offset + limit - 1);
@@ -370,7 +370,7 @@ async function getPublicQueries({ page = 1, limit = 10, isResolved } = {}) {
 async function findQueryByIdForDoctor(id) {
   const { data, error } = await supabase
     .from('patient_queries')
-    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
+    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

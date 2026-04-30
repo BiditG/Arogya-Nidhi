@@ -17,6 +17,9 @@ import { attachTwilioConversationRelayServer } from "./services/twilioConversati
 import publicRoutes from "./routes/public.routes.js"
 import studentsRoutes from "./routes/studentsRoute.js"
 import appointmentRoutes from "./routes/appointment.route.js"
+import consultationSummaryRoute from "./routes/consultationSummary.route.js";
+
+
 
 const app = express();
 
@@ -24,6 +27,7 @@ const app = express();
 
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'], credentials: true }));
 app.use(express.json());
+app.use("/api/consultation-summaries", consultationSummaryRoute);
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
