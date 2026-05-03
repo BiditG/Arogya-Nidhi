@@ -89,12 +89,16 @@ export const getAppointments = async (req, res) => {
   try {
     const filters = {};
 
-    if (req.user.role === 'patient') {
-      filters.patient_id = req.user.id;
-    } 
-    else if (req.user.role === 'doctor') {
-      const userId = req.user?.id || req.user?.sub;
+    const userId = req.user?.userId || req.user?.id || req.user?.sub || null;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
 
+    if (req.query?.status) {
+      filters.status = req.query.status;
+    }
+
+    if (req.user?.role === 'doctor') {
       const { data: doctorProfile, error } = await supabase
         .from('doctor_profiles')
         .select('id')
@@ -106,6 +110,12 @@ export const getAppointments = async (req, res) => {
       }
 
       filters.doctor_id = doctorProfile.id;
+    } else {
+      const patient = await patientRepo.findPatientByUserId(userId);
+      if (!patient) {
+        return res.status(404).json({ error: 'Patient profile not found' });
+      }
+      filters.patient_id = patient.id;
     }
 
     const appointments = await getAppointmentsService(filters);
