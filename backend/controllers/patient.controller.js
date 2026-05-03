@@ -1,5 +1,4 @@
 import repo from '../repository/patient.repository.js';
-import { generateBarcodeValue } from '../util/barcode.util.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -13,9 +12,17 @@ function forbidden() {
   return { status: 403, message: 'Access denied' };
 }
 
+function requireAuthUserId(req) {
+  const userId = req.user?.userId || req.user?.id || req.user?.sub || null;
+  if (!userId) throw { status: 401, message: 'User id not found in token' };
+  return userId;
+}
+
 async function _requirePatient(userId) {
-  const patient = await repo.findPatientByUserId(userId);
-  if (!patient) throw notFound('Patient profile');
+  let patient = await repo.findPatientByUserId(userId);
+  if (!patient) {
+    patient = await repo.createPatient({ user_id: userId });
+  }
   return patient;
 }
 
@@ -43,21 +50,6 @@ function _deleteFile(filePath) {
 
 async function _getProfile(userId) {
   const patient = await _requirePatient(userId);
-  if (patient?.user && !patient.user.barcode) {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const candidate = generateBarcodeValue();
-      try {
-        const updatedUser = await repo.updateUserProfile(userId, { barcode: candidate });
-        patient.user = { ...patient.user, ...updatedUser };
-        break;
-      } catch (err) {
-        const message = String(err?.message || '').toLowerCase();
-        if (!message.includes('duplicate') && !message.includes('unique')) {
-          throw err;
-        }
-      }
-    }
-  }
   return patient;
 }
 
@@ -107,10 +99,10 @@ async function _updateHealthInfo(userId, body) {
   if (allergies !== undefined)          data.allergies = allergies;
   if (chronicConditions !== undefined)  data.chronicConditions = chronicConditions;
   if (currentMedications !== undefined) data.currentMedications = currentMedications;
-  if (medicalHistory !== undefined)     data.medicalHistory = medicalHistory;
-  if (bloodGroup !== undefined)         data.bloodGroup = bloodGroup;
+  if (medicalHistory !== undefined)     data.medical_history = medicalHistory;
+  if (bloodGroup !== undefined)         data.blood_group = bloodGroup;
   if (gender !== undefined)             data.gender = gender;
-  if (dateOfBirth !== undefined)        data.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+  if (dateOfBirth !== undefined)        data.date_of_birth = dateOfBirth ? new Date(dateOfBirth) : null;
 
   if (!Object.keys(data).length) throw { status: 400, message: 'No health fields provided' };
 
@@ -295,53 +287,54 @@ const handleRequest = async (res, action) => {
 };
 
 export const getProfile = (req, res) =>
-  handleRequest(res, () => _getProfile(req.user.userId));
+  handleRequest(res, () => _getProfile(requireAuthUserId(req)));
 
 export const updateBasicProfile = (req, res) =>
-  handleRequest(res, () => _updateBasicProfile(req.user.userId, req.body));
+  handleRequest(res, () => _updateBasicProfile(requireAuthUserId(req), req.body));
 
 export const updateAvatar = (req, res) =>
-  handleRequest(res, () => _updateAvatar(req.user.userId, req.file));
+  handleRequest(res, () => _updateAvatar(requireAuthUserId(req), req.file));
 
 export const updateHealthInfo = (req, res) =>
-  handleRequest(res, () => _updateHealthInfo(req.user.userId, req.body));
+  handleRequest(res, () => _updateHealthInfo(requireAuthUserId(req), req.body));
 
 export const getEmergencyContacts = (req, res) =>
-  handleRequest(res, () => _getEmergencyContacts(req.user.userId));
+  handleRequest(res, () => _getEmergencyContacts(requireAuthUserId(req)));
 
 export const createEmergencyContact = (req, res) =>
-  handleRequest(res, () => _createEmergencyContact(req.user.userId, req.body));
+  handleRequest(res, () => _createEmergencyContact(requireAuthUserId(req), req.body));
 
 export const updateEmergencyContact = (req, res) =>
-  handleRequest(res, () => _updateEmergencyContact(req.user.userId, req.params.id, req.body));
+  handleRequest(res, () => _updateEmergencyContact(requireAuthUserId(req), req.params.id, req.body));
 
 export const deleteEmergencyContact = (req, res) =>
-  handleRequest(res, () => _deleteEmergencyContact(req.user.userId, req.params.id));
+  handleRequest(res, () => _deleteEmergencyContact(requireAuthUserId(req), req.params.id));
 
 export const getAddress = (req, res) =>
-  handleRequest(res, () => _getAddress(req.user.userId));
+  handleRequest(res, () => _getAddress(requireAuthUserId(req)));
 
 export const upsertAddress = (req, res) =>
-  handleRequest(res, () => _upsertAddress(req.user.userId, req.body));
+  handleRequest(res, () => _upsertAddress(requireAuthUserId(req), req.body));
 
 export const getReports = (req, res) =>
-  handleRequest(res, () => _getReports(req.user.userId, req.query));
+  handleRequest(res, () => _getReports(requireAuthUserId(req), req.query));
 
 export const uploadReport = (req, res) =>
-  handleRequest(res, () => _uploadReport(req.user.userId, req.file, req.body));
+  handleRequest(res, () => _uploadReport(requireAuthUserId(req), req.file, req.body));
 
 export const getReportById = (req, res) =>
-  handleRequest(res, () => _getReportById(req.user.userId, req.params.id));
+  handleRequest(res, () => _getReportById(requireAuthUserId(req), req.params.id));
 
 export const updateReport = (req, res) =>
-  handleRequest(res, () => _updateReport(req.user.userId, req.params.id, req.body));
+  handleRequest(res, () => _updateReport(requireAuthUserId(req), req.params.id, req.body));
 
 export const deleteReport = (req, res) =>
-  handleRequest(res, () => _deleteReport(req.user.userId, req.params.id));
+  handleRequest(res, () => _deleteReport(requireAuthUserId(req), req.params.id));
 
 export const downloadReport = async (req, res) => {
   try {
-    const { filePath, fileName, mimeType } = await _downloadReport(req.user.userId, req.params.id);
+    const userId = requireAuthUserId(req);
+    const { filePath, fileName, mimeType } = await _downloadReport(userId, req.params.id);
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.setHeader('Content-Type', mimeType);
     const fileStream = fs.createReadStream(filePath);

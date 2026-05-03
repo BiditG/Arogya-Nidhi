@@ -386,15 +386,111 @@
   border-top: 1px solid var(--mh-border-light);
 }
 
-/* ─── Empty / No-match state ──────────────────────────────────────── */
-.mh-empty-state {
+.mh-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.mh-loading {
   text-align: center;
   padding: 3rem 2rem;
   color: var(--mh-text-muted);
   font-size: 0.875rem;
+}
+
+/* ─── Content Sections ────────────────────────────────────────────── */
+.mh-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.mh-section {
   background: var(--mh-surface);
   border: 1px solid var(--mh-border);
   border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--mh-shadow-sm);
+}
+
+.mh-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--mh-text-primary);
+  margin-bottom: 1rem;
+}
+
+.mh-info-box {
+  background: var(--mh-background);
+  border: 1px solid var(--mh-border-light);
+  border-radius: 0.375rem;
+  padding: 1rem;
+}
+
+.mh-info-text {
+  font-size: 0.875rem;
+  color: var(--mh-text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.mh-info-empty {
+  font-size: 0.875rem;
+  color: var(--mh-text-muted);
+  font-style: italic;
+}
+
+/* ─── Edit Form ───────────────────────────────────────────────────── */
+.mh-edit-form {
+  background: var(--mh-surface);
+  border: 1px solid var(--mh-border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: var(--mh-shadow-sm);
+}
+
+.mh-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.mh-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.mh-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--mh-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.mh-form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--mh-border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+
+.mh-form-textarea:focus {
+  border-color: var(--mh-primary);
+}
+
+.mh-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--mh-border-light);
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────── */

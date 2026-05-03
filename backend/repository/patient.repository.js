@@ -57,6 +57,13 @@ async function updatePatientProfile(userId, data) {
   return updated;
 }
 
+// Create patient profile
+async function createPatient(data) {
+  const { data: created, error } = await supabase.from('patients').insert(data).select().maybeSingle();
+  if (error) throw error;
+  return created;
+}
+
 // ─── Emergency Contact ────────────────────────────────────────────────────────
 
 async function findEmergencyContactsByPatient(patientId) {
@@ -175,6 +182,7 @@ export default {
   findPatientById,
   updateUserProfile,
   updatePatientProfile,
+  createPatient,
   // emergency contacts
   findEmergencyContactsByPatient,
   findEmergencyContactById,

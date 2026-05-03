@@ -20,7 +20,7 @@ export async function authenticate(req, res, next) {
     // If the app JWT doesn't include a role, try to resolve from local users table
     if (!req.user.role) {
       try {
-        const id = payload?.id || payload?.sub || payload?.userId || null;
+        const id = payload?.userId || payload?.id || payload?.sub || null;
         if (id) {
           const user = await repo.findUserById(id);
           if (user && user.role) {

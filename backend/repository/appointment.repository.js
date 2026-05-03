@@ -27,6 +27,13 @@ export const getAppointments = async (filters) => {
   if (filters.doctor_id) {
     query = query.eq('doctor_id', filters.doctor_id);
   }
+  if (filters.status) {
+    const rawStatus = String(filters.status || '').trim();
+    const lower = rawStatus.toLowerCase();
+    const upper = rawStatus.toUpperCase();
+    const statuses = Array.from(new Set([rawStatus, lower, upper].filter(Boolean)));
+    query = query.in('status', statuses);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
