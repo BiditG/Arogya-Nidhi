@@ -281,7 +281,7 @@ async function getPatientQueries(patientId, { page = 1, limit = 10, isResolved }
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(specialty, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+      .select(`*, responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(specialty, user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .eq('patient_id', patientId)
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
@@ -377,7 +377,7 @@ async function getAllQueriesForDoctor({ page = 1, limit = 10, isResolved } = {})
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-      .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+      .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
   const { data, count, error } = await query.range(offset, offset + limit - 1);
@@ -389,7 +389,7 @@ async function getPublicQueries({ page = 1, limit = 10, isResolved } = {}) {
   const offset = (page - 1) * limit;
   let query = supabase
     .from('patient_queries')
-    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
+    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`, { count: 'exact' })
     .order('created_at', { ascending: false });
   if (isResolved !== undefined) query = query.eq('is_resolved', isResolved);
   const { data, count, error } = await query.range(offset, offset + limit - 1);
@@ -400,7 +400,7 @@ async function getPublicQueries({ page = 1, limit = 10, isResolved } = {}) {
 async function findQueryByIdForDoctor(id) {
   const { data, error } = await supabase
     .from('patient_queries')
-    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,created_at:createdAt, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
+    .select(`*, patient:patients(id, user:users(id,name,avatar_url)), responses:query_responses(id,responseText:response_text,isAccepted:is_accepted,createdAt:created_at, doctor:doctor_profiles(id,specialty,user:users(name,avatar_url))), triage_decision:triage_decisions(*)`)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;

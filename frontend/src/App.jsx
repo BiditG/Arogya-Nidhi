@@ -50,12 +50,13 @@ const App = () => {
     location.pathname.startsWith("/doctor-portal") ||
     location.pathname.startsWith("/student-portal") ||
     location.pathname.startsWith("/admin-portal") ||
+    location.pathname.startsWith("/public-queries") ||
     location.pathname === "/iot";
 
 
 
   return (
-    <div className={isPatientPortalRoute ? "min-h-screen" : "mx-4 sm:mx-[10%]"}>
+    <div className="min-h-screen w-full">
       <ToastContainer />
       <Navbar />
       <ScrollToTop />
@@ -134,7 +135,7 @@ const App = () => {
 
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {!isPatientPortalRoute && <Footer />}
+      {(!isPatientPortalRoute || location.pathname.startsWith("/public-queries")) && <Footer />}
 
     </div>
   );

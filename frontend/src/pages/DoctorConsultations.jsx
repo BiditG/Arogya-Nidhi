@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext, useCallback } from "react";
+import { useEffect, useState, useContext, useCallback, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
@@ -13,6 +13,449 @@ const FORM_FIELDS = [
   { label: "Recommended Tests", key: "recommendedTests", rows: 2 },
   { label: "Follow-up Date", key: "followUp", rows: 1 },
 ];
+
+// ─── IoT Device Panel ─────────────────────────────────────────────────────────
+
+const scoreColor = (score) => {
+  if (score == null) return { bar: "#93c5fd", text: "#1e40af", bg: "#eff6ff", label: "No data" };
+  if (score >= 75) return { bar: "#34d399", text: "#065f46", bg: "#ecfdf5", label: "Normal" };
+  if (score >= 50) return { bar: "#fbbf24", text: "#92400e", bg: "#fffbeb", label: "Moderate" };
+  return { bar: "#f87171", text: "#991b1b", bg: "#fef2f2", label: "Needs Review" };
+};
+
+const ScoreArc = ({ score }) => {
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const pct = score != null ? Math.min(score, 100) / 100 : 0;
+  const dash = circ * pct;
+  const col = scoreColor(score);
+  return (
+    <svg width="72" height="72" viewBox="0 0 72 72" style={{ display: "block" }}>
+      <circle cx="36" cy="36" r={r} fill="none" stroke="#e2e8f0" strokeWidth="7" />
+      <circle
+        cx="36" cy="36" r={r} fill="none"
+        stroke={col.bar} strokeWidth="7"
+        strokeDasharray={`${dash} ${circ}`}
+        strokeLinecap="round"
+        transform="rotate(-90 36 36)"
+        style={{ transition: "stroke-dasharray 0.8s cubic-bezier(.4,0,.2,1)" }}
+      />
+      <text x="36" y="39" textAnchor="middle" fontSize="13" fontWeight="700" fill={col.text}>
+        {score != null ? score : "—"}
+      </text>
+    </svg>
+  );
+};
+
+const InteractiveChart = ({ items, maxVal, barColor, tooltipFn, height = 96 }) => {
+  const [hovered, setHovered] = useState(null);
+  const [tooltip, setTooltip] = useState({ x: 0, y: 0, text: "" });
+  const containerRef = useRef(null);
+
+  const handleMouseMove = (e, idx, item) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setHovered(idx);
+    setTooltip({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      text: tooltipFn(item, idx),
+    });
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        display: "flex",
+        gap: 4,
+        alignItems: "flex-end",
+        height,
+        padding: "8px 0 0",
+        overflow: "visible",
+      }}
+    >
+      {items.map((item, idx) => {
+        const val = typeof item === "object" ? item.val : item;
+        const pct = maxVal > 0 ? Math.min(val / maxVal, 1) : 0;
+        const isHov = hovered === idx;
+        const col = typeof barColor === "function" ? barColor(item, idx) : barColor;
+        return (
+          <div
+            key={idx}
+            style={{
+              flex: 1,
+              height: `${Math.max(pct * (height - 16), 4)}px`,
+              background: isHov ? col.hover : col.normal,
+              borderRadius: "3px 3px 0 0",
+              cursor: "pointer",
+              transition: "height 0.5s cubic-bezier(.4,0,.2,1), background 0.15s",
+              animationDelay: `${idx * 40}ms`,
+              boxShadow: isHov ? `0 0 0 2px ${col.hover}55` : "none",
+              transform: isHov ? "scaleX(1.12)" : "scaleX(1)",
+              transformOrigin: "bottom",
+            }}
+            onMouseMove={(e) => handleMouseMove(e, idx, item)}
+            onMouseLeave={() => setHovered(null)}
+          />
+        );
+      })}
+      {hovered !== null && (
+        <div
+          style={{
+            position: "absolute",
+            left: Math.min(tooltip.x + 10, (containerRef.current?.offsetWidth || 200) - 90),
+            top: Math.max(tooltip.y - 36, 0),
+            background: "#0f172a",
+            color: "#f8fafc",
+            fontSize: "0.6875rem",
+            fontWeight: 600,
+            padding: "4px 10px",
+            borderRadius: 6,
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+            zIndex: 20,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const IoTDevicePanel = ({ patientId, backendUrl, token }) => {
+  const [tab, setTab] = useState("tremor"); // tremor | reaction
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    if (!token || !patientId) return;
+    setLoading(true);
+    axios
+      .get(`${backendUrl}/api/doctor/patient-iot/${patientId}`, {
+        headers: { Authorization: `Bearer ${token}`, dtoken: token },
+      })
+      .then(({ data }) => {
+        if (data?.success) {
+          const arr = Array.isArray(data.data) ? data.data : data.data?.readings || [];
+          setResults(arr);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [patientId, backendUrl, token]);
+
+  // Separate into test types
+  const tremorItems = results.filter((r) => r.sensorData?.test === "tremor_analysis").slice(0, 15);
+  const reactionItems = results.filter((r) => r.sensorData?.test === "reaction_time").slice(0, 15);
+  const activeItems = tab === "tremor" ? tremorItems : reactionItems;
+
+  // Build chart bars
+  const tremorBars = tremorItems.map((r) => ({
+    val: parseFloat(r.sensorData?.amplitude || 0),
+    score: r.resultScore,
+    date: r.createdAt,
+    label: `${r.sensorData?.amplitude}u amplitude`,
+  }));
+
+  const reactionBars = reactionItems.map((r) => ({
+    val: r.sensorData?.reactionTimeMs || 0,
+    score: r.resultScore,
+    date: r.createdAt,
+    label: `${r.sensorData?.reactionTimeMs}ms`,
+  }));
+
+  // Fallback demo bars when no real data
+  const demoTremorBars = [0.3, 0.6, 0.4, 0.8, 0.5, 0.3, 0.7, 0.4, 0.6, 0.5, 0.4, 0.7].map(
+    (v, i) => ({ val: v, score: Math.round(80 - v * 20), date: null, label: `Sample ${i + 1}` })
+  );
+  const demoReactionBars = [320, 280, 310, 260, 295, 340, 275, 300, 285, 310, 265, 290].map(
+    (v, i) => ({ val: v, score: Math.max(0, Math.round(100 - (v - 150) / 5)), date: null, label: `${v}ms` })
+  );
+
+  const chartBars = tab === "tremor"
+    ? (tremorBars.length ? tremorBars : demoTremorBars)
+    : (reactionBars.length ? reactionBars : demoReactionBars);
+
+  const maxVal = Math.max(...chartBars.map((b) => b.val), 0.001);
+
+  // Latest result stats
+  const latestTremor = tremorItems[0];
+  const latestReaction = reactionItems[0];
+  const latestScore = tab === "tremor" ? latestTremor?.resultScore : latestReaction?.resultScore;
+  const latestScoreCol = scoreColor(latestScore);
+
+  const avgReactionMs = reactionItems.length
+    ? Math.round(reactionItems.reduce((s, r) => s + (r.sensorData?.reactionTimeMs || 0), 0) / reactionItems.length)
+    : null;
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null;
+
+  const barColorFn = () => {
+    // Keep the original site blue palette for bars — score coloring only on the arc
+    return { normal: "#dbeafe", hover: "#93c5fd" };
+  };
+
+  const tooltipFn = (item) => {
+    const parts = [item.label];
+    if (item.score != null) parts.push(`Score: ${item.score}/100`);
+    if (item.date) parts.push(fmtDate(item.date));
+    return parts.join(" · ");
+  };
+
+  return (
+    <>
+      <div style={{
+        background: "var(--pp-surface)",
+        border: "1px solid var(--pp-border)",
+        borderRadius: "0.5rem",
+        boxShadow: "var(--pp-shadow-sm)",
+        overflow: "hidden",
+      }}>
+        {/* Header + Tabs */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "1rem 1.25rem 0",
+          borderBottom: "1px solid var(--pp-border)",
+        }}>
+          <div style={{ display: "flex", gap: 0 }}>
+            {["tremor", "reaction"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  border: "none",
+                  borderBottom: tab === t ? "2px solid var(--pp-primary)" : "2px solid transparent",
+                  background: "transparent",
+                  color: tab === t ? "var(--pp-primary)" : "var(--pp-text-muted)",
+                  cursor: "pointer",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  transition: "color 0.15s, border-color 0.15s",
+                  marginBottom: -1,
+                }}
+              >
+                {t === "tremor" ? "Tremor Analysis" : "Reaction Time"}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, paddingBottom: "0.75rem" }}>
+            {loading && (
+              <span style={{ fontSize: "0.6875rem", color: "var(--pp-text-muted)", alignSelf: "center" }}>Loading…</span>
+            )}
+            {activeItems.length === 0 && !loading && (
+              <span style={{
+                fontSize: "0.6875rem",
+                padding: "0.25rem 0.625rem",
+                borderRadius: 9999,
+                background: "#f1f5f9",
+                color: "var(--pp-text-muted)",
+                fontWeight: 600,
+              }}>Demo data</span>
+            )}
+            <button
+              className="pp-btn pp-btn-outline pp-btn-sm"
+              onClick={() => setShowModal(true)}
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+
+        {/* Chart + Score */}
+        <div style={{ display: "flex", gap: 0, padding: "1.25rem" }}>
+          {/* Bar Chart */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <InteractiveChart
+              items={chartBars}
+              maxVal={maxVal}
+              barColor={barColorFn}
+              tooltipFn={tooltipFn}
+              height={112}
+            />
+            {/* X-axis labels */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 4,
+              paddingBottom: 2,
+            }}>
+              {chartBars.filter((_, i) => i === 0 || i === Math.floor(chartBars.length / 2) || i === chartBars.length - 1).map((b, i) => (
+                <span key={i} style={{ fontSize: "0.625rem", color: "var(--pp-text-muted)" }}>
+                  {b.date ? fmtDate(b.date) : (i === 0 ? "Oldest" : i === 1 ? "Mid" : "Latest")}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Score Panel */}
+          <div style={{
+            width: 140,
+            flexShrink: 0,
+            marginLeft: 20,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            background: latestScoreCol.bg,
+            borderRadius: 8,
+            padding: "1rem",
+            border: `1px solid ${latestScoreCol.bar}55`,
+          }}>
+            <ScoreArc score={latestScore} />
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "0.6875rem", fontWeight: 700, color: latestScoreCol.text, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {latestScoreCol.label}
+              </div>
+              {tab === "tremor" && latestTremor && (
+                <div style={{ fontSize: "0.75rem", color: "var(--pp-text-secondary)", marginTop: 2 }}>
+                  Amp: {latestTremor.sensorData?.amplitude}u
+                </div>
+              )}
+              {tab === "reaction" && avgReactionMs && (
+                <div style={{ fontSize: "0.75rem", color: "var(--pp-text-secondary)", marginTop: 2 }}>
+                  Avg: {avgReactionMs}ms
+                </div>
+              )}
+              <div style={{ fontSize: "0.6875rem", color: "var(--pp-text-muted)", marginTop: 4 }}>
+                {activeItems.length > 0 ? `${activeItems.length} reading${activeItems.length !== 1 ? "s" : ""}` : "No data yet"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Details Modal */}
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.45)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backdropFilter: "blur(2px)",
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
+        >
+          <div style={{
+            background: "var(--pp-surface)",
+            borderRadius: 12,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+            width: "min(680px, 94vw)",
+            maxHeight: "80vh",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            <div style={{
+              padding: "1.25rem 1.5rem",
+              borderBottom: "1px solid var(--pp-border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: "1rem" }}>
+                  {tab === "tremor" ? "Tremor Analysis" : "Reaction Time"} — Full History
+                </div>
+                <div style={{ fontSize: "0.8125rem", color: "var(--pp-text-secondary)", marginTop: 2 }}>
+                  {activeItems.length === 0 ? "No recorded sessions found" : `${activeItems.length} session${activeItems.length !== 1 ? "s" : ""} recorded`}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                style={{
+                  background: "var(--pp-background)",
+                  border: "1px solid var(--pp-border)",
+                  borderRadius: 6,
+                  width: 32,
+                  height: 32,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1rem",
+                  color: "var(--pp-text-secondary)",
+                }}
+              >✕</button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "1rem 1.5rem" }}>
+              {activeItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "2rem", color: "var(--pp-text-muted)", fontSize: "0.875rem" }}>
+                  No IoT test data recorded for this patient yet.
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {activeItems.map((item, i) => {
+                    const sc = scoreColor(item.resultScore);
+                    return (
+                      <div key={item.id || i} style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        padding: "0.875rem 1rem",
+                        background: sc.bg,
+                        borderRadius: 8,
+                        border: `1px solid ${sc.bar}44`,
+                      }}>
+                        <div style={{
+                          width: 42, height: 42, borderRadius: "50%",
+                          background: sc.bar + "33",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontWeight: 800, fontSize: "0.9rem", color: sc.text, flexShrink: 0,
+                        }}>
+                          {item.resultScore ?? "—"}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--pp-text-primary)" }}>
+                            {tab === "tremor"
+                              ? `Amplitude: ${item.sensorData?.amplitude}u · ${item.sensorData?.pointCount || ""} pts`
+                              : `${item.sensorData?.reactionTimeMs}ms · Mode: ${item.sensorData?.mode || "visual"}`}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "var(--pp-text-secondary)", marginTop: 2 }}>
+                            {new Date(item.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </div>
+                        <span style={{
+                          padding: "0.25rem 0.75rem",
+                          borderRadius: 9999,
+                          fontSize: "0.6875rem",
+                          fontWeight: 700,
+                          background: sc.bar + "22",
+                          color: sc.text,
+                          border: `1px solid ${sc.bar}66`,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          flexShrink: 0,
+                        }}>{sc.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const DoctorConsultations = () => {
   const { token, backendUrl } = useContext(AppContext);
@@ -417,94 +860,7 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
 
           <section className="pp-section">
             <h2 className="pp-section-title">IoT Device Data</h2>
-
-            <div className="pp-bottom-grid">
-              <div className="pp-panel">
-                <h3 className="pp-panel-title">Tremor Analysis</h3>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    alignItems: "flex-end",
-                    height: 80,
-                    padding: "8px 0",
-                  }}
-                >
-                  {[2, 4, 3, 6, 5, 3, 4, 2, 3, 5, 4, 3].map((value, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        flex: 1,
-                        background: "var(--pp-primary-light)",
-                        height: `${value * 10}px`,
-                        borderRadius: 2,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "0.8125rem",
-                    color: "var(--pp-text-secondary)",
-                    marginTop: 4,
-                  }}
-                >
-                  Score: 82/100 — Normal range
-                </div>
-
-                <button
-                  className="pp-btn pp-btn-outline pp-btn-sm"
-                  style={{ marginTop: 8 }}
-                >
-                  View Details
-                </button>
-              </div>
-
-              <div className="pp-panel">
-                <h3 className="pp-panel-title">Reaction Time Test</h3>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 4,
-                    alignItems: "flex-end",
-                    height: 80,
-                    padding: "8px 0",
-                  }}
-                >
-                  {[5, 7, 6, 8, 6, 7, 5, 8, 7, 6, 8, 7].map((value, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        flex: 1,
-                        background: "var(--pp-primary-light)",
-                        height: `${value * 8}px`,
-                        borderRadius: 2,
-                      }}
-                    />
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "0.8125rem",
-                    color: "var(--pp-text-secondary)",
-                    marginTop: 4,
-                  }}
-                >
-                  Avg: 248ms — Above average
-                </div>
-
-                <button
-                  className="pp-btn pp-btn-outline pp-btn-sm"
-                  style={{ marginTop: 8 }}
-                >
-                  View Details
-                </button>
-              </div>
-            </div>
+            <IoTDevicePanel patientId={active?.patient?.id || active?.patient?._id || active?.patient_id} backendUrl={backendUrl} token={token} />
           </section>
 
           <section className="pp-section">

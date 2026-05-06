@@ -4,14 +4,14 @@ import { getProgressSummary } from "../controllers/studentsController.js";
 import { validate } from '../middlewares/validate.js';
 import { getQuestionsSchema, postProgressSchema } from '../validations/student.validation.js';
 import { authenticate, requireRole } from '../middlewares/auth.js';
-import { getHealthQueries, getHealthQueryDetails } from "../controllers/studentsController.js";
+import { getPublicQueries, getPublicQuery } from '../controllers/dashboard.controller.js';
 
 const router = express.Router();
 
 router.get("/mcqs", validate(getQuestionsSchema), getMCQs);
 router.get("/metadata", getMetadata);
-router.get("/queries", authenticate, requireRole('student'), getHealthQueries);
-router.get("/queries/:id", authenticate, requireRole('student'), getHealthQueryDetails);
+router.get("/queries", authenticate, requireRole('student'), getPublicQueries);
+router.get("/queries/:id", authenticate, requireRole('student'), getPublicQuery);
 
 // student progress summary
 router.get('/progress', authenticate, requireRole('student'), getProgressSummary);

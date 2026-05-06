@@ -25,25 +25,28 @@ const authDoctor = async (req, res, next) => {
 
     // Fall back: treat dtoken as Supabase access token and validate via Supabase
     if (!supabase) {
+      console.log(`[authDoctor] ERROR: supabase is null`);
       return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
 
     try {
       const { data, error } = await supabase.auth.getUser(token);
       if (error || !data?.user) {
+        console.log(`[authDoctor] ERROR: supabase.auth.getUser failed:`, error?.message || 'No user data');
         return res.status(401).json({ success: false, message: 'Invalid or expired token' });
       }
       const sUser = data.user;
       try { console.debug('authDoctor: validated Supabase token', { id: sUser.id, metadata: sUser.user_metadata }); } catch(_) {}
       // For Supabase-backed doctor profiles, map supabase user id to docId
       req.user = { docId: sUser.id, userId: sUser.id, id: sUser.id, sub: sUser.id, role: sUser.user_metadata?.role || 'patient' };
+      console.log(`[authDoctor] Success: Authenticated doctor ${sUser.id}`);
       return next();
     } catch (supErr) {
-      console.error('Supabase token validation error', supErr);
+      console.error('[authDoctor] Supabase token validation error', supErr);
       return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
   } catch (error) {
-    console.error('authDoctor middleware error', error);
+    console.error('[authDoctor] middleware error', error);
     return res.status(401).json({ success: false, message: error.message });
   }
 };

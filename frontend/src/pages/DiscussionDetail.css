@@ -121,9 +121,11 @@
 
 .dd-content-grid {
   display: grid;
-  grid-template-columns: 1fr 280px;
-  gap: 1.5rem;
+  grid-template-columns: 1fr 360px;
+  gap: 2rem;
   align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 /* ─── Post Card ───────────────────────────────────────────────────── */
@@ -571,8 +573,6 @@
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: var(--dd-shadow-sm);
-  position: sticky;
-  top: 85px;
 }
 
 .dd-panel-header {

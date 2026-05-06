@@ -82,13 +82,8 @@ export const DoctorContextProvider = ({ children }) => {
   const getAppointments = async () => {
     try {
       const { data } = await axios.get(
-<<<<<<< HEAD
         backendUrl + "/api/doctor/appointments",
         { headers: getDoctorAuthHeaders() }
-=======
-        backendUrl + "/api/appointments",
-        { headers: { Authorization: `Bearer ${dToken}` } }
->>>>>>> 7288240fb42a353ce19d6ebc95ff513a5b45f2cf
       );
       setAppointments(data.reverse());
     } catch (error) {

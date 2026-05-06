@@ -121,8 +121,7 @@ const PortalNavbar = ({ token, userData, logout }) => {
                   alignItems: "center",
                   gap: 8,
                   background: open ? "#eff6ff" : "transparent",
-                  border: "1px solid",
-                  borderColor: open ? "#bfdbfe" : "#e2e8f0",
+                  border: "none",
                   borderRadius: "0.5rem",
                   padding: "5px 10px 5px 6px",
                   cursor: "pointer",
@@ -241,7 +240,7 @@ const Navbar = () => {
   const logoutFunc = async () => { await logout(); navigate("/"); };
 
   return (
-    <div className="flex items-center justify-between text-sm py-4 mb-5 border-b border-b-gray-400 bg-white sticky top-0 z-50">
+    <div className="flex items-center justify-between text-sm py-4 px-4 sm:px-10 mb-5 border-b border-b-gray-400 bg-white sticky top-0 z-50">
       <Link to="/">
         <img className="w-44 cursor-pointer" src={assets.logo} alt="" />
       </Link>

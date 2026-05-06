@@ -151,16 +151,7 @@ const DiscussionDetail = ({ mode = "patient" }) => {
 
   return (
     <div className="dd-page">
-      <header className="dd-header">
-        <Link to={meta.backLink} className="dd-logo">{meta.title}</Link>
-        <nav>
-          <ul className="dd-nav-top">
-            <li><Link to={meta.dashboardLink}>Dashboard</Link></li>
-            {meta.profileLink && <li><Link to={meta.profileLink}>Profile</Link></li>}
-            <li><button type="button" className="dd-link-button" onClick={handleLogout}>Logout</button></li>
-          </ul>
-        </nav>
-      </header>
+
 
       <div className="dd-container">
         {Sidebar ? <Sidebar /> : null}

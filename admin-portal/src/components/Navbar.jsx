@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { useContext } from "react";
 import { assets } from "../assets/assets";
 import { AdminContext } from "../context/AdminContext";
@@ -6,34 +7,160 @@ import { DoctorContext } from "../context/DoctorContext";
 const Navbar = () => {
   const { aToken, setAToken } = useContext(AdminContext);
   const { dToken, setDToken } = useContext(DoctorContext);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const logoutHandler = () => {
-    // Admin logout
+  const isAdmin = !!aToken;
+  const role = isAdmin ? "Admin" : "Doctor";
+  const initials = isAdmin ? "A" : "D";
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleLogout = () => {
     setAToken("");
     localStorage.removeItem("aToken");
-
-    // Doctor logout
     setDToken("");
     localStorage.removeItem("dToken");
+    setOpen(false);
   };
+
   return (
-    <div className="flex justify-between items-center px-4 sm:px-10 py-3 border-b bg-white">
-      <div className="flex items-center gap-2 text-xs">
+    <div
+      style={{
+        background: "#ffffff",
+        borderBottom: "1px solid #e2e8f0",
+        padding: "0 2rem",
+        height: 65,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      }}
+    >
+      {/* Logo */}
+      <div style={{ lineHeight: 0 }}>
         <img
-          className="w-36 sm:w-40 cursor-pointer"
-          src={assets.admin_logo}
-          alt=""
+          style={{ width: 140, cursor: "default" }}
+          src={assets.logo}
+          alt="ArogyaNidhi"
         />
-        <p className="border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600">
-          {aToken ? "Admin" : "Doctor"}
-        </p>
       </div>
-      <button
-        onClick={logoutHandler}
-        className="cursor-pointer bg-primary text-white text-sm px-10 py-2 rounded-full"
-      >
-        Logout
-      </button>
+
+      {/* Right side */}
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        {/* Avatar dropdown */}
+        <div ref={ref} style={{ position: "relative" }}>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: open ? "var(--ap-primary-lighter)" : "transparent",
+              border: "none",
+              borderRadius: "0.5rem",
+              padding: "5px 10px 5px 6px",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {/* Avatar circle */}
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                background: "var(--ap-primary-lighter)",
+                border: "1px solid var(--ap-primary-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--ap-primary)",
+                flexShrink: 0,
+              }}
+            >
+              {initials}
+            </div>
+
+            <span
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                color: "#374151",
+              }}
+            >
+              {role}
+            </span>
+
+            {/* Chevron */}
+            <svg
+              style={{
+                width: 12,
+                height: 12,
+                color: "#94a3b8",
+                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.2s",
+              }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Dropdown */}
+          {open && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 8px)",
+                right: 0,
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "0.5rem",
+                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                minWidth: 160,
+                zIndex: 200,
+                overflow: "hidden",
+              }}
+            >
+              <button
+                onClick={handleLogout}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "0.625rem 1rem",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "#dc2626",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

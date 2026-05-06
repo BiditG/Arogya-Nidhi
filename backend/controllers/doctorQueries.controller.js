@@ -6,13 +6,16 @@ function getDocId(req) {
 }
 
 export async function listQueries(req, res) {
+  console.log(`[listQueries] Requested by doctor ${req.user?.docId}`);
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
     const isResolved = req.query.isResolved === 'true' ? true : (req.query.isResolved === 'false' ? false : undefined);
     const data = await repo.getAllQueriesForDoctor({ page, limit, isResolved });
+    console.log(`[listQueries] Success, found ${data.total} queries`);
     return sendSuccess(res, data, 'Queries fetched');
   } catch (err) {
+    console.error(`[listQueries] ERROR:`, err);
     return sendError(res, err.message, err.status || 500);
   }
 }
@@ -36,7 +39,7 @@ export async function createResponse(req, res) {
     const queryId = req.params.id;
     const { responseText } = req.body;
     if (!responseText || !String(responseText).trim()) return sendError(res, 'responseText is required', 400);
-    const created = await repo.createQueryResponse({ queryId, doctorId: docId, responseText: String(responseText).trim() });
+    const created = await repo.createQueryResponse({ query_id: queryId, doctor_id: docId, response_text: String(responseText).trim() });
     return sendSuccess(res, created, 'Response posted', 201);
   } catch (err) {
     return sendError(res, err.message, err.status || 500);

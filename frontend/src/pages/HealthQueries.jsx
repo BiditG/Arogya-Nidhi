@@ -91,7 +91,7 @@ const roleClass = (role) => (role === "doctor" ? "hq-role-doctor" : role === "st
 const roleLabel = (role) => (role === "doctor" ? "Doctor" : role === "student" ? "Student" : "Patient");
 
 const HealthQueries = ({ mode = "patient" }) => {
-  const { token, backendUrl, setToken, setUserData } = useContext(AppContext);
+  const { token, backendUrl } = useContext(AppContext);
   const navigate = useNavigate();
 
   const role = ROLE_META[mode] ? mode : "patient";
@@ -127,12 +127,6 @@ const HealthQueries = ({ mode = "patient" }) => {
     loadQueries();
   }, [backendUrl, role, token]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken(false);
-    setUserData(false);
-    navigate("/login");
-  };
 
   const handleCreatePost = async () => {
     if (!newPost.title.trim() || !newPost.excerpt.trim()) return;
@@ -183,17 +177,6 @@ const HealthQueries = ({ mode = "patient" }) => {
 
   return (
     <div className="hq-page">
-      <header className="hq-header">
-        <Link to={meta.backLink} className="hq-logo">{meta.title}</Link>
-        <nav>
-          <ul className="hq-nav-top">
-            <li><Link to={meta.dashboardLink}>Dashboard</Link></li>
-            {meta.profileLink && <li><Link to={meta.profileLink}>Profile</Link></li>}
-            <li><button type="button" className="hq-link-button" onClick={handleLogout}>Logout</button></li>
-          </ul>
-        </nav>
-      </header>
-
       <div className="hq-container">
         {Sidebar ? <Sidebar /> : null}
 
