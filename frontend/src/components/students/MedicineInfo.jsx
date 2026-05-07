@@ -1,12 +1,36 @@
 import { useState, useEffect } from 'react';
 import assets from '../../utils/studentAssets';
 
+const splitCsvLine = (line) => {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+};
+
 const parseCsv = (text) => {
   const lines = text.split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) return [];
-  const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const header = splitCsvLine(lines[0].replace(/^\uFEFF/, '')).map((h) => h.trim().toLowerCase());
   const rows = lines.slice(1).map((line) => {
-    const parts = line.split(',');
+    const parts = splitCsvLine(line);
     const obj = {};
     for (let i = 0; i < Math.min(header.length, parts.length); i++) {
       obj[header[i]] = (parts[i] || '').trim();
@@ -25,7 +49,7 @@ const parseCsv = (text) => {
       reviewExcellent: obj['excellent review %'] || '',
       reviewAverage: obj['average review %'] || '',
       reviewPoor: obj['poor review %'] || '',
-      image: obj['image'] || '',
+      imageUrl: obj['image url'] || obj['image_url'] || obj['image'] || '',
     };
   }).filter(r => r.name);
   return rows;
@@ -148,9 +172,9 @@ const MedicineInfo = () => {
           ) : (
             pagedResults.map((m, idx) => (
               <div key={idx} className="sp-medicine-card" style={{ flexDirection: 'row' }}>
-                {m['image url'] ? (
+                {m.imageUrl ? (
                   <img
-                    src={m['image url']}
+                    src={m.imageUrl}
                     alt={m.name}
                     loading="lazy"
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/data/placeholder_medicine.png'; }}

@@ -2,6 +2,10 @@ import { sendError, sendSuccess } from '../util/response.util.js';
 import { generateBarcodeValue } from '../util/barcode.util.js';
 import authRepo from '../repository/auth.repository.js';
 import patientRepo from '../repository/patient.repository.js';
+import supabase from '../config/supabase.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 const normalizeAddress = (source = {}) => ({
   streetAddress: source.streetAddress || source.street_address || null,
@@ -79,62 +83,13 @@ export async function updateProfile(req, res) {
     const id = req.user?.userId || req.user?.sub || req.user?.id || null;
     if (!id) return sendError(res, 'User id not found in token', 400);
 
-    const {
-      name,
-      phone,
-      gender,
-      dateOfBirth,
-      streetAddress,
-      city,
-      state,
-      pinCode,
-      country,
-    } = req.body;
+    const { phone } = req.body;
 
-    const userUpdates = {};
-    if (name !== undefined) userUpdates.name = name;
-    if (phone !== undefined) userUpdates.phone = phone;
-    // Only update `users` table fields that exist in the canonical users schema.
-    // Profile-specific fields (gender, dateOfBirth, address) are persisted in patient tables below.
-    if (name !== undefined) userUpdates.name = name;
-    if (phone !== undefined) userUpdates.phone = phone;
-
-    let updatedUser = null;
-    if (Object.keys(userUpdates).length) {
-      updatedUser = await authRepo.updateUserById(id, userUpdates);
-    } else {
-      updatedUser = await authRepo.findUserById(id);
+    if (phone === undefined) {
+      return sendError(res, 'Only phone can be updated from this profile page', 400);
     }
 
-    // Keep patient profile in sync when applicable
-    try {
-      const patient = await patientRepo.findPatientByUserId(id);
-      if (patient?.id) {
-        if (gender !== undefined || dateOfBirth !== undefined) {
-          await patientRepo.updatePatientProfile(id, {
-            gender: gender !== undefined ? gender : patient.gender,
-            dateOfBirth: dateOfBirth !== undefined ? (dateOfBirth ? new Date(dateOfBirth) : null) : patient.dateOfBirth,
-          });
-        }
-        if (
-          streetAddress !== undefined ||
-          city !== undefined ||
-          state !== undefined ||
-          pinCode !== undefined ||
-          country !== undefined
-        ) {
-          await patientRepo.upsertAddress(patient.id, {
-            streetAddress: streetAddress !== undefined ? streetAddress : null,
-            city: city !== undefined ? city : null,
-            state: state !== undefined ? state : null,
-            pinCode: pinCode !== undefined ? pinCode : null,
-            country: country !== undefined ? country : null,
-          });
-        }
-      }
-    } catch {
-      // ignore patient sync failures
-    }
+    const updatedUser = await authRepo.updateUserById(id, { phone });
 
     return sendSuccess(res, { user: updatedUser }, 'Profile updated');
   } catch (err) {
@@ -147,9 +102,38 @@ export async function updateAvatar(req, res) {
     const id = req.user?.userId || req.user?.sub || req.user?.id || null;
     if (!id) return sendError(res, 'User id not found in token', 400);
     if (!req.file) return sendError(res, 'No image file provided', 400);
+    if (!supabase) return sendError(res, 'Supabase is not configured', 500);
 
-    const avatarUrl = req.file.path.replace(/\\/g, '/');
-    const updated = await authRepo.updateUserById(id, { avatarUrl });
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
+    const fileKey = `user-${id}/avatar-${uuidv4()}${ext}`;
+    const fileBuffer = await fs.readFile(req.file.path);
+
+    const { error: uploadError } = await supabase
+      .storage
+      .from('avatars')
+      .upload(fileKey, fileBuffer, {
+        contentType: req.file.mimetype || 'image/jpeg',
+        upsert: true,
+      });
+
+    await fs.unlink(req.file.path).catch(() => {});
+
+    if (uploadError) {
+      return sendError(res, uploadError.message || 'Failed to upload avatar', 500);
+    }
+
+    const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileKey);
+    const avatarUrl = publicData?.publicUrl || null;
+
+    const updated = await authRepo.updateUserById(id, { avatar_url: avatarUrl });
+
+    try {
+      await supabase.auth.admin.updateUserById(id, {
+        user_metadata: { avatar_url: avatarUrl },
+      });
+    } catch {
+      // ignore metadata sync failures
+    }
 
     return sendSuccess(res, { user: updated }, 'Avatar updated');
   } catch (err) {

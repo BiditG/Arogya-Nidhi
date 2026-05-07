@@ -19,6 +19,7 @@ import {
   CheckIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
+import "./PatientPortal.css";
 import "./EditProfile.css";
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
@@ -110,7 +111,7 @@ const EditProfile = () => {
           setLastName(nameParts.slice(1).join(" ") || "");
           setEmail(user.email || "");
           setPhone(user.phone || "");
-          setAvatarUrl(user.avatarUrl || null);
+          setAvatarUrl(user.avatarUrl || user.avatar_url || null);
           setBloodGroup(p.bloodGroup || "");
           setGender(p.gender || "");
           if (p.dateOfBirth) setDateOfBirth(new Date(p.dateOfBirth).toISOString().split("T")[0]);
@@ -222,7 +223,7 @@ const EditProfile = () => {
         headers: { ...headers, "Content-Type": "multipart/form-data" },
       });
       if (data.success) {
-        setAvatarUrl(data.data?.avatarUrl || null);
+        setAvatarUrl(data.data?.avatarUrl || data.data?.avatar_url || data.data?.user?.avatar_url || null);
         toast.success("Avatar updated");
       }
     } catch (err) {
@@ -296,12 +297,16 @@ const EditProfile = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const resolvedAvatar = avatarUrl
+    ? (avatarUrl.startsWith("http") ? avatarUrl : `${backendUrl}/${String(avatarUrl).replace(/^\/+/, "")}`)
+    : null;
+
   return (
-    <div className="ep-page">
-      <div className="ep-container">
+    <div className="ep-page pp-page">
+      <div className="ep-container pp-container">
         <PatientSidebar />
 
-        <main className="ep-main-content">
+        <main className="ep-main-content pp-main-content">
           <Link to="/patient-portal" className="ep-back-link">
             <ArrowLeftIcon style={{ width: 16, height: 16 }} /> Back to Dashboard
           </Link>
@@ -313,13 +318,13 @@ const EditProfile = () => {
           ) : (
             <>
               {/* ── Profile Picture & Personal Info ── */}
-              <div className="ep-card">
-                <h2 className="ep-section-title">Profile Picture</h2>
+              <div className="ep-card pp-panel">
+                <h2 className="ep-section-title pp-section-title">Profile Picture</h2>
                 <div className="ep-profile-row">
                   <div className="ep-avatar-col">
                     <div className="ep-avatar">
-                      {avatarUrl
-                        ? <img src={backendUrl + "/" + avatarUrl} alt="avatar" />
+                      {resolvedAvatar
+                        ? <img src={resolvedAvatar} alt="avatar" />
                         : <UserIcon style={{ width: 52, height: 52 }} />}
                     </div>
                     <div className="ep-avatar-actions">
@@ -380,8 +385,8 @@ const EditProfile = () => {
               </div>
 
               {/* ── Health Information ── */}
-              <div className="ep-card">
-                <h2 className="ep-section-title">Health Information</h2>
+              <div className="ep-card pp-panel">
+                <h2 className="ep-section-title pp-section-title">Health Information</h2>
                 <div className="ep-form-grid">
                   <div className="ep-form-group">
                     <label className="ep-form-label">Height (cm)</label>
@@ -412,9 +417,9 @@ const EditProfile = () => {
               </div>
 
               {/* ── Medical Reports ── */}
-              <div className="ep-card">
+              <div className="ep-card pp-panel">
                 <div className="ep-section-header">
-                  <h2 className="ep-section-title" style={{ margin: 0 }}>Medical Reports & Documents</h2>
+                  <h2 className="ep-section-title pp-section-title" style={{ margin: 0 }}>Medical Reports & Documents</h2>
                   <button type="button" className="ep-btn ep-btn-primary ep-btn-sm" onClick={() => setShowUploadForm((s) => !s)}>
                     <PlusIcon style={{ width: 14, height: 14 }} /> Upload Report
                   </button>
@@ -500,8 +505,8 @@ const EditProfile = () => {
               </div>
 
               {/* ── Emergency Contact ── */}
-              <div className="ep-card">
-                <h2 className="ep-section-title">Emergency Contact</h2>
+              <div className="ep-card pp-panel">
+                <h2 className="ep-section-title pp-section-title">Emergency Contact</h2>
                 <div className="ep-form-grid">
                   <div className="ep-form-group">
                     <label className="ep-form-label">Contact Name <span className="ep-required">*</span></label>
@@ -528,8 +533,8 @@ const EditProfile = () => {
               </div>
 
               {/* ── Address ── */}
-              <div className="ep-card">
-                <h2 className="ep-section-title">Address Information</h2>
+              <div className="ep-card pp-panel">
+                <h2 className="ep-section-title pp-section-title">Address Information</h2>
                 <div className="ep-form-grid">
                   <div className="ep-form-group ep-full-width">
                     <label className="ep-form-label">Street Address</label>

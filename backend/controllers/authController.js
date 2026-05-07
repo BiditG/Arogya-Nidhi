@@ -84,10 +84,10 @@ export async function register(req, res) {
 
         const doctorData = {
           user_id: supaUser.id,
-          nmc_license_no: profile.nmcLicenseNo || profile.licenseNo || "PENDING",
+          license_no: profile.licenseNo || profile.nmcLicenseNo || "PENDING",
           specialty: profile.specialty || "General Medicine",
+          sub_specialty: profile.subSpecialty || null,
           consultation_fee: Number(profile.consultationFee) || 0,
-          experience_years: Number(profile.experienceYears) || 0,
           qualifications: profile.qualifications || null,
           is_verified: false,
           is_available: true,
@@ -316,24 +316,65 @@ export async function updateDoctorProfile(req, res) {
 
     const body = req.body || {};
     const updates = {};
-    if (body.consultation_fee !== undefined) updates.consultation_fee = body.consultation_fee;
-    if (body.consultationFee !== undefined) updates.consultation_fee = body.consultationFee;
+    const userUpdates = {};
+
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+    const resolvedName = [firstName, lastName].filter(Boolean).join(' ') || (typeof body.name === 'string' ? body.name.trim() : '');
+
+    if (resolvedName) userUpdates.name = resolvedName;
+    if (body.email !== undefined && String(body.email || '').trim()) userUpdates.email = String(body.email).trim();
+    if (body.phone !== undefined) userUpdates.phone = body.phone === '' ? null : body.phone;
+
+    const consultationFee = body.consultation_fee ?? body.consultationFee;
+    if (consultationFee !== undefined) {
+      const parsed = consultationFee === '' || consultationFee === null ? null : Number(consultationFee);
+      if (parsed !== null && Number.isNaN(parsed)) return sendError(res, 'Invalid consultation fee', 400);
+      updates.consultation_fee = parsed;
+    }
     if (body.qualifications !== undefined) updates.qualifications = body.qualifications;
     if (body.is_available !== undefined) updates.is_available = body.is_available;
     if (body.isAvailable !== undefined) updates.is_available = body.isAvailable;
     if (body.specialty !== undefined) updates.specialty = body.specialty;
     if (body.sub_specialty !== undefined) updates.sub_specialty = body.sub_specialty;
     if (body.subSpecialty !== undefined) updates.sub_specialty = body.subSpecialty;
-    if (body.license_no !== undefined) updates.nmc_license_no = body.license_no;
-    if (body.nmc_license_no !== undefined) updates.nmc_license_no = body.nmc_license_no;
+    if (body.license_no !== undefined) updates.license_no = body.license_no;
+    if (body.licenseNo !== undefined) updates.license_no = body.licenseNo;
+    if (body.nmc_license_no !== undefined) updates.license_no = body.nmc_license_no;
 
-    if (Object.keys(updates).length === 0) return sendError(res, 'No updatable fields provided', 400);
+    if (Object.keys(updates).length === 0 && Object.keys(userUpdates).length === 0) {
+      return sendError(res, 'No updatable fields provided', 400);
+    }
 
-    updates.updated_at = new Date().toISOString();
+    if (Object.keys(updates).length > 0) {
+      updates.updated_at = new Date().toISOString();
+    }
 
-    const updated = await repo.updateDoctorProfile(id, updates);
+    let updatedUser = null;
+    if (Object.keys(userUpdates).length > 0) {
+      updatedUser = await repo.updateUserById(id, userUpdates);
+      try {
+        const { data: authUser } = await supabase.auth.admin.getUserById(id);
+        const existingMeta = authUser?.user?.user_metadata || {};
+        const nextMeta = { ...existingMeta };
+        if (resolvedName) nextMeta.name = resolvedName;
+        if (body.phone !== undefined) nextMeta.phone = body.phone === '' ? null : body.phone;
+        if (updatedUser?.role && !nextMeta.role) nextMeta.role = updatedUser.role;
 
-    return sendSuccess(res, { profile: updated }, 'Doctor profile updated');
+        const authUpdates = { user_metadata: nextMeta };
+        if (userUpdates.email) authUpdates.email = userUpdates.email;
+
+        await supabase.auth.admin.updateUserById(id, authUpdates);
+      } catch {
+        // ignore auth metadata sync failures
+      }
+    }
+
+    const updatedProfile = Object.keys(updates).length > 0
+      ? await repo.updateDoctorProfile(id, updates)
+      : await repo.findDoctorProfileByUserId(id);
+
+    return sendSuccess(res, { profile: updatedProfile, user: updatedUser }, 'Doctor profile updated');
   } catch (err) {
     console.error('updateDoctorProfile error', err);
     return sendError(res, err.message || 'Failed to update doctor profile', err.status || 500);

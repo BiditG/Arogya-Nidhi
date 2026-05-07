@@ -23,8 +23,8 @@ const MCQSection = () => {
   const [questions, setQuestions] = useState(sampleQuestions);
   const [current, setCurrent] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [score, setScore] = useState(0);
   const [results, setResults] = useState([]);
+  const score = results.reduce((acc, r) => acc + (r.correct ? 1 : 0), 0);
 
   const [tableName, setTableName] = useState("mcq_questions");
   const [filterSubject, setFilterSubject] = useState("");
@@ -48,6 +48,35 @@ const MCQSection = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const timerRef = useRef(null);
   const questionStartRef = useRef(Date.now());
+
+  const getQuestionKey = (question, index) => question?.id || `idx-${index}`;
+
+  const recordResult = (question, index, selectedOption, correct) => {
+    const key = getQuestionKey(question, index);
+    setResults((prev) => {
+      if (prev.some((r) => r.key === key)) return prev;
+      return [...prev, { key, id: question?.id, selected: selectedOption, correct }];
+    });
+  };
+
+  const resetQuizState = () => {
+    clearInterval(timerRef.current);
+    setCurrent(0);
+    setSelected(null);
+    setResults([]);
+    setFinished(false);
+    setShowAnswer(false);
+    setQuizStarted(false);
+    setTimeLeft(timerPerQuestion);
+  };
+
+  const clampQuestionCount = (value) => {
+    const raw = Number(value);
+    const safe = Number.isFinite(raw) ? raw : 1;
+    const min = Math.max(1, Math.floor(safe));
+    if (availableCount) return Math.min(min, availableCount);
+    return min;
+  };
 
   useEffect(() => {
     setSelected(null);
@@ -111,15 +140,19 @@ const MCQSection = () => {
           explanation: r.explanation || "",
           meta: { exam: r.exam, subject: r.subject, topic: r.topic, year: r.year, created_at: r.created_at },
         }));
+        const requested = clampQuestionCount(numQuestions);
+        const limited = mapped.length ? mapped.slice(0, Math.min(requested, mapped.length)) : sampleQuestions;
         setAllQuestions(mapped.length ? mapped : sampleQuestions);
-        setQuestions(mapped.length ? mapped : sampleQuestions);
-        setCurrent(0); setScore(0); setResults([]);
+        setQuestions(limited.length ? limited : sampleQuestions);
+        resetQuizState();
       } else {
         setAllQuestions(sampleQuestions); setQuestions(sampleQuestions);
+        resetQuizState();
       }
     } catch (err) {
       console.error(err);
       setAllQuestions(sampleQuestions); setQuestions(sampleQuestions);
+      resetQuizState();
     } finally {
       setLoading(false);
     }
@@ -175,6 +208,14 @@ const MCQSection = () => {
     return () => { mounted = false; };
   }, [filterSubject, filterTopic, filterYear, numQuestions, tableName]);
 
+  useEffect(() => {
+    if (!availableCount) return;
+    setNumQuestions((prev) => {
+      const next = clampQuestionCount(prev);
+      return next === prev ? prev : next;
+    });
+  }, [availableCount]);
+
   const navigate = useNavigate();
 
   const startQuiz = async () => {
@@ -191,10 +232,9 @@ const MCQSection = () => {
   const recordAndAdvance = (sel) => {
     const q = questions[current];
     const correct = sel === q.answer;
-    setResults((r) => [...r, { id: q.id, selected: sel, correct }]);
-    if (correct) setScore((s) => s + 1);
+    recordResult(q, current, sel, correct);
     const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
-    sendProgress(q.id, sel === null ? null : String(sel), Boolean(correct), timeTaken).catch(() => {});
+    if (q?.id) sendProgress(q.id, sel === null ? null : String(sel), Boolean(correct), timeTaken).catch(() => {});
     if (current < questions.length - 1) {
       setCurrent((c) => c + 1);
       setSelected(null);
@@ -207,14 +247,15 @@ const MCQSection = () => {
 
   const submitAnswer = () => {
     if (selected === null) return;
+    const q = questions[current];
+    if (!q) return;
+    if (results.some((r) => r.key === getQuestionKey(q, current))) return;
     if (mode === "casual") {
       setShowAnswer(true);
-      const q = questions[current];
       const correct = selected === q.answer;
-      setResults((r) => [...r, { id: q.id, selected, correct }]);
-      if (correct) setScore((s) => s + 1);
+      recordResult(q, current, selected, correct);
       const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
-      sendProgress(q.id, selected === null ? null : String(selected), Boolean(correct), timeTaken).catch(() => {});
+      if (q?.id) sendProgress(q.id, selected === null ? null : String(selected), Boolean(correct), timeTaken).catch(() => {});
     } else {
       recordAndAdvance(selected);
     }
@@ -234,10 +275,10 @@ const MCQSection = () => {
   };
 
   const handleTimeExpired = () => {
-    setResults((r) => [...r, { id: questions[current].id, selected: null, correct: false }]);
-    const qid = questions[current].id;
+    const q = questions[current];
+    recordResult(q, current, null, false);
     const timeTaken = Math.floor((Date.now() - (questionStartRef.current || Date.now())) / 1000);
-    sendProgress(qid, null, false, timeTaken).catch(() => {});
+    if (q?.id) sendProgress(q.id, null, false, timeTaken).catch(() => {});
     if (current < questions.length - 1) {
       setCurrent((c) => c + 1);
       setSelected(null);
@@ -249,6 +290,12 @@ const MCQSection = () => {
   };
 
   const revealAll = () => { setShowAnswer(true); setFinished(true); setQuizStarted(false); };
+
+  const requestedCount = Number(numQuestions) || 0;
+  const targetCount = requestedCount ? Math.min(requestedCount, questions.length) : questions.length || 0;
+  const currentQuestion = questions[current];
+  const currentQuestionKey = getQuestionKey(currentQuestion, current);
+  const isCurrentAnswered = results.some((r) => r.key === currentQuestionKey);
 
   return (
     <div className="sp-panel">
@@ -288,8 +335,9 @@ const MCQSection = () => {
             <input
               type="number"
               min={1}
+              max={availableCount || undefined}
               value={numQuestions}
-              onChange={(e) => setNumQuestions(Number(e.target.value))}
+              onChange={(e) => { setNumQuestions(clampQuestionCount(e.target.value)); resetQuizState(); }}
               className="sp-control-input"
             />
           </div>
@@ -316,7 +364,7 @@ const MCQSection = () => {
         <div className="sp-mcq-question-card">
           <div className="sp-mcq-meta">
             <span>Question {current + 1} / {questions.length}</span>
-            <span className="sp-mcq-score">Score: {score}</span>
+            <span className="sp-mcq-score">Score: {score} / {targetCount}</span>
           </div>
 
           <div className="sp-mcq-question">{questions[current].question}</div>
@@ -351,7 +399,7 @@ const MCQSection = () => {
           <div className="sp-mcq-actions">
             {!quizStarted && !finished && (
               <button
-                onClick={() => { setQuizStarted(true); setCurrent(0); setScore(0); setResults([]); }}
+                onClick={() => { setQuizStarted(true); setCurrent(0); setResults([]); }}
                 className="sp-btn-primary"
               >
                 Begin
@@ -360,8 +408,8 @@ const MCQSection = () => {
 
             {quizStarted && !finished && (
               <>
-                <button onClick={submitAnswer} className="sp-btn-primary" disabled={selected === null}>Submit</button>
-                {mode === 'casual' && (
+                <button onClick={submitAnswer} className="sp-btn-primary" disabled={selected === null || isCurrentAnswered}>Submit</button>
+                {mode === 'casual' && (showAnswer || isCurrentAnswered) && (
                   <button onClick={nextQuestion} className="sp-btn-secondary">Next</button>
                 )}
               </>
@@ -369,7 +417,7 @@ const MCQSection = () => {
 
             {finished && (
               <div className="sp-mcq-result">
-                Final score: <strong>{score} / {questions.length}</strong>
+                Congrats, your score is <strong>{score} / {targetCount}</strong>
               </div>
             )}
 

@@ -1,6 +1,8 @@
 import repo from '../repository/patient.repository.js';
 import fs from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import supabase from '../config/supabase.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,32 +58,76 @@ async function _getProfile(userId) {
 async function _updateBasicProfile(userId, body) {
   const { name, email, phone, firstName, lastName } = body;
 
-  const resolvedName = (firstName && lastName)
-    ? `${firstName} ${lastName}`.trim()
-    : name;
+  const nameParts = [firstName, lastName]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean);
+  const resolvedName = nameParts.length > 0
+    ? nameParts.join(' ').trim()
+    : (typeof name === 'string' ? name.trim() : '');
 
   const userUpdates = {};
   if (resolvedName) userUpdates.name = resolvedName;
-  if (email)        userUpdates.email = email;
-  if (phone !== undefined) userUpdates.phone = phone;
+  if (email !== undefined && String(email || '').trim()) userUpdates.email = String(email).trim();
+  if (phone !== undefined) userUpdates.phone = phone === '' ? null : phone;
 
   const updatedUser = Object.keys(userUpdates).length
     ? await repo.updateUserProfile(userId, userUpdates)
     : null;
+
+  if (updatedUser && supabase) {
+    try {
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      const existingMeta = authUser?.user?.user_metadata || {};
+      const nextMeta = { ...existingMeta };
+      if (resolvedName) nextMeta.name = resolvedName;
+      if (phone !== undefined) nextMeta.phone = phone === '' ? null : phone;
+      if (updatedUser?.role && !nextMeta.role) nextMeta.role = updatedUser.role;
+
+      const authUpdates = { user_metadata: nextMeta };
+      if (userUpdates.email) authUpdates.email = userUpdates.email;
+
+      await supabase.auth.admin.updateUserById(userId, authUpdates);
+    } catch {
+      // ignore auth metadata sync failures
+    }
+  }
 
   return updatedUser;
 }
 
 async function _updateAvatar(userId, file) {
   if (!file) throw { status: 400, message: 'No image file provided' };
+  if (!supabase) throw { status: 500, message: 'Supabase is not configured' };
 
-  const existing = await repo.findPatientByUserId(userId);
-  if (existing?.user?.avatarUrl?.startsWith('uploads/')) {
-    _deleteFile(existing.user.avatarUrl);
+  const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+  const fileKey = `user-${userId}/avatar-${uuidv4()}${ext}`;
+  const fileBuffer = await fs.promises.readFile(file.path);
+
+  const { error: uploadError } = await supabase
+    .storage
+    .from('avatars')
+    .upload(fileKey, fileBuffer, {
+      contentType: file.mimetype || 'image/jpeg',
+      upsert: true,
+    });
+
+  await fs.promises.unlink(file.path).catch(() => {});
+
+  if (uploadError) throw { status: 500, message: uploadError.message || 'Failed to upload avatar' };
+
+  const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(fileKey);
+  const avatarUrl = publicData?.publicUrl || null;
+
+  const updated = await repo.updateUserProfile(userId, { avatar_url: avatarUrl });
+
+  try {
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { avatar_url: avatarUrl },
+    });
+  } catch {
+    // ignore metadata sync failures
   }
 
-  const avatarUrl = file.path.replace(/\\/g, '/');
-  const updated = await repo.updateUserProfile(userId, { avatarUrl });
   return updated;
 }
 

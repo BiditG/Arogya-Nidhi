@@ -150,10 +150,21 @@
   gap: 1rem;
 }
 
+.profile-static-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .profile-field {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+.profile-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .profile-label {
@@ -172,6 +183,15 @@
   font-size: 0.95rem;
   font-family: inherit;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-static {
+  border: 1px solid var(--profile-line);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.95rem;
+  background: #f8fafc;
+  color: var(--profile-ink);
 }
 
 .profile-input:focus,

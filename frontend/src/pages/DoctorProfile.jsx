@@ -1,6 +1,8 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import axios from "axios";
+import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
 import {
   UserCircleIcon,
@@ -54,7 +56,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const DoctorProfile = () => {
-  const { token, userData, backendUrl } = useContext(AppContext);
+  const { token, userData, backendUrl, loadUserProfileData } = useContext(AppContext);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const docInputRef = useRef(null);
@@ -63,6 +65,7 @@ const DoctorProfile = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [docs, setDocs] = useState(DUMMY_DOCS);
   const [dragOver, setDragOver] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -102,10 +105,35 @@ const DoctorProfile = () => {
       email: userData?.email || userData?.user?.email || "",
       phone: userData?.phone || userData?.user?.phone || "",
     }));
-    if (userData?.image || userData?.user?.avatarUrl) {
-      setImagePreview(userData?.image || userData?.user?.avatarUrl);
+    if (userData?.image || userData?.user?.avatar_url || userData?.user?.avatarUrl) {
+      setImagePreview(userData?.image || userData?.user?.avatar_url || userData?.user?.avatarUrl);
     }
   }, [token, userData, navigate]);
+
+  useEffect(() => {
+    if (!token) return;
+    const loadDoctorProfile = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}`, dtoken: token };
+        const { data } = await axios.get(backendUrl + "/api/auth/doctor/profile", { headers });
+        const body = data || {};
+        const profile = body?.data?.profile || body?.profile || body?.data || null;
+        if (!profile) return;
+
+        setForm((f) => ({
+          ...f,
+          specialization: profile.specialty || "",
+          licenseNumber: profile.license_no || profile.nmc_license_no || "",
+          qualification: profile.qualifications || "",
+          consultationFee: profile.consultation_fee ?? "",
+        }));
+      } catch (err) {
+        console.error("Failed to load doctor profile", err?.response?.data || err.message || err);
+      }
+    };
+
+    loadDoctorProfile();
+  }, [backendUrl, token]);
 
   const handleField = (e) => {
     const { name, value } = e.target;
@@ -150,10 +178,34 @@ const DoctorProfile = () => {
 
   const deleteDoc = (id) => setDocs((prev) => prev.filter((d) => d.id !== id));
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    // TODO: wire to backend
-    navigate("/doctor-portal");
+    if (!token || saving) return;
+    setSaving(true);
+    try {
+      const payload = {
+        firstName: form.firstName?.trim() || undefined,
+        lastName: form.lastName?.trim() || undefined,
+        email: form.email?.trim() || undefined,
+        phone: form.phone?.trim() || null,
+        specialty: form.specialization || undefined,
+        license_no: form.licenseNumber?.trim() || undefined,
+        qualifications: form.qualification?.trim() || undefined,
+        consultation_fee: form.consultationFee === "" ? null : Number(form.consultationFee),
+      };
+
+      const headers = { Authorization: `Bearer ${token}`, dtoken: token };
+      const { data } = await axios.post(backendUrl + "/api/auth/doctor/update-profile", payload, { headers });
+      if (!data?.success) throw new Error(data?.message || "Update failed");
+
+      toast.success("Profile updated successfully");
+      await loadUserProfileData();
+      navigate("/doctor-portal");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -485,8 +537,8 @@ const DoctorProfile = () => {
 
             {/* ── Actions ── */}
             <div style={{ display: "flex", gap: "0.75rem", paddingBottom: "2rem" }}>
-              <button type="submit" className="pp-btn pp-btn-primary">
-                Save Changes
+              <button type="submit" className="pp-btn pp-btn-primary" disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
               </button>
               <button type="button" className="pp-btn pp-btn-secondary" onClick={() => navigate("/doctor-portal")}>
                 Cancel

@@ -64,19 +64,18 @@ export const getMCQs = async (req, res) => {
     const filterQuery = filters.length ? `&${filters.join("&")}` : "";
     const lim = limit ? `&limit=${Number(limit)}` : "";
 
-    if (!SUPABASE_URL || !(SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY)) {
+    const resolvedHeaders = await resolveWorkingSupabaseHeaders(table);
+    if (!resolvedHeaders) {
       return res.status(500).json({ success: false, message: "Supabase not configured on server" });
     }
 
-    // use the same key for both headers to avoid mismatched-key rejections
-    const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
-    const apikeyHeader = authKey;
+    const { auth: authKey, apikey: apikeyHeader, name: headerName } = resolvedHeaders;
 
     const url = `${SUPABASE_URL}/rest/v1/${table}?${select}${filterQuery}${lim}`;
     console.log('[studentsController] Supabase URL:', url);
     console.log('[studentsController] keys present:', { has_url: !!SUPABASE_URL, has_key: !!SUPABASE_KEY, has_service: !!SUPABASE_SERVICE_ROLE_KEY });
     // log masked header sources
-    console.log('[studentsController] using headers:', { apikey_from: SUPABASE_SERVICE_ROLE_KEY ? 'service' : (SUPABASE_KEY ? 'anon' : 'none'), auth_from: SUPABASE_SERVICE_ROLE_KEY ? 'service' : (SUPABASE_KEY ? 'anon' : 'none') });
+    console.log('[studentsController] using headers:', headerName || 'resolved');
     console.log('[studentsController] header preview (masked):', { apikey: apikeyHeader ? `${String(apikeyHeader).slice(0,8)}...` : null, authorization: authKey ? `${String(authKey).slice(0,8)}...` : null });
     console.log('[studentsController] SUPABASE_KEY set?', Boolean(SUPABASE_KEY), 'SUPABASE_SERVICE_ROLE_KEY set?', Boolean(SUPABASE_SERVICE_ROLE_KEY));
     console.log('[studentsController] headers chosen -> apikeyHeader is serviceRole?', apikeyHeader === SUPABASE_SERVICE_ROLE_KEY, 'authKey is serviceRole?', authKey === SUPABASE_SERVICE_ROLE_KEY);
@@ -148,14 +147,15 @@ export const getMCQs = async (req, res) => {
 export const getMetadata = async (req, res) => {
   try {
     const table = req.query.table || DEFAULT_TABLE;
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
+    const resolvedHeaders = await resolveWorkingSupabaseHeaders(table);
+    if (!resolvedHeaders) {
       return res.status(500).json({ success: false, message: "Supabase not configured on server" });
     }
 
+    const { auth: authKey, apikey: apikeyHeader } = resolvedHeaders;
+
     // helper to fetch distinct values for a column
     const fetchDistinct = async (col) => {
-      const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
-      const apikeyHeader = SUPABASE_KEY || SUPABASE_SERVICE_ROLE_KEY;
       const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(col)}&distinct=${encodeURIComponent(col)}`;
       const r = await fetch(url, {
         headers: {
@@ -175,8 +175,6 @@ export const getMetadata = async (req, res) => {
 
     // get total count using Prefer: count=exact
     const countUrl = `${SUPABASE_URL}/rest/v1/${table}?select=id&limit=1`;
-    const authKey = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
-    const apikeyHeader = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_KEY;
     const countRes = await fetch(countUrl, {
       method: "GET",
       headers: {
