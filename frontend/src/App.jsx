@@ -1,4 +1,5 @@
-import { Route, Routes, useLocation } from "react-router-dom";
+import { useContext } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Doctors from "./pages/Doctors";
@@ -40,8 +41,23 @@ import StudentPortal from "./pages/StudentPortal";
 import AdminPortal from "./pages/AdminPortal";
 import Payment from "./pages/Payment";
 import PatientPrescriptions from "./pages/PatientPrescriptions";
+import { AppContext } from "./context/AppContext";
+import { getDashboardPathForRole, getUserRole } from "./utils/roleDashboard";
 
+const RoleAwareHome = () => {
+  const { token, userData } = useContext(AppContext);
 
+  if (token && userData) {
+    return (
+      <Navigate
+        to={getDashboardPathForRole(getUserRole(userData))}
+        replace
+      />
+    );
+  }
+
+  return <Home />;
+};
 
 const App = () => {
   const location = useLocation();
@@ -61,7 +77,7 @@ const App = () => {
       <Navbar />
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<RoleAwareHome />} />
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/doctors/:slug" element={<Doctors />} />
         <Route path="/chat" element={<Chat />} />

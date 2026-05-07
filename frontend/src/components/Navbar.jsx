@@ -4,6 +4,7 @@ import { assets as adminAssets } from "../assets/assets_admin/assets";
 import { useEffect, useRef, useState } from "react";
 import { useContext } from "react";
 import { AppContext } from "../context/AppContext";
+import { LANGUAGE_OPTIONS, useLanguage } from "../utils/language";
 
 const navLinks = [
   { title: "Home", path: "/" },
@@ -51,6 +52,110 @@ const Avatar = ({ userData }) => {
   );
 };
 
+const LanguageSwitcher = () => {
+  const [open, setOpen] = useState(false);
+  const [language, setLanguage] = useLanguage();
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  const currentLanguage = LANGUAGE_OPTIONS.find((option) => option.value === language) || LANGUAGE_OPTIONS[0];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: open ? "#eff6ff" : "transparent",
+          border: "1px solid #e2e8f0",
+          borderRadius: "9999px",
+          padding: "0.5rem 0.8rem",
+          cursor: "pointer",
+          color: "#334155",
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          transition: "all 0.15s",
+        }}
+        onMouseEnter={(e) => { if (!open) e.currentTarget.style.background = "#f8fafc"; }}
+        onMouseLeave={(e) => { if (!open) e.currentTarget.style.background = "transparent"; }}
+      >
+        <span>{currentLanguage.label}</span>
+        <svg
+          style={{ width: 12, height: 12, color: "#94a3b8", transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+            borderRadius: "0.75rem",
+            boxShadow: "0 12px 30px -18px rgb(15 23 42 / 0.45)",
+            minWidth: 160,
+            zIndex: 200,
+            overflow: "hidden",
+          }}
+        >
+          {LANGUAGE_OPTIONS.map((option) => {
+            const active = option.value === language;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  setLanguage(option.value);
+                  setOpen(false);
+                }}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "0.7rem 1rem",
+                  background: active ? "#eff6ff" : "transparent",
+                  border: "none",
+                  fontSize: "0.875rem",
+                  fontWeight: active ? 700 : 500,
+                  color: active ? "#1d4ed8" : "#374151",
+                  cursor: "pointer",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Portal Navbar ─────────────────────────────────────────── */
 const PortalNavbar = ({ token, userData, logout }) => {
   const navigate = useNavigate();
@@ -94,6 +199,8 @@ const PortalNavbar = ({ token, userData, logout }) => {
       </Link>
 
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <LanguageSwitcher />
+
         <Link
           to="/public-queries"
           style={{
@@ -254,6 +361,8 @@ const Navbar = () => {
       </ul>
 
       <div className="flex items-center gap-4">
+        <LanguageSwitcher />
+
         {token && userData ? (
           <div
             className="flex items-center gap-2 cursor-pointer group relative"
@@ -313,6 +422,11 @@ const Navbar = () => {
                 <p className="px-4 py-2 rounded inline-block">{nav.title}</p>
               </NavLink>
             ))}
+            <li className="w-full px-4 pt-3">
+              <div className="flex justify-center">
+                <LanguageSwitcher />
+              </div>
+            </li>
             {!token && (
               <li>
                 <button

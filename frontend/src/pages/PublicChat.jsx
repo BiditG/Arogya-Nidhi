@@ -185,7 +185,7 @@ export default function PublicChat() {
       {/* Hero Banner */}
       <div
         style={{
-          background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)",
+          background: "#3b82f6",
           padding: "2rem 1rem 1.5rem",
           color: "#fff",
           textAlign: "center",
@@ -225,7 +225,9 @@ export default function PublicChat() {
               padding: "0.75rem 1rem 0.75rem 2.75rem",
               borderRadius: "0.625rem",
               border: "none",
+              background: "#fff",
               fontSize: "0.95rem",
+              color: "#0f172a",
               outline: "none",
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             }}
@@ -235,7 +237,7 @@ export default function PublicChat() {
             onClick={() => { setActiveSearch(search); setCurrentPage(1); }}
             style={{
               background: "#fff",
-              color: "#1e40af",
+              color: "#3b82f6",
               fontWeight: 700,
               border: "none",
               borderRadius: "0.625rem",
@@ -317,7 +319,7 @@ export default function PublicChat() {
             No discussions found.{" "}
             <button
               type="button"
-              style={{ color: "#2563eb", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+              style={{ color: "#3b82f6", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
               onClick={() => { if (!token) navigate("/login"); else setShowModal(true); }}
             >
               Be the first to ask!
@@ -450,7 +452,7 @@ export default function PublicChat() {
               textAlign: "center",
             }}
           >
-            <h3 style={{ color: "#1e40af", fontWeight: 700, marginBottom: "0.5rem" }}>
+            <h3 style={{ color: "#3b82f6", fontWeight: 700, marginBottom: "0.5rem" }}>
               Have a health question?
             </h3>
             <p style={{ color: "#3b82f6", fontSize: "0.9rem", marginBottom: "1rem" }}>

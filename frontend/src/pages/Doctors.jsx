@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import DoctorCard from "../components/DoctorCard";
+import { useLanguage } from "../utils/language";
+import { getDoctorNameForLanguage } from "../utils/nepaliNames";
 
 const Doctors = () => {
   const { slug } = useParams();
@@ -18,6 +20,7 @@ const Doctors = () => {
   const navigate = useNavigate();
 
   const { doctors } = useContext(AppContext);
+  const [language] = useLanguage();
 
   const manualDoctors = [
     { _id: "doc1", name: "Dr. Sarah Johnson", speciality: "General physician", image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face", available: true, experience: "8 years", rating: 4.8, fee: 40, location: "New York, NY" },
@@ -62,7 +65,13 @@ const Doctors = () => {
   const filteredList = (filterDoc || []).filter((d) => {
     if (search) {
       const q = search.toLowerCase();
-      if (!(d.name?.toLowerCase().includes(q) || d.speciality?.toLowerCase().includes(q) || d.location?.toLowerCase().includes(q))) return false;
+      const localizedName = getDoctorNameForLanguage(d, language);
+      if (!(
+        d.name?.toLowerCase().includes(q) ||
+        localizedName?.toLowerCase().includes(q) ||
+        d.speciality?.toLowerCase().includes(q) ||
+        d.location?.toLowerCase().includes(q)
+      )) return false;
     }
     const fee = d.fee || d.consultation_fee || d.consultationFee || 0;
     if (fee < minFee || fee > maxFee) return false;
@@ -266,7 +275,14 @@ const Doctors = () => {
               <div>
                 <div className="grid grid-cols-1 gap-5">
                   {pageItems.map((doctor, index) => (
-                    <DoctorCard key={doctor._id || index} doctor={doctor} />
+                    <DoctorCard
+                      key={doctor._id || index}
+                      doctor={{
+                        ...doctor,
+                        name: getDoctorNameForLanguage(doctor, language),
+                        englishName: getDoctorNameForLanguage(doctor, "en"),
+                      }}
+                    />
                   ))}
                 </div>
 

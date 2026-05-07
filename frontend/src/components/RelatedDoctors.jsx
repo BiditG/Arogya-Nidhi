@@ -1,10 +1,18 @@
 import { useContext, useEffect, useState } from "react";
 import { AppContext } from "../context/AppContext";
 import DoctorCard from "./DoctorCard";
+import { useLanguage } from "../utils/language";
+import { getDoctorNameForLanguage } from "../utils/nepaliNames";
 
 const RelatedDoctors = ({ docId, speciality }) => {
   const [relDoc, setRelDoc] = useState([]);
   const { doctors } = useContext(AppContext);
+  const [language] = useLanguage();
+  const localizeDoctor = (doctor) => ({
+    ...doctor,
+    name: getDoctorNameForLanguage(doctor, language),
+    englishName: getDoctorNameForLanguage(doctor, "en"),
+  });
 
   useEffect(() => {
     if (doctors.length > 0 && speciality) {
@@ -24,7 +32,7 @@ const RelatedDoctors = ({ docId, speciality }) => {
         </p>
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-5 px-3 sm:px-0">
           {relDoc.slice(0, 5).map((doctor, index) => (
-            <DoctorCard key={index} doctor={doctor} />
+            <DoctorCard key={doctor._id || doctor.id || index} doctor={localizeDoctor(doctor)} />
           ))}
         </div>
       </div>

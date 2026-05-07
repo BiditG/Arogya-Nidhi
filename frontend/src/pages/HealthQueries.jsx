@@ -55,7 +55,8 @@ const fmtTime = (iso) => {
 };
 
 const normalizeQuery = (query) => {
-  const patientName = query?.isAnonymous ? "Anonymous Patient" : query?.patient?.user?.name || "Patient";
+  const isAnonymous = !!(query?.isAnonymous ?? query?.is_anonymous);
+  const patientName = isAnonymous ? "Anonymous Patient" : query?.patient?.user?.name || "Patient";
   const responses = Array.isArray(query?.responses)
     ? query.responses.map((response) => ({
         id: response.id,
@@ -81,8 +82,8 @@ const normalizeQuery = (query) => {
     views: Number(query.viewCount || query.view_count || 0),
     responses,
     comments: responses.length,
-    isResolved: !!query.isResolved,
-    isAnonymous: !!query.isAnonymous,
+    isResolved: !!(query.isResolved ?? query.is_resolved),
+    isAnonymous,
     triageDecision: query.triageDecision || null,
   };
 };
@@ -114,7 +115,9 @@ const HealthQueries = ({ mode = "patient" }) => {
     const loadQueries = async () => {
       setLoading(true);
       try {
-        const data = await patientPortalApi.getForumQueries(backendUrl, token, role, { page: 1, limit: 100 });
+        const data = role === "patient"
+          ? await patientPortalApi.getQueries(backendUrl, token, { page: 1, limit: 100 })
+          : await patientPortalApi.getForumQueries(backendUrl, token, role, { page: 1, limit: 100 });
         const items = Array.isArray(data?.queries) ? data.queries : Array.isArray(data) ? data : [];
         setQueries(items.map(normalizeQuery));
       } catch (error) {

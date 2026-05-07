@@ -71,7 +71,6 @@ const Students = () => {
     <div className="pp-page">
       <div className="pp-container">
         <aside className="ps-sidebar">
-          <div className="ps-menu-title">Tools</div>
           <ul className="ps-menu-list">
             {NAV.map(({ id, label, Icon }) => (
               <li key={id} className="ps-menu-item">

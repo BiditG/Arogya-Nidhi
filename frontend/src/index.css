@@ -6,12 +6,75 @@
   50%       { opacity: 0.4; }
 }
 
+@keyframes top-doctors-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 *{
   font-family: Outfit;
 }
 
+.top-doctors-marquee {
+  overflow: hidden;
+  width: 100%;
+}
+
+.top-doctors-marquee-track {
+  animation: top-doctors-marquee 28s linear infinite;
+  display: flex;
+  gap: 1.25rem;
+  width: max-content;
+  will-change: transform;
+}
+
+.top-doctors-marquee:hover .top-doctors-marquee-track {
+  animation-play-state: paused;
+}
+
+.top-doctor-spotlight {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  box-shadow: 0 16px 36px -28px rgb(15 23 42 / 0.5);
+  min-height: 286px;
+  padding: 1.5rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  width: min(78vw, 260px);
+}
+
+.top-doctor-spotlight:hover {
+  border-color: rgb(59 130 246 / 0.35);
+  box-shadow: 0 22px 42px -30px rgb(37 99 235 / 0.65);
+  transform: translateY(-3px);
+}
+
+.top-doctor-avatar-wrap {
+  align-items: center;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 9999px;
+  display: flex;
+  height: 108px;
+  justify-content: center;
+  margin: 0 auto;
+  width: 108px;
+}
+
+.top-doctor-avatar {
+  border-radius: 9999px;
+  height: 88px;
+  width: 88px;
+}
+
+@media (min-width: 768px) {
+  .top-doctor-spotlight {
+    width: 286px;
+  }
+}
+
 @theme {
-  --color-primary: #5f6fff;
+  --color-primary: #3b82f6;
 }
 
 .active hr {

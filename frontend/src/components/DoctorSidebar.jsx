@@ -24,7 +24,6 @@ const NAV_ITEMS = [
 
 const DoctorSidebar = () => (
   <aside className="ps-sidebar">
-    <div className="ps-menu-title">Menu</div>
     <ul className="ps-menu-list">
       {NAV_ITEMS.map(({ label, to, end, Icon }) => (
         <li key={to} className="ps-menu-item">

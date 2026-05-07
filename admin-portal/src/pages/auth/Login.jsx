@@ -5,11 +5,13 @@ import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
 import { DoctorContext } from "../../context/DoctorContext";
 import { supabase } from "../../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [state, setState] = useState("Admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const { setAToken } = useContext(AdminContext);
   const { setDToken } = useContext(DoctorContext);
@@ -39,13 +41,23 @@ const Login = () => {
         return;
       }
 
-      if (state === "Admin") {
+      const actualRole = (sData?.user?.user_metadata?.role || state).toLowerCase();
+
+      if (actualRole === "admin") {
         localStorage.setItem("aToken", accessToken);
+        localStorage.removeItem("dToken");
         setAToken(accessToken);
+        setDToken("");
         toast.success("Admin logged in successfully");
-      } else {
+        navigate("/admin/dashboard", { replace: true });
+      } else if (actualRole === "doctor") {
+        localStorage.removeItem("aToken");
+        setAToken("");
         setDToken(accessToken);
         toast.success("Doctor logged in successfully");
+        navigate("/doctor/dashboard", { replace: true });
+      } else {
+        toast.error("This portal is only for admins and doctors");
       }
     } catch (error) {
       toast.error(error.message || "Invalid credentials");

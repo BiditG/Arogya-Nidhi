@@ -8,6 +8,16 @@ const DoctorCard = ({ doctor }) => {
   const navigate = useNavigate();
   const { currencySymbol } = useContext(AppContext);
   const doctorId = doctor?._id || doctor?.id || doctor?.doctorId || doctor?.doctor_id || null;
+  const imageSrc =
+    doctor?.image ||
+    doctor?.avatar_url ||
+    doctor?.avatarUrl ||
+    doctor?.profile_image ||
+    doctor?.user?.avatar_url ||
+    doctor?.user?.avatarUrl ||
+    doctor?.users?.avatar_url ||
+    doctor?.fallbackImage ||
+    adminAssets.doctor_icon;
 
   const handleBook = (e) => {
     e?.stopPropagation();
@@ -29,15 +39,17 @@ const DoctorCard = ({ doctor }) => {
       className={`min-h-[260px] h-full flex flex-col border border-gray-200 rounded-lg bg-white cursor-pointer hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200 overflow-hidden ${doctor.available ? "" : "opacity-60"}`}
     >
       <div className="flex items-start md:items-center gap-5 p-6">
-        {doctor.image ? (
-          <img
-            className="w-28 h-28 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0"
-            src={doctor.image}
-            alt={doctor.name}
-          />
-        ) : (
-          <img className="w-28 h-28 rounded-full bg-gray-100 ring-2 ring-primary/20 flex-shrink-0 p-4" src={adminAssets.doctor_icon} alt="doctor icon" />
-        )}
+        <img
+          className={`w-28 h-28 rounded-full ring-2 ring-primary/20 flex-shrink-0 ${imageSrc === adminAssets.doctor_icon ? "bg-gray-100 p-4 object-contain" : "object-cover"}`}
+          src={imageSrc}
+          alt={doctor.name || "Doctor"}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = adminAssets.doctor_icon;
+            e.currentTarget.classList.remove("object-cover");
+            e.currentTarget.classList.add("object-contain", "bg-gray-100", "p-4");
+          }}
+        />
 
         <div className="flex-1 min-w-0">
           <h3 className="text-gray-900 text-xl font-semibold truncate" title={doctor.name}>{doctor.name}</h3>

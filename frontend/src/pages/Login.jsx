@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { getDashboardPathForRole, getUserRole } from "../utils/roleDashboard";
 
 const Login = () => {
   const { backendUrl, setToken, token, userData, getDoctorsData } = useContext(AppContext);
@@ -78,10 +79,7 @@ const Login = () => {
               try { getDoctorsData(); } catch (_) {}
             }
             toast.success("Account created successfully");
-            if (role === 'doctor') navigate('/doctor-portal');
-            else if (role === 'student') navigate('/student-portal');
-            else if (role === 'admin') navigate('/admin-portal');
-            else navigate('/patient-portal');
+            navigate(getDashboardPathForRole(role), { replace: true });
           } else {
             toast.error(data?.message || "Failed to create account");
           }
@@ -108,10 +106,7 @@ const Login = () => {
         setToken(accessToken);
 
         toast.success("Logged in successfully!");
-        if (loggedRole === 'doctor') navigate('/doctor-portal');
-        else if (loggedRole === 'student') navigate('/student-portal');
-        else if (loggedRole === 'admin') navigate('/admin-portal');
-        else navigate('/patient-portal');
+        navigate(getDashboardPathForRole(loggedRole), { replace: true });
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "An error occurred");
@@ -122,15 +117,14 @@ const Login = () => {
 
   useEffect(() => {
     if (token && userData) {
-      if (userData.user?.role === 'patient' || userData.role === 'patient') navigate("/patient-portal");
-      else navigate("/");
+      navigate(getDashboardPathForRole(getUserRole(userData)), { replace: true });
     }
-  }, [token, userData]);
+  }, [navigate, token, userData]);
 
   return (
     <main className="min-h-[calc(100vh-140px)] bg-gray-50/70 px-4 pb-10 pt-28 sm:px-6 sm:pt-32 lg:px-12">
       <div className="mx-auto grid w-full max-w-6xl overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl shadow-primary/10 lg:grid-cols-[0.95fr_1.05fr]">
-        <section className="hidden bg-primary px-10 py-12 text-white lg:flex lg:items-center lg:justify-center">
+        <section className="hidden bg-[#3b82f6] px-10 py-12 text-white lg:flex lg:items-center lg:justify-center">
           <div className="max-w-md text-center">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">

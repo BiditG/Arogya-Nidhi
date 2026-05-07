@@ -2,6 +2,7 @@ import { createContext, useCallback, useEffect, useMemo, useState } from "react"
 import axios from "axios";
 import { toast } from "react-toastify";
 import { supabase } from "../lib/supabaseClient";
+import { assets as adminAssets } from "../assets/assets_admin/assets";
 
 export const AppContext = createContext();
 
@@ -63,7 +64,7 @@ const AppContextProvider = (props) => {
           // Supabase returns related row under the relation name (usually 'users')
           const userRow = r.users || r.user || null;
           const displayName = (userRow && (userRow.name || userRow.email)) || r.name || r.license_no || `Dr ${r.id?.slice(0, 8)}`;
-          const image = (userRow && (userRow.avatar_url || userRow.avatar)) || r.image || "/images/doctor-placeholder.png";
+          const image = (userRow && (userRow.avatar_url || userRow.avatarUrl || userRow.avatar)) || r.image || r.avatar_url || null;
 
           return {
             _id: r.id,
@@ -82,6 +83,7 @@ const AppContextProvider = (props) => {
             created_at: r.created_at,
             updated_at: r.updated_at,
             image,
+            fallbackImage: adminAssets.doctor_icon,
             raw: r,
           };
         });

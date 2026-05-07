@@ -327,11 +327,16 @@ async function findCommunityQueryById(id) {
 
 async function createQuery(data) {
   // normalize camelCase keys to snake_case columns for PostgREST
+  const patientId = data.patientId ?? data.patient_id;
+  if (!patientId) {
+    throw { status: 400, message: 'patientId is required' };
+  }
+
   const payload = {
-    patient_id: data.patientId,
+    patient_id: patientId,
     title: data.title,
-    symptom_text: data.symptomText ?? null,
-    is_anonymous: data.isAnonymous === true || data.isAnonymous === 'true',
+    symptom_text: data.symptomText ?? data.symptom_text ?? null,
+    is_anonymous: data.isAnonymous === true || data.isAnonymous === 'true' || data.is_anonymous === true || data.is_anonymous === 'true',
   };
   const { data: created, error } = await supabase.from('patient_queries').insert(payload).select().maybeSingle();
   if (error) throw error;

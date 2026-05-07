@@ -299,7 +299,16 @@ const BookAppointment = () => {
                   const specialty = getDoctorSpecialty(doc);
                   const experience = getDoctorExperience(doc);
                   const available = isDoctorAvailable(doc);
-                  const imgSrc = doc.user?.profile_image || doc.profile_image || doc.image || null;
+                  const imgSrc =
+                    doc.user?.profile_image ||
+                    doc.user?.avatar_url ||
+                    doc.user?.avatarUrl ||
+                    doc.users?.avatar_url ||
+                    doc.profile_image ||
+                    doc.avatar_url ||
+                    doc.avatarUrl ||
+                    doc.image ||
+                    null;
                   return (
                     <div key={doc.id} className={`ba-doctor-card${isSelected ? " ba-specialist-selected" : ""}`}>
                       <div className="ba-doctor-avatar">

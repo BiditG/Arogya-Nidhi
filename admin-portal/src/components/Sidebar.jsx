@@ -36,14 +36,8 @@ const Sidebar = () => {
   const { dToken } = useContext(DoctorContext);
 
   const navLinks = aToken ? adminNavLinks : doctorNavLinks;
-  const isAdmin = !!aToken;
-
   return (
     <aside className="ap-sidebar" style={sidebarStyle}>
-      <div className="ap-sidebar-header" style={sidebarHeaderStyle}>
-        <h2 style={logoStyle}>{isAdmin ? "Admin Menu" : "Doctor Menu"}</h2>
-      </div>
-
       {(aToken || dToken) && (
         <nav className="ap-sidebar-nav">
           <ul style={navListStyle}>
@@ -87,21 +81,6 @@ const sidebarStyle = {
   height: "calc(100vh - 65px)",
   overflowY: "auto",
   zIndex: 40,
-};
-
-const sidebarHeaderStyle = {
-  padding: "1.25rem 1.25rem",
-  borderBottom: "1px solid var(--ap-border)",
-  backgroundColor: "var(--ap-primary-lighter)",
-};
-
-const logoStyle = {
-  fontSize: "0.6875rem",
-  fontWeight: "700",
-  color: "var(--ap-text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  margin: 0,
 };
 
 const navListStyle = {

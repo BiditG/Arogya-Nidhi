@@ -1,7 +1,7 @@
 /* ─── Health Queries / Discussion Forum ─────────────────────────── */
 :root {
-  --hq-primary: #1e40af;
-  --hq-primary-dark: #1e3a8a;
+  --hq-primary: #3b82f6;
+  --hq-primary-dark: #2563eb;
   --hq-primary-light: #dbeafe;
   --hq-primary-lighter: #eff6ff;
   --hq-background: #f8fafc;
@@ -94,7 +94,7 @@
   padding: 2rem;
   overflow-y: auto;
   height: 100%;
-  margin-left: 240px;
+  margin-left: 280px;
   box-sizing: border-box;
 }
 
