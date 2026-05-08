@@ -7,9 +7,13 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { getDashboardPathForRole, getUserRole } from "../utils/roleDashboard";
+import { AdminContext } from "../admin/context/AdminContext";
+import { DoctorContext } from "../admin/context/DoctorContext";
 
 const Login = () => {
   const { backendUrl, setToken, token, userData, getDoctorsData } = useContext(AppContext);
+  const { setAToken } = useContext(AdminContext);
+  const { setDToken } = useContext(DoctorContext);
   const navigate = useNavigate();
   const [state, setState] = useState("Login");
   const [role, setRole] = useState("patient");
@@ -39,11 +43,15 @@ const Login = () => {
 
     localStorage.removeItem("aToken");
     localStorage.removeItem("dToken");
+    setAToken("");
+    setDToken("");
 
     if (normalizedRole === "admin") {
       localStorage.setItem("aToken", accessToken);
+      setAToken(accessToken);
     } else if (normalizedRole === "doctor") {
       localStorage.setItem("dToken", accessToken);
+      setDToken(accessToken);
     }
   };
 
@@ -324,12 +332,6 @@ const Login = () => {
               </p>
             )}
 
-            <p>
-              Doctor or Admin?{" "}
-              <a href="/admin-portal" className="font-semibold text-primary underline underline-offset-2">
-                Portal login
-              </a>
-            </p>
           </div>
         </form>
       </div>

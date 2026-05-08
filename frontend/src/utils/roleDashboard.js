@@ -13,7 +13,7 @@ export const getDashboardPathForRole = (role) => {
 
   if (normalizedRole === "doctor") return "/doctor-portal";
   if (normalizedRole === "student") return "/student-portal";
-  if (normalizedRole === "admin") return "/admin-portal";
+  if (normalizedRole === "admin") return "/admin-portal/admin/dashboard";
 
   return "/patient-portal";
 };

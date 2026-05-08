@@ -1,17 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useContext } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { assets } from "../assets/assets";
 import { AdminContext } from "../context/AdminContext";
 import { DoctorContext } from "../context/DoctorContext";
+import { AppContext } from "../../context/AppContext";
 
 const Navbar = () => {
   const { aToken, setAToken } = useContext(AdminContext);
   const { dToken, setDToken } = useContext(DoctorContext);
+  const { logout } = useContext(AppContext);
   const [open, setOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const ref = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isAdmin = !!aToken;
   const isDoctor = !!dToken;
@@ -35,12 +38,14 @@ const Navbar = () => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setAToken("");
     localStorage.removeItem("aToken");
     setDToken("");
     localStorage.removeItem("dToken");
+    await logout();
     setOpen(false);
+    navigate("/login", { replace: true });
   };
 
   return (
