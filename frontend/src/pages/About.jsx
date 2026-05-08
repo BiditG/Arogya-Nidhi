@@ -16,7 +16,7 @@ const About = () => {
           <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-3 shadow-sm">
             <p className="text-xs font-semibold text-gray-700">ArogyaNidhi</p>
             <p className="text-xs text-gray-400 italic mt-0.5">
-              अारोग्यनिधि — स्वास्थ्य नै धन हो
+              आरोग्यनिधि — स्वास्थ्य नै धन हो
             </p>
           </div>
         </div>

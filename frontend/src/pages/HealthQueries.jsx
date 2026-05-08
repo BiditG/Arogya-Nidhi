@@ -1,8 +1,9 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, ChatBubbleLeftIcon, ChevronLeftIcon, ChevronRightIcon, EyeIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ChatBubbleLeftIcon, EyeIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import DoctorSidebar from "../components/DoctorSidebar";
 import PatientSidebar from "../components/PatientSidebar";
+import PageChanger from "../components/PageChanger";
 import { AppContext } from "../context/AppContext";
 import { patientPortalApi } from "../utils/patientPortalApi";
 import { toast } from "react-toastify";
@@ -179,7 +180,7 @@ const HealthQueries = ({ mode = "patient" }) => {
   const paginated = sorted.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
 
   return (
-    <div className="hq-page">
+    <div className={`hq-page hq-theme-portal hq-mode-${role}`}>
       <div className="hq-container">
         {Sidebar ? <Sidebar /> : null}
 
@@ -295,26 +296,7 @@ const HealthQueries = ({ mode = "patient" }) => {
             </div>
           )}
 
-          {totalPages > 1 && (
-            <div className="hq-pagination">
-              <button type="button" className="hq-page-btn" disabled={currentPage === 1} onClick={() => setCurrentPage((page) => page - 1)}>
-                <ChevronLeftIcon style={{ width: 14, height: 14 }} /> Prev
-              </button>
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-                <button
-                  key={pageNumber}
-                  type="button"
-                  className={`hq-page-btn ${currentPage === pageNumber ? "hq-page-btn-active" : ""}`}
-                  onClick={() => setCurrentPage(pageNumber)}
-                >
-                  {pageNumber}
-                </button>
-              ))}
-              <button type="button" className="hq-page-btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((page) => page + 1)}>
-                Next <ChevronRightIcon style={{ width: 14, height: 14 }} />
-              </button>
-            </div>
-          )}
+          <PageChanger currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </main>
       </div>
 

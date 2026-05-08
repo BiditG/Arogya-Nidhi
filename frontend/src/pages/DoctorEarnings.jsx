@@ -33,7 +33,7 @@ const EarningsTooltip = ({ active, payload, label }) => {
   );
 };
 
-const DUMMY_STATS = { earning: 24500, thisMonth: 8200, pending: 2400, avgPerConsultation: 850 };
+const DUMMY_STATS = { earning: 24500, thisMonth: 8200 };
 
 const DUMMY_TRANSACTIONS = [
   { id: "t1", patient_name: "Rajan Adhikari", slotDate: "Apr 30, 2026", service: "Routine Checkup", amount: 800, payment: true },
@@ -83,8 +83,6 @@ const DoctorEarnings = () => {
   const displayTransactions = transactions.length > 0 ? transactions : DUMMY_TRANSACTIONS;
   const totalEarning = dash?.earning || DUMMY_STATS.earning;
   const thisMonth = dash?.thisMonth || DUMMY_STATS.thisMonth;
-  const pendingAmt = dash?.pending || DUMMY_STATS.pending;
-  const avgPerConsult = dash?.avgPerConsultation || DUMMY_STATS.avgPerConsultation;
 
   return (
     <div className="pp-page">
@@ -96,7 +94,7 @@ const DoctorEarnings = () => {
           <section className="pp-section">
             {loading ? (
               <div className="pp-stats-grid">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(2)].map((_, i) => (
                   <div key={i} className="pp-stat-card">
                     <div className="pp-stat-label">Loading...</div>
                     <div className="pp-stat-value">—</div>
@@ -112,14 +110,6 @@ const DoctorEarnings = () => {
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">This Month</div>
                   <div className="pp-stat-value">रु {Number(thisMonth).toLocaleString()}</div>
-                </div>
-                <div className="pp-stat-card">
-                  <div className="pp-stat-label">Pending Payment</div>
-                  <div className="pp-stat-value">रु {Number(pendingAmt).toLocaleString()}</div>
-                </div>
-                <div className="pp-stat-card">
-                  <div className="pp-stat-label">Avg per Consultation</div>
-                  <div className="pp-stat-value">रु {Number(avgPerConsult).toLocaleString()}</div>
                 </div>
               </div>
             )}

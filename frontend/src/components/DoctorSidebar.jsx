@@ -6,7 +6,6 @@ import {
   ClipboardDocumentListIcon,
   SparklesIcon,
   BanknotesIcon,
-  DocumentTextIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
@@ -20,7 +19,6 @@ const NAV_ITEMS = [
   { label: "Health Queries", to: "/doctor-portal/health-queries", Icon: ChatBubbleOvalLeftEllipsisIcon },
   { label: "AI Summaries", to: "/doctor-portal/ai-summaries", Icon: SparklesIcon },
   { label: "Earnings", to: "/doctor-portal/earnings", Icon: BanknotesIcon },
-  { label: "Reports", to: "/doctor-portal/reports", Icon: DocumentTextIcon },
   { label: "Article", to: "/doctor-portal/article", Icon: PencilSquareIcon },
 ];
 

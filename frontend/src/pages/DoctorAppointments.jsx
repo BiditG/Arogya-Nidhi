@@ -3,7 +3,6 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
 import { AppContext } from "../context/AppContext";
-import { UserCircleIcon } from "@heroicons/react/24/outline";
 import "./PatientPortal.css";
 
 const DoctorAppointments = () => {
@@ -94,10 +93,6 @@ const DoctorAppointments = () => {
     return true;
   });
 
-  const pending = filtered.filter(
-    (appointment) => normalizeStatus(appointment.status) === "pending"
-  );
-
   const scheduled = filtered.filter((appointment) =>
     ["confirmed", "scheduled"].includes(normalizeStatus(appointment.status))
   );
@@ -109,44 +104,6 @@ const DoctorAppointments = () => {
   const cancelled = filtered.filter(
     (appointment) => normalizeStatus(appointment.status) === "cancelled"
   );
-
-  const accept = async (appointment) => {
-    try {
-      const { data } = await axios.patch(
-        `${backendUrl}/api/appointments/${appointment.id}`,
-        { status: "CONFIRMED" },
-        { headers }
-      );
-
-      if (data) {
-        toast.success("Appointment accepted");
-        loadAppointments();
-      }
-    } catch (err) {
-      console.error("Accept appointment error:", err);
-      toast.error(err?.response?.data?.error || "Failed to accept appointment");
-    }
-  };
-
-  const reject = async (appointment) => {
-    try {
-      const { data } = await axios.post(
-        `${backendUrl}/api/doctor/cancel-appointment`,
-        { appointmentId: appointment.id },
-        { headers }
-      );
-
-      if (data?.success) {
-        toast.success(data.message || "Appointment rejected");
-        loadAppointments();
-      } else {
-        toast.error(data?.message || "Failed to reject appointment");
-      }
-    } catch (err) {
-      console.error("Reject appointment error:", err);
-      toast.error(err?.response?.data?.message || "Failed to reject appointment");
-    }
-  };
 
   const complete = async (appointment) => {
     try {
@@ -193,7 +150,6 @@ const DoctorAppointments = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">All statuses</option>
-                <option value="pending">Pending</option>
                 <option value="confirmed">Scheduled</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
@@ -215,71 +171,6 @@ const DoctorAppointments = () => {
                 Refresh
               </button>
             </div>
-          </section>
-
-          <section className="pp-section">
-            <h2 className="pp-section-title">Pending Requests</h2>
-
-            {loading ? (
-              <div className="pp-appointment-list">
-                <div className="pp-appointment-item">
-                  <div className="pp-appointment-info">
-                    <div className="pp-appointment-title">Loading...</div>
-                  </div>
-                </div>
-              </div>
-            ) : pending.length === 0 ? (
-              <div className="pp-appointment-list">
-                <div className="pp-appointment-item">
-                  <div className="pp-appointment-info">
-                    <div className="pp-appointment-title">
-                      No pending requests
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="pp-appointment-list">
-                {pending.map((appointment) => (
-                  <div
-                    key={appointment.id || appointment._id}
-                    className="pp-appointment-item"
-                  >
-                    <div className="pp-appointment-icon">
-                      <UserCircleIcon style={{ width: 22, height: 22 }} />
-                    </div>
-
-                    <div className="pp-appointment-info">
-                      <div className="pp-appointment-title">
-                        {getPatientName(appointment)}
-                      </div>
-
-                      <div className="pp-appointment-meta">
-                        {getAppointmentDate(appointment)}{" "}
-                        {getAppointmentTime(appointment)} ·{" "}
-                        {getAppointmentType(appointment)}
-                      </div>
-                    </div>
-
-                    <div className="pp-appointment-actions">
-                      <button
-                        className="pp-btn pp-btn-primary pp-btn-sm"
-                        onClick={() => accept(appointment)}
-                      >
-                        Accept
-                      </button>
-
-                      <button
-                        className="pp-btn pp-btn-outline pp-btn-sm"
-                        onClick={() => reject(appointment)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
 
           <section className="pp-section">

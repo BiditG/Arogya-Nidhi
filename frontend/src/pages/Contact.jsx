@@ -69,7 +69,12 @@ const Contact = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</p>
-                  <p className="text-sm text-gray-700 font-medium mt-0.5">mahmudalam.official@gmail.com</p>
+                  <a
+                    className="text-sm text-gray-700 font-medium mt-0.5 inline-block hover:text-primary transition-colors duration-200"
+                    href="mailto:info@arogyanidhi.com"
+                  >
+                    info@arogyanidhi.com
+                  </a>
                 </div>
               </div>
 
@@ -88,9 +93,12 @@ const Contact = () => {
             <p className="text-sm text-gray-500 leading-6">
               Learn more about our teams and job openings. Join us in building Nepal's most trusted healthcare platform.
             </p>
-            <button className="self-start mt-1 border border-primary text-primary text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-primary hover:text-white transition-all duration-300">
-              Explore Jobs
-            </button>
+            <a
+              className="self-start mt-1 border border-primary text-primary text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-primary hover:text-white transition-all duration-300"
+              href="mailto:info@arogyanidhi.com"
+            >
+              Get connected
+            </a>
           </div>
 
         </div>

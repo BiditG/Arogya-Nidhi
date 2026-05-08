@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import DoctorCard from "../components/DoctorCard";
+import PageChanger from "../components/PageChanger";
 import { useLanguage } from "../utils/language";
 import { getDoctorNameForLanguage } from "../utils/nepaliNames";
 
@@ -285,51 +286,7 @@ const Doctors = () => {
                     />
                   ))}
                 </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 mt-8">
-                    <button
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className={`px-5 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200 ${
-                        page <= 1
-                          ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400"
-                          : "border-gray-300 text-gray-600 hover:border-primary hover:text-primary"
-                      }`}
-                    >
-                      ← Prev
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setPage(p)}
-                          className={`w-9 h-9 rounded-full text-sm font-medium transition-all duration-200 ${
-                            p === page
-                              ? "bg-primary text-white shadow-sm"
-                              : "text-gray-500 hover:bg-primary/10 hover:text-primary"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      className={`px-5 py-2 rounded-full text-sm font-medium border-2 transition-all duration-200 ${
-                        page >= totalPages
-                          ? "opacity-40 cursor-not-allowed border-gray-200 text-gray-400"
-                          : "border-gray-300 text-gray-600 hover:border-primary hover:text-primary"
-                      }`}
-                    >
-                      Next →
-                    </button>
-                  </div>
-                )}
+                <PageChanger currentPage={page} totalPages={totalPages} onPageChange={setPage} />
               </div>
             )}
           </main>

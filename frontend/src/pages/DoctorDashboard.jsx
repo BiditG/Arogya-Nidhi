@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import "./PatientPortal.css";
 
-const DUMMY_STATS = { todayAppointments: 4, pendingRequests: 2, totalConsultations: 47, earning: 8200 };
+const DUMMY_STATS = { todayAppointments: 4, totalConsultations: 47, earning: 8200 };
 
 const EARNINGS_DATA = [
   { month: "Nov", earnings: 4200 },
@@ -53,11 +53,6 @@ const DUMMY_APPOINTMENTS = [
   { id: "da2", user: { name: "Bikash Shrestha" }, slotDate: "May 1, 2026", slotTime: "11:30 AM" },
   { id: "da3", user: { name: "Priya Gautam" }, slotDate: "May 1, 2026", slotTime: "2:00 PM" },
   { id: "da4", user: { name: "Rajan Adhikari" }, slotDate: "May 1, 2026", slotTime: "3:30 PM" },
-];
-
-const DUMMY_PENDING = [
-  { id: "dp1", patient_name: "Sunita Poudel", slotDate: "May 2, 2026", request_type: "Consultation" },
-  { id: "dp2", patient_name: "Deepak Karki", slotDate: "May 3, 2026", request_type: "Follow-up" },
 ];
 
 const DUMMY_CONSULTATIONS = [
@@ -103,8 +98,6 @@ const DoctorDashboard = () => {
     (dash?.latestAppointments || []).length > 0
       ? (dash.latestAppointments || []).slice(0, 5)
       : DUMMY_APPOINTMENTS;
-  const pending =
-    (dash?.pendingRequests || []).length > 0 ? dash.pendingRequests : DUMMY_PENDING;
   const consultations =
     (dash?.latestAppointments || []).length > 0 ? dash.latestAppointments : DUMMY_CONSULTATIONS;
 
@@ -127,7 +120,7 @@ const DoctorDashboard = () => {
             <h2 className="pp-section-title">Overview</h2>
             {loading ? (
               <div className="pp-stats-grid">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(3)].map((_, i) => (
                   <div key={i} className="pp-stat-card">
                     <div className="pp-stat-label">Loading...</div>
                     <div className="pp-stat-value">—</div>
@@ -139,10 +132,6 @@ const DoctorDashboard = () => {
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">Today's Appointments</div>
                   <div className="pp-stat-value">{todayCount}</div>
-                </div>
-                <div className="pp-stat-card">
-                  <div className="pp-stat-label">Pending Requests</div>
-                  <div className="pp-stat-value">{pending.length}</div>
                 </div>
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">Total Consultations</div>
@@ -189,43 +178,6 @@ const DoctorDashboard = () => {
                 ))}
               </div>
             )}
-          </section>
-
-          <section className="pp-section">
-            <h2 className="pp-section-title">Pending Requests</h2>
-            <div className="pp-table-container">
-              <table className="pp-table">
-                <thead>
-                  <tr>
-                    <th>Patient Name</th>
-                    <th>Date &amp; Time</th>
-                    <th>Type</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={4}>Loading...</td>
-                    </tr>
-                  ) : (
-                    pending.map((p) => (
-                      <tr key={p.id || p._id}>
-                        <td>{p.patient_name || p.user?.name || "—"}</td>
-                        <td>{p.date || p.slotDate || "—"}</td>
-                        <td>{p.type || p.request_type || "—"}</td>
-                        <td>
-                          <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
-                            <button className="pp-btn pp-btn-primary pp-btn-sm">Accept</button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
           </section>
 
           <section className="pp-section">

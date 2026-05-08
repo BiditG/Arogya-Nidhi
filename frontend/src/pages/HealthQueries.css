@@ -15,6 +15,26 @@
   --hq-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
+/* Portal theme override (doctor/patient/student portals): use dark-blue portal palette.
+   Public chat keeps the default lighter blue in :root.
+*/
+.hq-page.hq-theme-portal {
+  --hq-primary: var(--pp-primary, #1e40af);
+  --hq-primary-dark: var(--pp-primary-dark, #1e3a8a);
+  --hq-primary-light: var(--pp-primary-light, #dbeafe);
+  --hq-primary-lighter: var(--pp-primary-lighter, #eff6ff);
+
+  --hq-background: var(--pp-background, #f8fafc);
+  --hq-surface: var(--pp-surface, #ffffff);
+  --hq-text-primary: var(--pp-text-primary, #0f172a);
+  --hq-text-secondary: var(--pp-text-secondary, #64748b);
+  --hq-text-muted: var(--pp-text-muted, #94a3b8);
+  --hq-border: var(--pp-border, #e2e8f0);
+  --hq-border-light: var(--pp-border-light, #f1f5f9);
+  --hq-shadow-sm: var(--pp-shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+  --hq-shadow: var(--pp-shadow, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+}
+
 .hq-page {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--hq-background);
