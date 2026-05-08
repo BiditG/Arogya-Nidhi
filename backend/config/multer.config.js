@@ -1,21 +1,33 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 
-// ─── Ensure upload dirs exist ─────────────────────────────────────────────────
+// ─── Upload dirs (local + serverless) ────────────────────────────────────────
 
-const AVATAR_DIR    = 'uploads/avatars';
-const REPORTS_DIR   = 'uploads/reports';
+const baseUploadDir = (() => {
+  if (process.env.UPLOAD_DIR) return path.resolve(process.env.UPLOAD_DIR);
+  if (process.env.VERCEL) return path.join(os.tmpdir(), 'uploads');
+  return path.join(process.cwd(), 'uploads');
+})();
 
-[AVATAR_DIR, REPORTS_DIR].forEach((dir) => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
+const AVATAR_DIR = path.join(baseUploadDir, 'avatars');
+const REPORTS_DIR = path.join(baseUploadDir, 'reports');
+
+function ensureDir(dir, cb) {
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  } catch (err) {
+    cb(err);
+  }
+}
 
 // ─── Avatar Storage ───────────────────────────────────────────────────────────
 
 const avatarStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
+  destination: (_req, _file, cb) => ensureDir(AVATAR_DIR, cb),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `avatar-${uuidv4()}${ext}`);
@@ -37,7 +49,7 @@ export const uploadAvatar = multer({
 // ─── Medical Report Storage ───────────────────────────────────────────────────
 
 const reportStorage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, REPORTS_DIR),
+  destination: (_req, _file, cb) => ensureDir(REPORTS_DIR, cb),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `report-${uuidv4()}${ext}`);
