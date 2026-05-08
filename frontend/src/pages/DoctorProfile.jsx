@@ -1,7 +1,8 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
+import QRCode from "react-qr-code";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
 import {
@@ -135,6 +136,22 @@ const DoctorProfile = () => {
     loadDoctorProfile();
   }, [backendUrl, token]);
 
+  const barcode = userData?.barcode || userData?.user?.barcode || "";
+  const publicLink = useMemo(() => {
+    if (!barcode) return "";
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/public-profile/${barcode}`;
+  }, [barcode]);
+
+  const copyToClipboard = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error("Copy failed");
+    }
+  };
+
   const handleField = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
@@ -254,7 +271,7 @@ const DoctorProfile = () => {
               <h2 className="pp-section-title">Profile Picture</h2>
               <div
                 className="pp-panel"
-                style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1.5rem", alignItems: "start" }}
+                style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "1.5rem", alignItems: "start" }}
               >
                 <div>
                   <div
@@ -315,6 +332,32 @@ const DoctorProfile = () => {
                   <FormField label="Date of Birth">
                     <input className="dp-input" name="dob" type="date" placeholder="DD/MM/YYYY" value={form.dob} onChange={handleField} />
                   </FormField>
+                </div>
+
+                <div className="dp-qr-card">
+                  <div>
+                    <div className="dp-qr-title">Profile Barcode</div>
+                    <div className="dp-qr-subtitle">Scan to open your public profile.</div>
+                  </div>
+                  <div className="dp-qr-code">
+                    {publicLink ? <QRCode value={publicLink} size={132} /> : <span>No barcode yet</span>}
+                  </div>
+                  <div>
+                    <div className="dp-qr-value">{barcode || "--"}</div>
+                    {publicLink && <div className="dp-qr-link">{publicLink}</div>}
+                  </div>
+                  <div className="dp-qr-actions">
+                    {barcode && (
+                      <button type="button" className="pp-btn pp-btn-outline pp-btn-sm" onClick={() => copyToClipboard(barcode, "Barcode")}>
+                        Copy Code
+                      </button>
+                    )}
+                    {publicLink && (
+                      <button type="button" className="pp-btn pp-btn-secondary pp-btn-sm" onClick={() => copyToClipboard(publicLink, "Link")}>
+                        Copy Link
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
@@ -585,6 +628,77 @@ const DoctorProfile = () => {
         .dp-textarea {
           resize: vertical;
           min-height: 90px;
+        }
+        .dp-qr-card {
+          align-self: stretch;
+          width: min(100%, 250px);
+          border: 1px solid var(--pp-border);
+          border-radius: 0.5rem;
+          background: var(--pp-background);
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .dp-qr-title {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--pp-text-primary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .dp-qr-subtitle {
+          color: var(--pp-text-secondary);
+          font-size: 0.75rem;
+          margin-top: 0.2rem;
+        }
+        .dp-qr-code {
+          width: 152px;
+          min-height: 152px;
+          border-radius: 0.5rem;
+          border: 1px solid var(--pp-border);
+          background: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--pp-text-muted);
+          font-size: 0.8125rem;
+          padding: 0.625rem;
+        }
+        .dp-qr-value {
+          color: var(--pp-text-primary);
+          font-size: 0.8125rem;
+          font-weight: 700;
+          word-break: break-all;
+        }
+        .dp-qr-link {
+          color: var(--pp-text-secondary);
+          font-size: 0.6875rem;
+          margin-top: 0.25rem;
+          word-break: break-all;
+        }
+        .dp-qr-actions {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        @media (max-width: 1100px) {
+          .pp-section:first-of-type .pp-panel {
+            grid-template-columns: auto 1fr !important;
+          }
+          .dp-qr-card {
+            grid-column: 1 / -1;
+            width: 100%;
+          }
+        }
+        @media (max-width: 720px) {
+          .pp-section:first-of-type .pp-panel,
+          .pp-section:first-of-type .pp-panel > div:nth-child(2),
+          .pp-section:nth-of-type(2) .pp-panel,
+          .pp-section:nth-of-type(4) .pp-panel,
+          .pp-section:nth-of-type(5) .pp-panel {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
     </div>

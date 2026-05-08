@@ -34,6 +34,19 @@ const Login = () => {
   const inputClass = "mt-1.5 w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-800 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-gray-50 disabled:text-gray-400";
   const labelClass = "text-xs font-semibold uppercase tracking-wide text-gray-500";
 
+  const syncPortalTokenForRole = (nextRole, accessToken) => {
+    const normalizedRole = String(nextRole || "").toLowerCase();
+
+    localStorage.removeItem("aToken");
+    localStorage.removeItem("dToken");
+
+    if (normalizedRole === "admin") {
+      localStorage.setItem("aToken", accessToken);
+    } else if (normalizedRole === "doctor") {
+      localStorage.setItem("dToken", accessToken);
+    }
+  };
+
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -72,6 +85,7 @@ const Login = () => {
             const accessToken = data.data?.accessToken || data.data?.access_token || data.data?.accessToken;
             if (accessToken) {
               localStorage.setItem("token", accessToken);
+              syncPortalTokenForRole(role, accessToken);
               setToken(accessToken);
             }
             // Refresh doctor list immediately for newly-registered doctors
@@ -104,6 +118,7 @@ const Login = () => {
         const loggedRole = sData?.user?.user_metadata?.role || 'patient';
 
         setToken(accessToken);
+        syncPortalTokenForRole(loggedRole, accessToken);
 
         toast.success("Logged in successfully!");
         navigate(getDashboardPathForRole(loggedRole), { replace: true });
@@ -309,12 +324,7 @@ const Login = () => {
               </p>
             )}
 
-            <p>
-              Doctor or Admin?{" "}
-              <a href="http://localhost:5174/" className="font-semibold text-primary underline underline-offset-2" target="_blank" rel="noopener noreferrer">
-                Portal login
-              </a>
-            </p>
+            <p>Use this same login for patients, students, doctors, and admins.</p>
           </div>
         </form>
       </div>
