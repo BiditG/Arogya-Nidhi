@@ -38,7 +38,7 @@ import DoctorQueryDetail from "./pages/DoctorQueryDetail";
 import DoctorProfile from "./pages/DoctorProfile";
 import DoctorArticle from "./pages/DoctorArticle";
 import StudentPortal from "./pages/StudentPortal";
-import AdminPortal from "./pages/AdminPortal";
+import AdminPortal from "./adminPortal/App";
 import Payment from "./pages/Payment";
 import PatientPrescriptions from "./pages/PatientPrescriptions";
 import { AppContext } from "./context/AppContext";
@@ -61,11 +61,12 @@ const RoleAwareHome = () => {
 
 const App = () => {
   const location = useLocation();
+  const isAdminPortalRoute = location.pathname.startsWith("/admin-portal");
   const isPatientPortalRoute =
     location.pathname.startsWith("/patient-portal") ||
     location.pathname.startsWith("/doctor-portal") ||
     location.pathname.startsWith("/student-portal") ||
-    location.pathname.startsWith("/admin-portal") ||
+    isAdminPortalRoute ||
     location.pathname.startsWith("/public-queries") ||
     location.pathname === "/iot";
 
@@ -74,7 +75,7 @@ const App = () => {
   return (
     <div className="min-h-screen w-full">
       <ToastContainer />
-      <Navbar />
+      {!isAdminPortalRoute && <Navbar />}
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<RoleAwareHome />} />
@@ -147,7 +148,7 @@ const App = () => {
         <Route path="/doctor-portal/queries/:id" element={<DoctorQueryDetail />} />
         <Route path="/doctor-portal/profile" element={<DoctorProfile />} />
         <Route path="/student-portal" element={<StudentPortal />} />
-        <Route path="/admin-portal" element={<AdminPortal />} />
+        <Route path="/admin-portal/*" element={<AdminPortal />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
