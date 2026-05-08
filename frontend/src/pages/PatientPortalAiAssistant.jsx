@@ -72,7 +72,7 @@ const PatientPortalAiAssistant = () => {
     if (typeof window === "undefined") return false;
     return Boolean(navigator?.mediaDevices?.getUserMedia);
   });
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const assistantAudioUrlRef = useRef(null);
   const fallbackUtteranceRef = useRef(null);
   const twilioDeviceRef = useRef(null);
@@ -94,8 +94,10 @@ const PatientPortalAiAssistant = () => {
     return "Ready to book";
   }, [bookingState.stage, sending, voiceBusy]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior = "auto") => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior });
   };
 
   useEffect(() => {
@@ -143,12 +145,12 @@ const PatientPortalAiAssistant = () => {
       bookingPreview: payload.bookingPreview || null,
       booking: payload.booking || null,
     });
-    setTimeout(scrollToBottom, 50);
+    setTimeout(() => scrollToBottom("smooth"), 50);
   };
 
   const pushUserMessage = (text) => {
     setMessages((prev) => [...prev, { id: Date.now() + Math.random(), from: "user", text }]);
-    setTimeout(scrollToBottom, 50);
+    setTimeout(() => scrollToBottom("smooth"), 50);
   };
 
   const speakAssistantFallback = (text) => {
@@ -559,7 +561,7 @@ const PatientPortalAiAssistant = () => {
                 </div>
               </div>
 
-              <div className="paa-chat-messages">
+              <div className="paa-chat-messages" ref={messagesContainerRef}>
                 {messages.map((msg) => (
                   <div key={msg.id} className={`paa-message${msg.from === "user" ? " paa-message-user" : ""}`}>
                     <div className="paa-message-avatar">
@@ -602,7 +604,6 @@ const PatientPortalAiAssistant = () => {
                     <div className="paa-message-content">{voiceBusy ? callStatus : "Thinking..."}</div>
                   </div>
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               <div className="paa-chat-input-container">

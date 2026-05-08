@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import PageChanger from "../PageChanger";
 
 const DiseaseGlossary = () => {
   const [items, setItems] = useState([]);
@@ -61,19 +62,6 @@ const DiseaseGlossary = () => {
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const pageItems = filtered.slice(page * pageSize, page * pageSize + pageSize);
-
-  const getPageButtons = () => {
-    const n = totalPages;
-    if (n <= 7) return Array.from({ length: n }).map((_, i) => i);
-    const pages = [0];
-    const left = Math.max(1, page - 1);
-    const right = Math.min(n - 2, page + 1);
-    if (left > 1) pages.push("...");
-    for (let i = left; i <= right; i++) pages.push(i);
-    if (right < n - 2) pages.push("...");
-    pages.push(n - 1);
-    return pages;
-  };
 
   const renderHighlighted = (text, positions) => {
     if (!positions || positions.length === 0) return text;
@@ -140,37 +128,12 @@ const DiseaseGlossary = () => {
             {[10, 20, 50, 100].map((s) => <option key={s} value={s}>{s} / page</option>)}
           </select>
 
-          <div className="sp-pagination">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="sp-page-btn"
-            >
-              Prev
-            </button>
-
-            {getPageButtons().map((p, idx) =>
-              p === "..." ? (
-                <span key={"e-" + idx} className="sp-page-ellipsis">…</span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`sp-page-btn${p === page ? ' active' : ''}`}
-                >
-                  {p + 1}
-                </button>
-              )
-            )}
-
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="sp-page-btn"
-            >
-              Next
-            </button>
-          </div>
+          <PageChanger
+            currentPage={page + 1}
+            totalPages={totalPages}
+            onPageChange={(nextPage) => setPage(nextPage - 1)}
+            className="mt-0"
+          />
         </div>
       </div>
     </div>

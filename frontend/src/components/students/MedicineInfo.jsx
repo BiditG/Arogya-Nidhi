@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PageChanger from '../PageChanger';
 import assets from '../../utils/studentAssets';
 
 const splitCsvLine = (line) => {
@@ -196,15 +197,7 @@ const MedicineInfo = () => {
             ))
           )}
 
-          {totalPages > 1 && (
-            <div className="sp-pagination-row" style={{ justifyContent: 'center' }}>
-              <div className="sp-pagination">
-                <button onClick={() => gotoPage(page - 1)} disabled={page === 1} className="sp-page-btn">Prev</button>
-                <span className="sp-page-info">Page {page} / {totalPages}</span>
-                <button onClick={() => gotoPage(page + 1)} disabled={page === totalPages} className="sp-page-btn">Next</button>
-              </div>
-            </div>
-          )}
+          <PageChanger currentPage={page} totalPages={totalPages} onPageChange={gotoPage} />
         </>
       )}
     </div>

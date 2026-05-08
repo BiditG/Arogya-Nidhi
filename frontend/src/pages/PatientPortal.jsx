@@ -8,7 +8,6 @@ import {
   SignalIcon,
   SparklesIcon,
   UserCircleIcon,
-  CpuChipIcon,
 } from "@heroicons/react/24/outline";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -18,10 +17,8 @@ import "./PatientPortal.css";
 const PatientPortal = () => {
   const { userData, setToken, setUserData, backendUrl, token } = useContext(AppContext);
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ upcomingAppointments: 0, pendingTests: 0, activePrescriptions: 0, healthScore: 0 });
+  const [stats, setStats] = useState({ upcomingAppointments: 0, activePrescriptions: 0 });
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [recentHistory, setRecentHistory] = useState([]);
-  const [recentIot, setRecentIot] = useState([]);
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,12 +34,16 @@ const PatientPortal = () => {
           axios.get(backendUrl + "/api/patient/dashboard/quick-actions", { headers }),
           axios.get(backendUrl + "/api/patient/queries", { headers }),
         ]);
-        if (overviewRes.data.success) setStats(overviewRes.data.data.stats);
+        if (overviewRes.data.success) {
+          const nextStats = overviewRes.data.data?.stats || {};
+          setStats({
+            upcomingAppointments: Number(nextStats.upcomingAppointments || 0),
+            activePrescriptions: Number(nextStats.activePrescriptions || 0),
+          });
+        }
         if (quickRes.data.success) {
           const d = quickRes.data.data;
           setUpcomingAppointments(d.upcomingAppointments || []);
-          setRecentHistory(d.recentMedicalHistory || []);
-          setRecentIot(d.recentIotReadings || []);
         }
         if (queriesRes.data.success) {
           const q = queriesRes.data.data;
@@ -77,7 +78,6 @@ const PatientPortal = () => {
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
   const fmtDateTime = (d) => d ? new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-  const iotLabel = (type) => type?.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Test";
   const statusBadge = (isResolved) => isResolved ? "pp-status-resolved" : "pp-status-progress";
 
   return (
@@ -92,7 +92,7 @@ const PatientPortal = () => {
             <h2 className="pp-section-title">Health Overview</h2>
             {loading ? (
               <div className="pp-stats-grid">
-                {[...Array(4)].map((_, i) => (
+                {[...Array(3)].map((_, i) => (
                   <div key={i} className="pp-stat-card">
                     <div className="pp-stat-label">Loading...</div>
                     <div className="pp-stat-value">—</div>
@@ -106,16 +106,12 @@ const PatientPortal = () => {
                   <div className="pp-stat-value">{stats.upcomingAppointments}</div>
                 </div>
                 <div className="pp-stat-card">
-                  <div className="pp-stat-label">Pending Tests</div>
-                  <div className="pp-stat-value">{stats.pendingTests}</div>
-                </div>
-                <div className="pp-stat-card">
                   <div className="pp-stat-label">Prescriptions</div>
                   <div className="pp-stat-value">{stats.activePrescriptions}</div>
                 </div>
                 <div className="pp-stat-card">
-                  <div className="pp-stat-label">Health Score</div>
-                  <div className="pp-stat-value">{stats.healthScore}</div>
+                  <div className="pp-stat-label">Health Queries</div>
+                  <div className="pp-stat-value">{queries.length}</div>
                 </div>
               </div>
             )}
@@ -220,77 +216,6 @@ const PatientPortal = () => {
             )}
           </section>
 
-          <section className="pp-section">
-            <div className="pp-bottom-grid">
-              <div className="pp-panel" id="history">
-                <h3 className="pp-panel-title">Recent Medical History</h3>
-                {loading ? (
-                  <div className="pp-history-item">
-                    <div className="pp-history-header">
-                      <span className="pp-history-title">Loading...</span>
-                    </div>
-                  </div>
-                ) : recentHistory.length === 0 ? (
-                  <div className="pp-history-item">
-                    <div className="pp-history-header">
-                      <span className="pp-history-title">No medical history found</span>
-                    </div>
-                  </div>
-                ) : (
-                  recentHistory.map((item, i) => (
-                    <div key={item.id || i} className="pp-history-item">
-                      <div className="pp-history-header">
-                        <span className="pp-history-title">{item.diagnosis || item.title || "Visit"}</span>
-                        <span className="pp-history-date">{fmtDate(item.visitDate || item.createdAt)}</span>
-                      </div>
-                      <div className="pp-history-desc">{item.doctorNotes || item.notes || ""}</div>
-                    </div>
-                  ))
-                )}
-                <button type="button" className="pp-btn pp-btn-secondary pp-btn-full">
-                  View All History
-                </button>
-              </div>
-
-              <div className="pp-panel" id="iot">
-                <h3 className="pp-panel-title">IoT Device Data</h3>
-                {loading ? (
-                  <div className="pp-iot-item">
-                    <div className="pp-iot-info">
-                      <div className="pp-iot-title">Loading...</div>
-                    </div>
-                  </div>
-                ) : recentIot.length === 0 ? (
-                  <div className="pp-iot-item">
-                    <div className="pp-iot-info">
-                      <div className="pp-iot-title">No IoT readings found</div>
-                    </div>
-                  </div>
-                ) : (
-                  recentIot.map((item, i) => (
-                    <div key={item.id || i} className="pp-iot-item">
-                      <div className="pp-iot-info">
-                        <div className="pp-iot-icon"><CpuChipIcon style={{ width: 18, height: 18 }} /></div>
-                        <div>
-                          <div className="pp-iot-title">{iotLabel(item.testType)}</div>
-                          <div className="pp-iot-subtext">
-                            {item.createdAt ? `Updated ${fmtDate(item.createdAt)}` : ""}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pp-iot-status">
-                        {item.resultScore != null ? `${item.resultScore}/100` : item.notes || "—"}
-                      </div>
-                    </div>
-                  ))
-                )}
-                <button type="button" className="pp-btn pp-btn-secondary pp-btn-full">
-                  Perform Test
-                </button>
-              </div>
-            </div>
-          </section>
-
           <section className="pp-section" id="queries">
             <h2 className="pp-section-title">My Health Queries</h2>
             <div className="pp-table-container">
@@ -326,7 +251,11 @@ const PatientPortal = () => {
                           </span>
                         </td>
                         <td>
-                          <button type="button" className="pp-btn pp-btn-primary pp-btn-sm">
+                          <button
+                            type="button"
+                            className="pp-btn pp-btn-primary pp-btn-sm"
+                            onClick={() => navigate(`/patient-portal/health-queries/${q.id}`)}
+                          >
                             View
                           </button>
                         </td>

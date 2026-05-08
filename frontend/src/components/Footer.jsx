@@ -18,7 +18,7 @@ const Footer = () => {
               Trusted care, simplified booking
             </div>
             <p className="mt-4 w-full md:w-2/3 text-sm leading-6 text-slate-500">
-              <em>अारोग्यनिधि — स्वास्थ्य नै धन हो। काठमाडौं स्थित सेवा।</em>
+              <em>आरोग्यनिधि — स्वास्थ्य नै धन हो। काठमाडौं स्थित सेवा।</em>
             </p>
           </div>
 

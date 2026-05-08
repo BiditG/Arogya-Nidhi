@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import DiscussionCard from "../components/DiscussionCard";
-import ChatPostForm from "../components/ChatPostForm";
+import PageChanger from "../components/PageChanger";
 
 const STORAGE_KEY = "arogyanidhi_chat_posts";
 
@@ -203,31 +203,7 @@ const Chat = () => {
         ))}
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-center mt-6">
-        <div className="inline-flex items-center gap-2">
-          <button onClick={() => gotoPage(page-1)} className="px-3 py-1 border rounded">Prev</button>
-
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const n = i + 1;
-            if (totalPages > 7) {
-              if (n === 1 || n === totalPages || (n >= page-1 && n <= page+1)) {
-                return (
-                  <button key={n} onClick={() => gotoPage(n)} className={`px-3 py-1 border rounded ${n===page ? 'bg-gray-800 text-white' : ''}`}>{n}</button>
-                );
-              }
-              if (n === 2 && page > 3) return <span key={n}>...</span>;
-              if (n === totalPages-1 && page < totalPages-2) return <span key={n}>...</span>;
-              return null;
-            }
-            return (
-              <button key={n} onClick={() => gotoPage(n)} className={`px-3 py-1 border rounded ${n===page ? 'bg-gray-800 text-white' : ''}`}>{n}</button>
-            );
-          })}
-
-          <button onClick={() => gotoPage(page+1)} className="px-3 py-1 border rounded">Next</button>
-        </div>
-      </div>
+      <PageChanger currentPage={page} totalPages={totalPages} onPageChange={gotoPage} className="mt-6" />
     </div>
   );
 };

@@ -457,6 +457,51 @@ const IoTDevicePanel = ({ patientId, backendUrl, token }) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+const DUMMY_APPOINTMENTS = [
+  {
+    id: "dummy-appt-1",
+    status: "scheduled",
+    scheduled_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    type: "Consultation",
+    patient: {
+      id: "dummy-patient-1",
+      user: {
+        name: "Dummy Patient One",
+        email: "patient.one@example.com",
+      },
+    },
+    patient_notes: "Headache and fatigue for 3 days.",
+  },
+  {
+    id: "dummy-appt-2",
+    status: "pending",
+    scheduled_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    type: "Follow-up",
+    patient: {
+      id: "dummy-patient-2",
+      user: {
+        name: "Dummy Patient Two",
+        email: "patient.two@example.com",
+      },
+    },
+    patient_notes: "Follow-up for blood pressure check.",
+  },
+  {
+    id: "dummy-appt-3",
+    status: "completed",
+    scheduled_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    type: "Consultation",
+    patient: {
+      id: "dummy-patient-1",
+      user: {
+        name: "Dummy Patient One",
+        email: "patient.one@example.com",
+      },
+    },
+    patient_notes: "Previous visit: mild fever, resolved.",
+  },
+];
+
 const DoctorConsultations = () => {
   const { token, backendUrl } = useContext(AppContext);
 
@@ -466,6 +511,13 @@ const DoctorConsultations = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQ, setSearchQ] = useState("");
+  const [patientSearchQ, setPatientSearchQ] = useState("");
+  const [selectedPatientKey, setSelectedPatientKey] = useState("");
+  const activeIdRef = useRef(null);
+
+  useEffect(() => {
+    activeIdRef.current = active?.id || active?._id || null;
+  }, [active]);
 
   const headers = token
     ? {
@@ -492,6 +544,16 @@ const DoctorConsultations = () => {
       appointment?.patient?.user?.email ||
       appointment?.user?.email ||
       ""
+    );
+  };
+
+  const getPatientKey = (appointment) => {
+    return (
+      appointment?.patient?.id ||
+      appointment?.patient?._id ||
+      appointment?.patient_id ||
+      getPatientEmail(appointment) ||
+      getPatientName(appointment)
     );
   };
 
@@ -541,22 +603,24 @@ const DoctorConsultations = () => {
       });
 
       if (data?.success) {
-        const list = data.appointments || [];
+        const fetched = data.appointments || [];
+        const list = fetched.length > 0 ? fetched : DUMMY_APPOINTMENTS;
         setAppointments(list);
 
-        const firstActive = list.find((appointment) =>
-          ["confirmed", "scheduled", "pending"].includes(
-            normalizeStatus(appointment.status)
-          )
-        );
+        const currentId = activeIdRef.current;
+        if (currentId) {
+          const stillThere = list.find(
+            (appointment) => (appointment.id || appointment._id) === currentId
+          );
 
-        if (firstActive) {
-          const prepared = prepareAppointmentForConsultation(firstActive);
-          setActive(prepared);
-          setAiSummary(buildAiSummary(prepared));
-        } else {
-          setActive(null);
-          setAiSummary("");
+          if (stillThere) {
+            const prepared = prepareAppointmentForConsultation(stillThere);
+            setActive(prepared);
+            setAiSummary(buildAiSummary(prepared));
+          } else {
+            setActive(null);
+            setAiSummary("");
+          }
         }
       } else {
         setAppointments([]);
@@ -586,14 +650,18 @@ Notes:
 ${appointment.patient_notes || appointment.reason || "No patient notes available."}`;
   };
 
-  const displayHistory = appointments
+  const scopedAppointments = selectedPatientKey
+    ? appointments.filter((appointment) => getPatientKey(appointment) === selectedPatientKey)
+    : appointments;
+
+  const displayHistory = scopedAppointments
     .filter((appointment) => normalizeStatus(appointment.status) === "completed")
     .filter((appointment) => {
       if (!searchQ) return true;
       return getPatientName(appointment).toLowerCase().includes(searchQ.toLowerCase());
     });
 
-  const activeAppointments = appointments.filter((appointment) =>
+  const activeAppointments = scopedAppointments.filter((appointment) =>
     ["confirmed", "scheduled", "pending"].includes(normalizeStatus(appointment.status))
   );
 
@@ -608,6 +676,75 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
     const prepared = prepareAppointmentForConsultation(appointment);
     setActive(prepared);
     setAiSummary(buildAiSummary(prepared));
+  };
+
+  const patientCards = (() => {
+    const groups = new Map();
+    const getScheduledMs = (appointment) => {
+      if (appointment?.scheduled_at) return new Date(appointment.scheduled_at).getTime();
+      if (appointment?.slotDate) return new Date(appointment.slotDate).getTime();
+      return 0;
+    };
+
+    for (const appointment of appointments) {
+      const key = getPatientKey(appointment);
+      if (!key) continue;
+
+      const scheduledMs = getScheduledMs(appointment);
+      const status = normalizeStatus(appointment.status);
+
+      const existing = groups.get(key) || {
+        key,
+        name: getPatientName(appointment),
+        email: getPatientEmail(appointment),
+        count: 0,
+        latestAny: null,
+        latestAnyMs: 0,
+        bestActive: null,
+        bestActiveMs: Number.POSITIVE_INFINITY,
+      };
+
+      existing.count += 1;
+
+      if (scheduledMs >= existing.latestAnyMs) {
+        existing.latestAnyMs = scheduledMs;
+        existing.latestAny = appointment;
+      }
+
+      if (["confirmed", "scheduled", "pending"].includes(status)) {
+        const effectiveMs = scheduledMs || Date.now();
+        if (effectiveMs < existing.bestActiveMs) {
+          existing.bestActiveMs = effectiveMs;
+          existing.bestActive = appointment;
+        }
+      }
+
+      groups.set(key, existing);
+    }
+
+    const q = patientSearchQ.trim().toLowerCase();
+    return Array.from(groups.values())
+      .map((p) => ({ ...p, preferredAppointment: p.bestActive || p.latestAny }))
+      .filter((p) => {
+        if (!q) return true;
+        return (
+          (p.name || "").toLowerCase().includes(q) ||
+          (p.email || "").toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => b.latestAnyMs - a.latestAnyMs);
+  })();
+
+  const goToPatientList = () => {
+    setSelectedPatientKey("");
+    setActive(null);
+    setAiSummary("");
+  };
+
+  const pickPatient = (patientCard) => {
+    if (!patientCard?.preferredAppointment) return;
+    setSelectedPatientKey(patientCard.key);
+    selectAppointment(patientCard.preferredAppointment);
   };
 
   const savePrescription = async (shouldEndConsultation = false) => {
@@ -670,8 +807,119 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
         <main className="pp-main-content">
           <p className="pp-welcome">Consultations</p>
 
-          <section className="pp-section">
-            <h2 className="pp-section-title">Active Consultation</h2>
+          {!selectedPatientKey ? (
+            <section className="pp-section">
+              <h2 className="pp-section-title">Select Patient</h2>
+
+              <div className="pp-panel" style={{ marginBottom: 12 }}>
+                <input
+                  className="pp-chat-input"
+                  placeholder="Search patients…"
+                  value={patientSearchQ}
+                  onChange={(e) => setPatientSearchQ(e.target.value)}
+                />
+              </div>
+
+              {loading ? (
+                <div className="pp-panel">Loading patients…</div>
+              ) : patientCards.length === 0 ? (
+                <div className="pp-panel">No patients found.</div>
+              ) : (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  {patientCards.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      className="pp-panel"
+                      onClick={() => pickPatient(p)}
+                      style={{ textAlign: "left", cursor: "pointer" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                          style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 10,
+                            background: "var(--pp-primary-lighter)",
+                            border: "1px solid var(--pp-primary-light)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "var(--pp-primary)",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {(p.name || "P").slice(0, 1).toUpperCase()}
+                        </div>
+
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 800, color: "var(--pp-text-primary)" }}>
+                            {p.name}
+                          </div>
+                          {!!p.email && (
+                            <div
+                              style={{
+                                fontSize: "0.8125rem",
+                                color: "var(--pp-text-secondary)",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {p.email}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          gap: 10,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          color: "var(--pp-text-secondary)",
+                          fontSize: "0.8125rem",
+                        }}
+                      >
+                        <span>Appointments: {p.count}</span>
+                        <span>•</span>
+                        <span>
+                          {p.preferredAppointment
+                            ? `Next/Latest: ${getDate(p.preferredAppointment)} ${getTime(p.preferredAppointment)}`
+                            : "Next/Latest: —"}
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <span className="pp-btn pp-btn-primary pp-btn-sm">Open</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : (
+            <>
+              <div style={{ marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className="pp-btn pp-btn-outline pp-btn-sm"
+                  onClick={goToPatientList}
+                >
+                  Back
+                </button>
+              </div>
+
+              <section className="pp-section">
+                <h2 className="pp-section-title">Active Consultation</h2>
 
             {loading ? (
               <div className="pp-panel">Loading consultation...</div>
@@ -827,10 +1075,10 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
                 </div>
               </div>
             )}
-          </section>
+              </section>
 
-          <section className="pp-section">
-            <h2 className="pp-section-title">AI Patient Summary</h2>
+              <section className="pp-section">
+                <h2 className="pp-section-title">AI Patient Summary</h2>
 
             <div className="pp-panel">
               <div
@@ -856,15 +1104,15 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
                 Refresh Summary
               </button>
             </div>
-          </section>
+              </section>
 
-          <section className="pp-section">
-            <h2 className="pp-section-title">IoT Device Data</h2>
-            <IoTDevicePanel patientId={active?.patient?.id || active?.patient?._id || active?.patient_id} backendUrl={backendUrl} token={token} />
-          </section>
+              <section className="pp-section">
+                <h2 className="pp-section-title">IoT Device Data</h2>
+                <IoTDevicePanel patientId={active?.patient?.id || active?.patient?._id || active?.patient_id} backendUrl={backendUrl} token={token} />
+              </section>
 
-          <section className="pp-section">
-            <h2 className="pp-section-title">Consultation History</h2>
+              <section className="pp-section">
+                <h2 className="pp-section-title">Consultation History</h2>
 
             <div style={{ marginBottom: 12 }}>
               <input
@@ -917,7 +1165,9 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
                 </tbody>
               </table>
             </div>
-          </section>
+              </section>
+            </>
+          )}
         </main>
       </div>
     </div>

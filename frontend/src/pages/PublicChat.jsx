@@ -2,8 +2,6 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChatBubbleLeftIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   EyeIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -14,6 +12,7 @@ import {
   ClockIcon,
   TrophyIcon,
 } from "@heroicons/react/24/outline";
+import PageChanger from "../components/PageChanger";
 import { AppContext } from "../context/AppContext";
 import { patientPortalApi } from "../utils/patientPortalApi";
 import { toast } from "react-toastify";
@@ -408,37 +407,7 @@ export default function PublicChat() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="hq-pagination" style={{ marginTop: "1.5rem" }}>
-            <button
-              type="button"
-              className="hq-page-btn"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              <ChevronLeftIcon style={{ width: 14, height: 14 }} /> Prev
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-              <button
-                key={n}
-                type="button"
-                className={`hq-page-btn ${currentPage === n ? "hq-page-btn-active" : ""}`}
-                onClick={() => setCurrentPage(n)}
-              >
-                {n}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="hq-page-btn"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              Next <ChevronRightIcon style={{ width: 14, height: 14 }} />
-            </button>
-          </div>
-        )}
+        <PageChanger currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} className="mt-6" />
 
         {/* Not logged in CTA */}
         {!token && (

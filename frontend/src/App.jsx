@@ -31,7 +31,6 @@ import DoctorDashboard from "./pages/DoctorDashboard";
 import DoctorAppointments from "./pages/DoctorAppointments";
 import DoctorConsultations from "./pages/DoctorConsultations";
 import DoctorEarnings from "./pages/DoctorEarnings";
-import DoctorReports from "./pages/DoctorReports";
 import DoctorPatientHistory from "./pages/DoctorPatientHistory";
 import DoctorAISummaries from "./pages/DoctorAISummaries";
 import DoctorQueries from "./pages/DoctorQueries";
@@ -143,7 +142,6 @@ const App = () => {
         <Route path="/doctor-portal/patient-history" element={<DoctorPatientHistory />} />
         <Route path="/doctor-portal/ai-summaries" element={<DoctorAISummaries />} />
         <Route path="/doctor-portal/earnings" element={<DoctorEarnings />} />
-        <Route path="/doctor-portal/reports" element={<DoctorReports />} />
         <Route path="/doctor-portal/article" element={<DoctorArticle />} />
         <Route path="/doctor-portal/queries" element={<DoctorQueries />} />
         <Route path="/doctor-portal/queries/:id" element={<DoctorQueryDetail />} />
