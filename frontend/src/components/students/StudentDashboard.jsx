@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { AppContext } from '../../context/AppContext';
 
 const StatCard = ({ label, value, icon }) => (
   <div className="sp-stat-card">
@@ -87,6 +88,7 @@ const RESOURCE_ICONS = {
 };
 
 const StudentDashboard = () => {
+  const { backendUrl } = useContext(AppContext);
   const [progress, setProgress] = useState({ totalAttempts: 0, uniqueMcqs: 0, correctAnswers: 0 });
   const [resourceCount, setResourceCount] = useState(0);
 
@@ -96,7 +98,7 @@ const StudentDashboard = () => {
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
-        const res = await fetch('/api/students/progress', { headers });
+        const res = await fetch(`${backendUrl}/api/students/progress`, { headers });
         if (!res.ok) return;
         const payload = await res.json();
         if (payload.success && payload.data) {
