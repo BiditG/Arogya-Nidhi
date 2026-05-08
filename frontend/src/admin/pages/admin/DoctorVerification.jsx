@@ -6,7 +6,7 @@ const DoctorVerification = () => {
   const { doctors, getAllDoctors, verifyDoctor, aToken } = useContext(AdminContext);
   
   const [activeFilter, setActiveFilter] = useState("PENDING");
-  const [verificationNotes, setVerificationNotes] = useState({});
+  const [verificationNotes] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
 

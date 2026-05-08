@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 
 const SubscriptionManagement = () => {
-  const [plans, setPlans] = useState([
+  const [plans] = useState([
     { id: 1, name: "Basic", price: "₹99/mo", features: "5 consultations", subscribers: 120, status: "Active" },
     { id: 2, name: "Professional", price: "₹299/mo", features: "Unlimited consultations", subscribers: 340, status: "Active" },
     { id: 3, name: "Premium", price: "₹599/mo", features: "Priority support + Analytics", subscribers: 85, status: "Active" },

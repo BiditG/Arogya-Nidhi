@@ -4,7 +4,10 @@ export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
   const currencySymbol = "$";
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = (
+    (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim()) ||
+    (import.meta.env.DEV ? "http://localhost:3001" : "/_/backend")
+  ).replace(/\/+$/, "");
 
   const calculateAge = (dob) => {
     const today = new Date();

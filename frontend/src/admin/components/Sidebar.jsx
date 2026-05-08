@@ -16,19 +16,19 @@ import {
 import "../styles/AdminPortal.css";
 
 const adminNavLinks = [
-  { to: "/admin/dashboard", Icon: Squares2X2Icon, label: "Dashboard" },
-  { to: "/admin/manage-users", Icon: UsersIcon, label: "Manage Users" },
-  { to: "/admin/verify-doctors", Icon: ShieldCheckIcon, label: "Verify Doctors" },
-  { to: "/admin/system-reports", Icon: DocumentChartBarIcon, label: "System Reports" },
-  { to: "/admin/subscriptions", Icon: CreditCardIcon, label: "Subscriptions" },
-  { to: "/admin/revenue", Icon: BanknotesIcon, label: "Revenue" },
-  { to: "/admin/ai-triage", Icon: CpuChipIcon, label: "AI Triage" },
+  { to: "/admin-portal/admin/dashboard", Icon: Squares2X2Icon, label: "Dashboard" },
+  { to: "/admin-portal/admin/manage-users", Icon: UsersIcon, label: "Manage Users" },
+  { to: "/admin-portal/admin/verify-doctors", Icon: ShieldCheckIcon, label: "Verify Doctors" },
+  { to: "/admin-portal/admin/system-reports", Icon: DocumentChartBarIcon, label: "System Reports" },
+  { to: "/admin-portal/admin/subscriptions", Icon: CreditCardIcon, label: "Subscriptions" },
+  { to: "/admin-portal/admin/revenue", Icon: BanknotesIcon, label: "Revenue" },
+  { to: "/admin-portal/admin/ai-triage", Icon: CpuChipIcon, label: "AI Triage" },
 ];
 
 const doctorNavLinks = [
-  { to: "/doctor/dashboard", Icon: Squares2X2Icon, label: "Dashboard" },
-  { to: "/doctor/appointments", Icon: CalendarDaysIcon, label: "My Appointments" },
-  { to: "/doctor/profile", Icon: UserCircleIcon, label: "Profile" },
+  { to: "/admin-portal/doctor/dashboard", Icon: Squares2X2Icon, label: "Dashboard" },
+  { to: "/admin-portal/doctor/appointments", Icon: CalendarDaysIcon, label: "My Appointments" },
+  { to: "/admin-portal/doctor/profile", Icon: UserCircleIcon, label: "Profile" },
 ];
 
 const Sidebar = () => {

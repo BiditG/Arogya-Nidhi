@@ -547,7 +547,7 @@ const SystemReports = () => {
       {/* Back link + Page title */}
       <div style={{ marginBottom: "1.75rem" }}>
         <Link
-          to="/admin/dashboard"
+          to="/admin-portal/admin/dashboard"
           style={{ display: "inline-flex", alignItems: "center", gap: "0.375rem", fontSize: "0.8125rem", color: "var(--ap-text-secondary)", textDecoration: "none", marginBottom: "0.625rem", fontWeight: "500" }}
         >
           <ArrowLeftIcon style={{ width: "14px", height: "14px", strokeWidth: 2.5 }} />

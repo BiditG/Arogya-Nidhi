@@ -14,8 +14,9 @@ const Navbar = () => {
   const location = useLocation();
 
   const isAdmin = !!aToken;
-  const role = isAdmin ? "Admin" : "Doctor";
-  const initials = isAdmin ? "A" : "D";
+  const isDoctor = !!dToken;
+  const role = isAdmin ? "Admin" : isDoctor ? "Doctor" : "Portal";
+  const initials = isAdmin ? "A" : isDoctor ? "D" : "P";
 
   useEffect(() => {
     const handler = (e) => {

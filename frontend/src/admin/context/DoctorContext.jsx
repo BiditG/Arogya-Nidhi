@@ -7,7 +7,10 @@ import { supabase } from "../lib/supabaseClient";
 export const DoctorContext = createContext();
 
 export const DoctorContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = (
+    (import.meta.env.VITE_BACKEND_URL && import.meta.env.VITE_BACKEND_URL.trim()) ||
+    (import.meta.env.DEV ? "http://localhost:3001" : "/_/backend")
+  ).replace(/\/+$/, "");
 
   const [dToken, setDToken] = useState(localStorage.getItem("dToken") || "");
   const [appointments, setAppointments] = useState([]);

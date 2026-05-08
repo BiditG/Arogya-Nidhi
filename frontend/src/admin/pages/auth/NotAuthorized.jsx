@@ -14,7 +14,7 @@ const NotAuthorized = () => {
           Please contact your administrator if you believe this is a mistake.
         </p>
         <Link
-          to="/"
+          to="/admin-portal"
           className="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-all"
         >
           Go to Homepage

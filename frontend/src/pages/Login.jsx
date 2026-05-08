@@ -311,7 +311,7 @@ const Login = () => {
 
             <p>
               Doctor or Admin?{" "}
-              <a href="http://localhost:5174/" className="font-semibold text-primary underline underline-offset-2" target="_blank" rel="noopener noreferrer">
+              <a href="/admin-portal" className="font-semibold text-primary underline underline-offset-2">
                 Portal login
               </a>
             </p>

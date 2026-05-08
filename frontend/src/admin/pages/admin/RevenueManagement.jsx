@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 
 const RevenueManagement = () => {
-  const [transactions, setTransactions] = useState([
+  const [transactions] = useState([
     { id: "T001", date: "2026-04-28", type: "Subscription", amount: "₹299", status: "Completed", user: "Raj Kumar" },
     { id: "T002", date: "2026-04-27", type: "Consultation", amount: "₹500", status: "Completed", user: "Priya Sharma" },
     { id: "T003", date: "2026-04-26", type: "Subscription", amount: "₹99", status: "Completed", user: "Amit Singh" },

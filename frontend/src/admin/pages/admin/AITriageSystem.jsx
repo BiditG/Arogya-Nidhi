@@ -7,14 +7,14 @@ const AITriageSystem = () => {
   const [aiModel, setAiModel] = useState("v2.1");
   const [flowType, setFlowType] = useState("standard");
 
-  const [priorityQueue, setPriorityQueue] = useState([
+  const [priorityQueue] = useState([
     { id: 1, patient: "Raj Kumar", symptoms: "High fever, cough", priority: "Critical", confidence: 0.92 },
     { id: 2, patient: "Priya Sharma", symptoms: "Mild headache", priority: "Low", confidence: 0.65 },
     { id: 3, patient: "Amit Singh", symptoms: "Chest pain", priority: "Critical", confidence: 0.88 },
     { id: 4, patient: "Neha Gupta", symptoms: "Skin rash", priority: "Medium", confidence: 0.75 },
   ]);
 
-  const [triageDecisions, setTriageDecisions] = useState([
+  const [triageDecisions] = useState([
     { id: 1, patient: "John Doe", condition: "Flu-like symptoms", decision: "Home care", confidence: 0.85 },
     { id: 2, patient: "Jane Smith", condition: "Severe chest pain", decision: "Emergency", confidence: 0.92 },
     { id: 3, patient: "Bob Johnson", condition: "Mild cough", decision: "Telemedicine", confidence: 0.78 },

@@ -1,10 +1,9 @@
 ## Arogya Nidhi - Local Setup (Windows)
 
-This project has 3 separate apps:
+This project has 2 apps:
 
 1. `backend` (Node + Express + Prisma + PostgreSQL)
-2. `frontend` (Patient app, Vite + React)
-3. `admin-portal` (Admin/Doctor app, Vite + React)
+2. `frontend` (Vite + React app for patient, doctor, student, and admin portals)
 
 ## Prerequisites
 
@@ -22,9 +21,6 @@ npm install
 
 cd ..\frontend
 npm install
-
-cd ..\admin-portal
-npm install
 ```
 
 ## 2) Configure environment variables
@@ -32,8 +28,7 @@ npm install
 Open the existing env files and ensure values are correct:
 
 1. `backend/.env`
-2. `frontend/.env`
-3. `admin-portal/.env.local`
+2. `frontend/.env.local`
 
 Then ensure `backend/.env` has at least:
 
@@ -66,7 +61,7 @@ If your local DB is fresh and has no migration history, run:
 npx prisma migrate dev
 ```
 
-## 4) Start all apps (3 terminals)
+## 4) Start all apps (2 terminals)
 
 Terminal 1 (backend):
 
@@ -82,17 +77,10 @@ cd frontend
 npm run dev
 ```
 
-Terminal 3 (admin portal):
-
-```powershell
-cd admin-portal
-npm run dev
-```
-
 ## 5) Open in browser
 
 1. Frontend: http://localhost:5173
-2. Admin portal: http://localhost:5174
+2. Admin portal: http://localhost:5173/admin-portal
 3. Backend API: http://localhost:3001
 
 ## Common issues

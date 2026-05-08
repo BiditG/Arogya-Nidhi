@@ -20,12 +20,12 @@ const App = () => {
   return (
     <Routes>
       <Route
-        path="/"
+        index
         element={
           isAdmin ? (
-            <Navigate to="/admin/dashboard" />
+            <Navigate to="admin/dashboard" />
           ) : isDoctor ? (
-            <Navigate to="/doctor/dashboard" />
+            <Navigate to="doctor/dashboard" />
           ) : (
             <Login />
           )
@@ -34,28 +34,28 @@ const App = () => {
 
       {/* Admin Routes */}
       <Route
-        path="/admin/*"
+        path="admin/*"
         element={
           isAdmin ? (
             <AdminLayout />
           ) : isDoctor ? (
             <NotAuthorized />
           ) : (
-            <Navigate to="/" />
+            <Navigate to="/admin-portal" />
           )
         }
       />
 
       {/* Doctor Routes */}
       <Route
-        path="/doctor/*"
+        path="doctor/*"
         element={
           isDoctor ? (
             <DoctorLayout />
           ) : isAdmin ? (
             <NotAuthorized />
           ) : (
-            <Navigate to="/" />
+            <Navigate to="/admin-portal" />
           )
         }
       />

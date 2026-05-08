@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { assets } from "../../assets/assets";
 import { useContext } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
@@ -49,13 +48,13 @@ const Login = () => {
         setAToken(accessToken);
         setDToken("");
         toast.success("Admin logged in successfully");
-        navigate("/admin/dashboard", { replace: true });
+        navigate("/admin-portal/admin/dashboard", { replace: true });
       } else if (actualRole === "doctor") {
         localStorage.removeItem("aToken");
         setAToken("");
         setDToken(accessToken);
         toast.success("Doctor logged in successfully");
-        navigate("/doctor/dashboard", { replace: true });
+        navigate("/admin-portal/doctor/dashboard", { replace: true });
       } else {
         toast.error("This portal is only for admins and doctors");
       }
