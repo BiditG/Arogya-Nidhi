@@ -199,7 +199,7 @@ const getAllDoctors = async (req, res) => {
         available: Boolean(doc.available ?? doc.is_available),
         is_available: Boolean(doc.is_available ?? doc.available),
         license_no: licenseNo,
-        verification_status: (verification?.status || (doc.is_verified ? 'verified' : 'pending')).toLowerCase()
+        verification_status: (doc.is_verified ? 'verified' : (verification?.status || 'pending')).toLowerCase()
       };
     });
 
@@ -238,17 +238,29 @@ const appointmentCancelAdmin = async (req, res) => {
 // API to get dashboard data for admin dashboard
 const adminDashboard = async (req, res) => {
   try {
-    const [{ data: doctors }, { data: users }, { data: appointments }] = await Promise.all([
+    const [
+      { data: doctors },
+      { data: users },
+      { data: appointments },
+      { data: students },
+      { data: patients },
+    ] = await Promise.all([
       supabase.from('doctor_profiles').select('id'),
       supabase.from('users').select('id'),
       supabase.from('appointments').select('id'),
+      supabase.from('student_profiles').select('id'),
+      supabase.from('patients').select('id'),
     ]);
+
     const dashData = {
-      doctors: doctors?.length || 0,
-      patients: users?.length || 0,
-      appointments: appointments?.length || 0,
+      totalUsers: users?.length || 0,
+      totalDoctors: doctors?.length || 0,
+      totalStudents: students?.length || 0,
+      totalPatients: patients?.length || 0,
+      totalAppointments: appointments?.length || 0,
       latestAppointments: [],
     };
+
     return res.status(200).json({ success: true, dashData });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });

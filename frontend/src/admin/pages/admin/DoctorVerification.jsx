@@ -1,12 +1,12 @@
 import { useState, useContext, useEffect } from "react";
-import { toast } from "react-toastify";
 import { AdminContext } from "../../context/AdminContext";
 
 const DoctorVerification = () => {
   const { doctors, getAllDoctors, verifyDoctor, aToken } = useContext(AdminContext);
   
   const [activeFilter, setActiveFilter] = useState("PENDING");
-  const [verificationNotes] = useState({});
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
 
@@ -21,16 +21,34 @@ const DoctorVerification = () => {
     return (doctor.verification_status || (doctor.is_verified ? 'verified' : 'pending')).toUpperCase();
   };
 
-  const filteredDoctors = doctors?.filter((doc) => {
+  const searchedDoctors = doctors?.filter((doc) => {
+    if (!searchQuery) return true;
+    const term = searchQuery.toLowerCase();
+    return [
+      doc.users?.name,
+      doc.specialty,
+      doc.license_no,
+      doc.users?.email,
+      doc.qualifications,
+    ].some((value) => String(value || "").toLowerCase().includes(term));
+  }) || [];
+
+  const filteredDoctors = searchedDoctors.filter((doc) => {
     const status = getDoctorStatus(doc);
     if (activeFilter === "ALL") return true;
     return status === activeFilter;
   }) || [];
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearchQuery(searchInput.trim());
+  };
+
   const handleApproveDoctor = async (doctorId) => {
     const success = await verifyDoctor(doctorId, "verified");
     if (success) {
       setShowModal(false);
+      setActiveFilter("VERIFIED");
     }
   };
 
@@ -41,18 +59,66 @@ const DoctorVerification = () => {
     }
   };
 
-  const handleRequestInfo = (doctorId) => {
-    const note = verificationNotes[doctorId] || "Please provide additional information";
-    toast.info(`Information request sent to doctor. Note: ${note}`);
+  const cardGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "1rem",
+  };
+
+  const headerRowStyle = {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "1rem",
+    flexWrap: "wrap",
+    marginBottom: "1rem",
+  };
+
+  const actionButtonWrapStyle = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.75rem",
   };
 
   return (
     <div>
-      <h1 className="ap-page-title">Doctor Verification</h1>
+      <div style={headerRowStyle}>
+        <div>
+          <h1 className="ap-page-title" style={{ marginBottom: "0.25rem" }}>Doctor Verification</h1>
+          <p className="ap-list-meta" style={{ margin: 0 }}>
+            Review applications, verify licenses, and manage approval status.
+          </p>
+        </div>
+        <a
+          href="https://www.nmc.org.np/search-registered-doctor/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ap-btn ap-btn-primary"
+          style={{ whiteSpace: "nowrap" }}
+        >
+          View NMC
+        </a>
+      </div>
+
+      <section className="ap-section ap-card">
+        <form onSubmit={handleSearchSubmit} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "0.75rem", alignItems: "center" }}>
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by doctor name, specialty, license, or email"
+            className="ap-form-input"
+            style={{ minWidth: 0 }}
+          />
+          <button type="submit" className="ap-btn ap-btn-primary" style={{ whiteSpace: "nowrap" }}>
+            Search Doctors
+          </button>
+        </form>
+      </section>
 
       {/* Filter Buttons */}
       <section className="ap-section ap-card">
-        <div className="ap-filter-buttons">
+        <div className="ap-filter-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
           {filters.map((filter) => (
             <button
               key={filter}
@@ -73,8 +139,8 @@ const DoctorVerification = () => {
           </div>
         ) : (activeFilter === "VERIFIED" || activeFilter === "REJECTED") ? (
           /* Table View for Verified/Rejected Doctors */
-          <div className="ap-card overflow-hidden">
-            <table className="ap-table">
+          <div className="ap-card overflow-hidden" style={{ overflowX: "auto" }}>
+            <table className="ap-table" style={{ minWidth: "760px" }}>
               <thead>
                 <tr>
                   <th>Doctor Name</th>
@@ -119,7 +185,7 @@ const DoctorVerification = () => {
           </div>
         ) : (
           /* Card View for Pending/All */
-          <div className="ap-grid ap-grid-2">
+          <div style={cardGridStyle}>
             {filteredDoctors.map((doctor) => {
               const docStatus = getDoctorStatus(doctor).toLowerCase();
               return (
@@ -159,20 +225,9 @@ const DoctorVerification = () => {
                   <p className="ap-list-meta">{doctor.experience_years || 'N/A'} years</p>
                 </div>
 
-                <div className="ap-form-group">
-                  <label className="ap-form-label">Bio / Notes</label>
-                  <p className="ap-list-meta">{doctor.bio || 'No notes provided'}</p>
-                </div>
-
                 {/* Action Buttons - only show for pending */}
                 {!doctor.is_verified && docStatus === 'pending' && (
-                  <div className="ap-button-group" style={{ marginTop: '1rem' }}>
-                    <button 
-                      onClick={() => handleRequestInfo(doctor.id)}
-                      className="ap-btn ap-btn-outline"
-                    >
-                      Request Info
-                    </button>
+                  <div className="ap-button-group" style={{ marginTop: '1rem', ...actionButtonWrapStyle }}>
                     <button 
                       onClick={() => {
                         setSelectedAction({ type: 'reject', doctorId: doctor.id, doctorName: doctor.users?.name });

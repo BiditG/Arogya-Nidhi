@@ -20,9 +20,6 @@ const adminNavLinks = [
   { to: "/admin-portal/admin/manage-users", Icon: UsersIcon, label: "Manage Users" },
   { to: "/admin-portal/admin/verify-doctors", Icon: ShieldCheckIcon, label: "Verify Doctors" },
   { to: "/admin-portal/admin/system-reports", Icon: DocumentChartBarIcon, label: "System Reports" },
-  { to: "/admin-portal/admin/subscriptions", Icon: CreditCardIcon, label: "Subscriptions" },
-  { to: "/admin-portal/admin/revenue", Icon: BanknotesIcon, label: "Revenue" },
-  { to: "/admin-portal/admin/ai-triage", Icon: CpuChipIcon, label: "AI Triage" },
 ];
 
 const doctorNavLinks = [

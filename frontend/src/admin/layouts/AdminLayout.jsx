@@ -8,9 +8,6 @@ import DoctorsList from "../pages/admin/DoctorsList";
 import ManageUsers from "../pages/admin/ManageUsers";
 import DoctorVerification from "../pages/admin/DoctorVerification";
 import SystemReports from "../pages/admin/SystemReports";
-import SubscriptionManagement from "../pages/admin/SubscriptionManagement";
-import RevenueManagement from "../pages/admin/RevenueManagement";
-import AITriageSystem from "../pages/admin/AITriageSystem";
 import NotAuthorized from "../pages/auth/NotAuthorized";
 import "../styles/AdminPortal.css";
 
@@ -28,9 +25,6 @@ const AdminLayout = () => (
           <Route path="manage-users" element={<ManageUsers />} />
           <Route path="verify-doctors" element={<DoctorVerification />} />
           <Route path="system-reports" element={<SystemReports />} />
-          <Route path="subscriptions" element={<SubscriptionManagement />} />
-          <Route path="revenue" element={<RevenueManagement />} />
-          <Route path="ai-triage" element={<AITriageSystem />} />
 
           <Route path="*" element={<NotAuthorized />} />
         </Routes>

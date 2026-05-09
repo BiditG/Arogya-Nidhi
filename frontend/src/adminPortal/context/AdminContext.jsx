@@ -176,8 +176,22 @@ export const AdminContextProvider = ({ children }) => {
       );
       if (data.success) {
         toast.success(data.message);
-        getAllDoctors(); // Refresh doctors list
-        getAllUsers(); // Refresh users list (since is_active changed)
+        setDoctors((prev) =>
+          prev.map((doctor) =>
+            doctor.id === doctorId
+              ? {
+                  ...doctor,
+                  is_verified: status === "verified",
+                  verification_status: status,
+                  users: doctor.users
+                    ? { ...doctor.users, is_active: status === "verified" }
+                    : doctor.users,
+                }
+              : doctor
+          )
+        );
+        await getAllDoctors(); // Refresh doctors list
+        await getAllUsers(); // Refresh users list (since is_active changed)
         return true;
       }
     } catch (error) {

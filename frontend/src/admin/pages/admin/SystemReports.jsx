@@ -519,25 +519,19 @@ const UserActivityTab = () => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "ai-triage", label: "AI Triage Decisions" },
   { id: "appointment", label: "Appointment Analytics" },
   { id: "consultation", label: "Consultation History" },
-  { id: "subscription", label: "Subscription Analytics" },
-  { id: "revenue", label: "Revenue Report" },
   { id: "user-activity", label: "User Activity" },
 ];
 
 const TAB_CONTENT = {
-  "ai-triage": <AITriageTab />,
   appointment: <AppointmentTab />,
   consultation: <ConsultationTab />,
-  subscription: <SubscriptionTab />,
-  revenue: <RevenueTab />,
   "user-activity": <UserActivityTab />,
 };
 
 const SystemReports = () => {
-  const [activeTab, setActiveTab] = useState("ai-triage");
+  const [activeTab, setActiveTab] = useState("appointment");
   const [reportType, setReportType] = useState("");
   const [dateRange, setDateRange] = useState("");
   const [category, setCategory] = useState("");
@@ -568,8 +562,7 @@ const SystemReports = () => {
             <option>AI Triage Report</option>
             <option>Appointment Report</option>
             <option>Consultation Report</option>
-            <option>Subscription Report</option>
-            <option>Revenue Report</option>
+            
             <option>User Activity Report</option>
           </select>
           <input
@@ -588,8 +581,7 @@ const SystemReports = () => {
             <option>All</option>
             <option>Patients</option>
             <option>Doctors</option>
-            <option>Subscriptions</option>
-            <option>Revenue</option>
+            
           </select>
           <button className="ap-btn ap-btn-primary" style={{ whiteSpace: "nowrap" }}>
             Generate
