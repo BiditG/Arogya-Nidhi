@@ -26,21 +26,8 @@ const app = express();
 
 // MongoDB is not used in this project; Supabase client handles DB connections
 
-<<<<<<< HEAD
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'https://rncks4z6-5173.inc1.devtunnels.ms', 'https://arogya-nidhi-qobi5xkae-nirman12s-projects.vercel.app', 'https://arogya-nidhi-git-main-nirman12s-projects.vercel.app', 'https://arogya-nidhi.vercel.app'], credentials: true }));
 // app.use(cors({ origin: ['https://arogya-nidhi.vercel.app'], credentials: true }));
-=======
-//app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'https://arogya-nidhi-qobi5xkae-nirman12s-projects.vercel.app', 'https://arogya-nidhi-git-main-nirman12s-projects.vercel.app', 'https://arogya-nidhi.vercel.app'], credentials: true }));
-app.use(cors({
-	origin: [
-		'http://localhost:5173',
-		'http://localhost:5174',
-		'https://arogya-nidhi.vercel.app',
-		'https://arogya-nidhi-ten.vercel.app',
-	],
-	credentials: true,
-}));
->>>>>>> 352ee70822e55df39e704018e54b9408d74ec37e
 app.use(express.json());
 app.use("/api/consultation-summaries", consultationSummaryRoute);
 app.use(express.urlencoded({ extended: false }));
