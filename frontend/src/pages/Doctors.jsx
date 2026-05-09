@@ -6,6 +6,22 @@ import PageChanger from "../components/PageChanger";
 import { useLanguage } from "../utils/language";
 import { getDoctorNameForLanguage } from "../utils/nepaliNames";
 
+const DEFAULT_MAX_FEE = 10000;
+
+const toSpecialitySlug = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const getDoctorSpeciality = (doctor) =>
+  doctor?.speciality || doctor?.specialty || doctor?.sub_speciality || doctor?.sub_specialty || "";
+
+const getDoctorFee = (doctor) =>
+  Number(doctor?.fee ?? doctor?.consultation_fee ?? doctor?.consultationFee ?? doctor?.fees ?? 0) || 0;
+
 const Doctors = () => {
   const { slug } = useParams();
   const { pathname } = useLocation();
@@ -14,7 +30,7 @@ const Doctors = () => {
   const [search, setSearch] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [minFee, setMinFee] = useState(0);
-  const [maxFee, setMaxFee] = useState(1000);
+  const [maxFee, setMaxFee] = useState(DEFAULT_MAX_FEE);
   const [ratingMin, setRatingMin] = useState(0);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("relevance");
@@ -40,17 +56,19 @@ const Doctors = () => {
 
   const specialityList = [
     { name: "General physician", slug: "general-physician" },
+    { name: "Cardiologist", slug: "cardiologist" },
     { name: "Gynecologist", slug: "gynecologist" },
     { name: "Dermatologist", slug: "dermatologist" },
     { name: "Pediatricians", slug: "pediatricians" },
     { name: "Neurologist", slug: "neurologist" },
+    { name: "Orthopedic", slug: "orthopedic" },
     { name: "Gastroenterologist", slug: "gastroenterologist" },
   ];
 
   const applyFilter = () => {
     const doctorsToFilter = (doctors && doctors.length > 0) ? doctors : manualDoctors;
     if (slug) {
-      setFilterDoc(doctorsToFilter.filter((doc) => doc.speciality.toLowerCase().replace(/\s+/g, "-") === slug.toLowerCase()));
+      setFilterDoc(doctorsToFilter.filter((doc) => toSpecialitySlug(getDoctorSpeciality(doc)) === slug.toLowerCase()));
     } else {
       setFilterDoc(doctorsToFilter);
     }
@@ -70,11 +88,11 @@ const Doctors = () => {
       if (!(
         d.name?.toLowerCase().includes(q) ||
         localizedName?.toLowerCase().includes(q) ||
-        d.speciality?.toLowerCase().includes(q) ||
+        getDoctorSpeciality(d)?.toLowerCase().includes(q) ||
         d.location?.toLowerCase().includes(q)
       )) return false;
     }
-    const fee = d.fee || d.consultation_fee || d.consultationFee || 0;
+    const fee = getDoctorFee(d);
     if (fee < minFee || fee > maxFee) return false;
     if ((d.rating || 0) < ratingMin) return false;
     return true;
@@ -85,8 +103,8 @@ const Doctors = () => {
 
   const sorted = [...filteredList].sort((a, b) => {
     if (sortBy === "rating") return (b.rating || 0) - (a.rating || 0);
-    if (sortBy === "fee-asc") return (a.fee || 0) - (b.fee || 0);
-    if (sortBy === "fee-desc") return (b.fee || 0) - (a.fee || 0);
+    if (sortBy === "fee-asc") return getDoctorFee(a) - getDoctorFee(b);
+    if (sortBy === "fee-desc") return getDoctorFee(b) - getDoctorFee(a);
     if (sortBy === "experience") {
       const ea = Number(String(a.experience || "").match(/\d+/)?.[0] || 0);
       const eb = Number(String(b.experience || "").match(/\d+/)?.[0] || 0);
@@ -102,7 +120,7 @@ const Doctors = () => {
   }, [pathname]);
 
   const clearFilters = () => {
-    setSearchTerm(""); setSearch(""); setMinFee(0); setMaxFee(1000); setRatingMin(0); setSortBy("relevance"); setPage(1);
+    setSearchTerm(""); setSearch(""); setMinFee(0); setMaxFee(DEFAULT_MAX_FEE); setRatingMin(0); setSortBy("relevance"); setPage(1);
   };
 
   return (
@@ -206,7 +224,7 @@ const Doctors = () => {
 
               {/* Fee range */}
               <div>
-                <h4 className="text-sm font-semibold text-gray-800 mb-3 uppercase tracking-wide">Fee Range ($)</h4>
+                <h4 className="text-sm font-semibold text-gray-800 mb-3 uppercase tracking-wide">Fee Range (NPR)</h4>
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
