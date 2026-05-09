@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
 import {
@@ -24,7 +24,7 @@ const INITIAL_MESSAGE = {
   id: 1,
   from: "ai",
   text:
-    "I can book an appointment for you by text or voice. Tell me the specialty you need, and I’ll guide you step by step until the booking is confirmed.",
+    "I can book an appointment for you by text or voice. Tell me the specialty you need, and I'll guide you step by step until the booking is confirmed.",
 };
 
 const SPECIALTY_CHIPS = [
@@ -51,6 +51,19 @@ const VOICE_CONNECTING = "Connecting call...";
 const VOICE_CONNECTED = "Live call active";
 const VOICE_MUTED = "Call muted";
 
+const SPEECH_LANGUAGES = [
+  { value: "ne-NP", label: "Nepali" },
+  { value: "en-US", label: "English" },
+  { value: "hi-IN", label: "Hindi" },
+];
+
+const getSpeechRecognitionConstructor = () => {
+  if (typeof window === "undefined") return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+};
+
+const hasDevanagariText = (text) => /[\u0900-\u097F]/.test(String(text || ""));
+
 const PatientPortalAiAssistant = () => {
   const { setToken, backendUrl, token } = useContext(AppContext);
   const navigate = useNavigate();
@@ -68,13 +81,24 @@ const PatientPortalAiAssistant = () => {
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [callStatus, setCallStatus] = useState(VOICE_IDLE);
   const [lastTranscript, setLastTranscript] = useState("");
+  const [speechLanguage, setSpeechLanguage] = useState("ne-NP");
+  const [listening, setListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState(null);
+  const [availableVoices, setAvailableVoices] = useState([]);
   const [voiceSupported] = useState(() => {
     if (typeof window === "undefined") return false;
     return Boolean(navigator?.mediaDevices?.getUserMedia);
   });
+  const [speechSupported] = useState(() => Boolean(getSpeechRecognitionConstructor()));
+  const [ttsSupported] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(window.speechSynthesis && window.SpeechSynthesisUtterance);
+  });
   const messagesContainerRef = useRef(null);
-  const assistantAudioUrlRef = useRef(null);
   const fallbackUtteranceRef = useRef(null);
+  const speechRecognitionRef = useRef(null);
+  const speechDraftRef = useRef("");
+  const speechFinalRef = useRef("");
   const twilioDeviceRef = useRef(null);
   const twilioCallRef = useRef(null);
   const twilioPollTimerRef = useRef(null);
@@ -84,6 +108,8 @@ const PatientPortalAiAssistant = () => {
   const callMutedRef = useRef(false);
 
   const assistantStatus = useMemo(() => {
+    if (listening) return "Listening...";
+    if (speakingMessageId) return "Reading aloud";
     if (sending || voiceBusy) return "Thinking...";
     if (bookingState.stage === "done") return "Booking complete";
     if (bookingState.stage === "confirm") return "Ready to confirm";
@@ -92,7 +118,7 @@ const PatientPortalAiAssistant = () => {
     if (bookingState.stage === "time") return "Choose a time";
     if (bookingState.stage === "notes") return "Add notes or skip";
     return "Ready to book";
-  }, [bookingState.stage, sending, voiceBusy]);
+  }, [bookingState.stage, listening, sending, speakingMessageId, voiceBusy]);
 
   const scrollToBottom = (behavior = "auto") => {
     const container = messagesContainerRef.current;
@@ -102,10 +128,8 @@ const PatientPortalAiAssistant = () => {
 
   useEffect(() => {
     return () => {
-      if (assistantAudioUrlRef.current) {
-        URL.revokeObjectURL(assistantAudioUrlRef.current);
-        assistantAudioUrlRef.current = null;
-      }
+      speechRecognitionRef.current?.abort?.();
+      speechRecognitionRef.current = null;
 
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -122,6 +146,25 @@ const PatientPortalAiAssistant = () => {
       twilioDeviceRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!ttsSupported || typeof window === "undefined") return undefined;
+
+    const loadVoices = () => {
+      setAvailableVoices(window.speechSynthesis.getVoices());
+    };
+
+    loadVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      window.speechSynthesis.removeEventListener?.("voiceschanged", loadVoices);
+      if (window.speechSynthesis.onvoiceschanged === loadVoices) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, [ttsSupported]);
 
   const getLiveToken = async () => {
     const { data: sessionData } = supabase ? await supabase.auth.getSession() : { data: null };
@@ -153,46 +196,69 @@ const PatientPortalAiAssistant = () => {
     setTimeout(() => scrollToBottom("smooth"), 50);
   };
 
-  const speakAssistantFallback = (text) => {
-    if (!text || typeof window === "undefined" || !window.speechSynthesis) return false;
+  const getSpeechLanguageForText = useCallback(
+    (text) => (hasDevanagariText(text) ? "ne-NP" : speechLanguage),
+    [speechLanguage]
+  );
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
-    fallbackUtteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-    return true;
-  };
+  const pickSpeechVoice = useCallback(
+    (language) => {
+      const lang = String(language || speechLanguage).toLowerCase();
+      const base = lang.split("-")[0];
+      const exact = availableVoices.find((voice) => voice.lang.toLowerCase() === lang);
+      const sameBase = availableVoices.find((voice) => voice.lang.toLowerCase().startsWith(`${base}-`));
+      const devanagariFallback =
+        base === "ne" || base === "hi"
+          ? availableVoices.find((voice) => voice.lang.toLowerCase().startsWith("hi"))
+          : null;
 
-  const playAssistantAudio = async (audioBase64, mimeType, fallbackText = "") => {
-    if (!audioBase64 || !mimeType) {
-      return speakAssistantFallback(fallbackText);
-    }
+      return (
+        exact ||
+        sameBase ||
+        devanagariFallback ||
+        availableVoices.find((voice) => voice.lang.toLowerCase().startsWith("en")) ||
+        null
+      );
+    },
+    [availableVoices, speechLanguage]
+  );
 
-    if (assistantAudioUrlRef.current) {
-      URL.revokeObjectURL(assistantAudioUrlRef.current);
-      assistantAudioUrlRef.current = null;
-    }
+  const speakAssistantFallback = useCallback(
+    (text, messageId = "assistant-reader") => {
+      if (!text || !ttsSupported || typeof window === "undefined" || !window.speechSynthesis) {
+        toast.error("Text to speech is not supported in this browser");
+        return false;
+      }
 
-    const binary = window.atob(audioBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
+      if (speakingMessageId === messageId) {
+        window.speechSynthesis.cancel();
+        setSpeakingMessageId(null);
+        return true;
+      }
 
-    const blob = new Blob([bytes], { type: mimeType });
-    const audioUrl = URL.createObjectURL(blob);
-    assistantAudioUrlRef.current = audioUrl;
+      window.speechSynthesis.cancel();
+      const language = getSpeechLanguageForText(text);
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voice = pickSpeechVoice(language);
 
-    try {
-      const audio = new Audio(audioUrl);
-      await audio.play();
+      utterance.lang = voice?.lang || language;
+      utterance.voice = voice || null;
+      utterance.rate = language.startsWith("ne") || language.startsWith("hi") ? 0.9 : 0.95;
+      utterance.pitch = 1;
+      utterance.onend = () => {
+        setSpeakingMessageId((current) => (current === messageId ? null : current));
+      };
+      utterance.onerror = () => {
+        setSpeakingMessageId((current) => (current === messageId ? null : current));
+      };
+
+      fallbackUtteranceRef.current = utterance;
+      setSpeakingMessageId(messageId);
+      window.speechSynthesis.speak(utterance);
       return true;
-    } catch {
-      return speakAssistantFallback(fallbackText);
-    }
-  };
+    },
+    [getSpeechLanguageForText, pickSpeechVoice, speakingMessageId, ttsSupported]
+  );
 
   const pushAssistantIfChanged = (payload) => {
     setMessages((prev) => {
@@ -265,6 +331,7 @@ const PatientPortalAiAssistant = () => {
   };
 
   const handleKeyDown = (e) => {
+    if (listening) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -273,6 +340,115 @@ const PatientPortalAiAssistant = () => {
 
   const handleQuickAction = (value) => {
     handleSend(value);
+  };
+
+  const stopSpeechInput = () => {
+    const recognition = speechRecognitionRef.current;
+    if (!recognition) return;
+
+    try {
+      recognition.stop();
+    } catch {
+      recognition.abort?.();
+    }
+  };
+
+  const startSpeechInput = () => {
+    if (sending || voiceBusy) return;
+
+    if (callActive) {
+      toast.info("End the live call before using the chat microphone");
+      return;
+    }
+
+    const SpeechRecognition = getSpeechRecognitionConstructor();
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in this browser");
+      return;
+    }
+
+    if (speechRecognitionRef.current) {
+      stopSpeechInput();
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    speechFinalRef.current = "";
+    speechDraftRef.current = "";
+
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeakingMessageId(null);
+    }
+
+    recognition.lang = speechLanguage;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      let finalChunk = "";
+      let interimChunk = "";
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index]?.[0]?.transcript || "";
+        if (event.results[index].isFinal) {
+          finalChunk += ` ${transcript}`;
+        } else {
+          interimChunk += ` ${transcript}`;
+        }
+      }
+
+      if (finalChunk) {
+        speechFinalRef.current = `${speechFinalRef.current} ${finalChunk}`.replace(/\s+/g, " ").trim();
+      }
+
+      const combined = `${speechFinalRef.current} ${interimChunk}`.replace(/\s+/g, " ").trim();
+      speechDraftRef.current = combined;
+      setInput(combined);
+      setLastTranscript(combined);
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        toast.error("Please allow microphone access to use speech input");
+      } else if (event.error && event.error !== "no-speech" && event.error !== "aborted") {
+        toast.error(`Speech input stopped: ${event.error}`);
+      }
+    };
+
+    recognition.onend = () => {
+      const spokenText = (speechFinalRef.current || speechDraftRef.current).replace(/\s+/g, " ").trim();
+      speechRecognitionRef.current = null;
+      speechFinalRef.current = "";
+      speechDraftRef.current = "";
+      setListening(false);
+
+      if (spokenText) {
+        setInput("");
+        handleSend(spokenText);
+      }
+    };
+
+    speechRecognitionRef.current = recognition;
+    setListening(true);
+
+    try {
+      recognition.start();
+    } catch {
+      speechRecognitionRef.current = null;
+      setListening(false);
+      toast.error("Could not start speech recognition");
+    }
+  };
+
+  const toggleSpeechInput = () => {
+    if (listening) {
+      stopSpeechInput();
+      return;
+    }
+
+    startSpeechInput();
   };
 
   const appendVoiceEvent = (event) => {
@@ -398,6 +574,10 @@ const PatientPortalAiAssistant = () => {
       return;
     }
 
+    if (listening) {
+      stopSpeechInput();
+    }
+
     try {
       const liveToken = await getLiveToken();
       if (!liveToken) {
@@ -472,6 +652,7 @@ const PatientPortalAiAssistant = () => {
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+      setSpeakingMessageId(null);
     }
   };
 
@@ -531,7 +712,7 @@ const PatientPortalAiAssistant = () => {
                       type="button"
                       className="paa-btn paa-btn-primary"
                       onClick={startVoiceCall}
-                      disabled={!voiceSupported || voiceBusy || sending}
+                      disabled={!voiceSupported || voiceBusy || sending || listening}
                     >
                       <PhoneIcon className="paa-inline-icon" />
                       Start call
@@ -568,7 +749,21 @@ const PatientPortalAiAssistant = () => {
                       {msg.from === "user" ? <UserIcon style={{ width: 14, height: 14 }} /> : <SparklesIcon style={{ width: 14, height: 14 }} />}
                     </div>
                     <div className="paa-message-content">
-                      <div>{msg.text}</div>
+                      <div className="paa-message-text-row">
+                        <div className="paa-message-text">{msg.text}</div>
+                        {msg.from === "ai" && (
+                          <button
+                            type="button"
+                            className={`paa-icon-button${speakingMessageId === msg.id ? " paa-icon-button-active" : ""}`}
+                            onClick={() => speakAssistantFallback(msg.text, msg.id)}
+                            disabled={!ttsSupported || listening}
+                            title={speakingMessageId === msg.id ? "Stop reading" : "Read response aloud"}
+                            aria-label={speakingMessageId === msg.id ? "Stop reading response" : "Read AI response aloud"}
+                          >
+                            <SpeakerWaveIcon className="paa-inline-icon" />
+                          </button>
+                        )}
+                      </div>
                       {Array.isArray(msg.actions) && msg.actions.length > 0 && (
                         <div className="paa-message-actions">
                           {msg.actions.map((action, index) => (
@@ -607,10 +802,20 @@ const PatientPortalAiAssistant = () => {
               </div>
 
               <div className="paa-chat-input-container">
+                <button
+                  type="button"
+                  className={`paa-icon-button paa-input-icon-button${listening ? " paa-icon-button-active" : ""}`}
+                  onClick={toggleSpeechInput}
+                  disabled={!speechSupported || sending || voiceBusy || callActive}
+                  title={listening ? "Stop listening" : "Speak message"}
+                  aria-label={listening ? "Stop speech input" : "Start speech input"}
+                >
+                  <MicrophoneIcon className="paa-inline-icon" />
+                </button>
                 <input
                   type="text"
                   className="paa-chat-input"
-                  placeholder={STEP_PLACEHOLDERS[bookingState.stage] || STEP_PLACEHOLDERS.specialty}
+                  placeholder={listening ? "Listening..." : STEP_PLACEHOLDERS[bookingState.stage] || STEP_PLACEHOLDERS.specialty}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -620,7 +825,7 @@ const PatientPortalAiAssistant = () => {
                   type="button"
                   className="paa-btn paa-btn-primary"
                   onClick={() => handleSend()}
-                  disabled={sending || voiceBusy || !input.trim()}
+                  disabled={sending || voiceBusy || listening || !input.trim()}
                 >
                   {sending ? "..." : "Send"}
                 </button>
@@ -629,10 +834,34 @@ const PatientPortalAiAssistant = () => {
 
             <div className="paa-side-panel-group">
               <div className="paa-panel">
-                <h3 className="paa-panel-title">Voice Call</h3>
+                <h3 className="paa-panel-title">Voice Tools</h3>
                 <div className="paa-voice-card">
                   <div className="paa-voice-card-row">
-                    <span className="paa-summary-label">Microphone</span>
+                    <span className="paa-summary-label">Chat mic</span>
+                    <span className="paa-summary-value">{speechSupported ? (listening ? "Listening" : "Ready") : "Not supported"}</span>
+                  </div>
+                  <div className="paa-voice-card-row">
+                    <span className="paa-summary-label">Reader</span>
+                    <span className="paa-summary-value">{ttsSupported ? (speakingMessageId ? "Speaking" : "Ready") : "Not supported"}</span>
+                  </div>
+                  <div className="paa-voice-card-row">
+                    <label className="paa-summary-label" htmlFor="paa-speech-language">Language</label>
+                    <select
+                      id="paa-speech-language"
+                      className="paa-language-select"
+                      value={speechLanguage}
+                      onChange={(event) => setSpeechLanguage(event.target.value)}
+                      disabled={listening}
+                    >
+                      {SPEECH_LANGUAGES.map((language) => (
+                        <option key={language.value} value={language.value}>
+                          {language.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="paa-voice-card-row">
+                    <span className="paa-summary-label">Call mic</span>
                     <span className="paa-summary-value">{voiceSupported ? "Ready" : "Not supported"}</span>
                   </div>
                   <div className="paa-voice-card-row">
@@ -645,7 +874,7 @@ const PatientPortalAiAssistant = () => {
                   </div>
                   <div className="paa-voice-hint">
                     <SpeakerWaveIcon className="paa-step-icon" />
-                    <span>Start the call and talk naturally. Use mute only when you need privacy.</span>
+                    <span>Use the mic beside the message box, or start the live call when Twilio is available.</span>
                   </div>
                 </div>
               </div>
