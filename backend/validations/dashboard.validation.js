@@ -43,7 +43,7 @@ export const getAllAppointmentsSchema = z.object({
 export const submitIotTestSchema = z.object({
   body: z.object({
     testType:    z.enum(VALID_TEST_TYPES),
-    sensorData:  z.record(z.unknown()).or(z.array(z.unknown())),
+    sensorData:  z.record(z.string(), z.unknown()).or(z.array(z.unknown())),
     resultScore: z.coerce.number().min(0).max(100).optional().nullable(),
     notes:       z.string().max(500).optional().nullable(),
   }),

@@ -341,12 +341,19 @@ const doctorDashboard = async (req, res) => {
     const patients = Array.from(
       new Set((appointments || []).map((a) => a.patient_id))
     );
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const todaysAppointments = (appointments || []).filter((appointment) => {
+      if (!appointment.scheduled_at) return false;
+      return new Date(appointment.scheduled_at).toISOString().slice(0, 10) === todayKey;
+    });
 
     const dashData = {
       earning,
       appointments: (appointments || []).length,
+      todayAppointments: todaysAppointments.length,
       patients: patients.length,
-      latestAppointments: (appointments || []).slice(0, 5),
+      latestAppointments: todaysAppointments.slice(0, 5),
+      recentAppointments: (appointments || []).slice(0, 5),
     };
 
     return res.status(200).json({

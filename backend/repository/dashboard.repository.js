@@ -1,5 +1,18 @@
 import supabase from '../config/supabase.js';
 
+function normalizeIotReading(row) {
+  if (!row) return row;
+  const sensorData = row.sensorData ?? row.sensor_data ?? {};
+  return {
+    ...row,
+    sensorData,
+    resultScore: row.resultScore ?? row.result_score ?? sensorData?.resultScore ?? null,
+    testType: row.testType ?? row.test_type ?? null,
+    recordedAt: row.recordedAt ?? row.recorded_at ?? null,
+    createdAt: row.createdAt ?? row.recorded_at ?? row.recordedAt ?? null,
+  };
+}
+
 // ─── Patient lookup ───────────────────────────────────────────────────────────
 
 async function findPatientByUserId(userId) {
@@ -106,12 +119,7 @@ async function getHealthScoreData(patientId) {
     .order('recorded_at', { ascending: false })
     .limit(5);
   if (iotErr) throw iotErr;
-  const normalizedIot = (iot || []).map((r) => ({
-    ...r,
-    resultScore: r.resultScore ?? r.result_score ?? null,
-    testType: r.testType ?? r.test_type ?? null,
-    recordedAt: r.recordedAt ?? r.recorded_at ?? null,
-  }));
+  const normalizedIot = (iot || []).map(normalizeIotReading);
   return { ...data, emergencyContacts, addressInfo, iotReadings: normalizedIot };
 }
 
@@ -254,25 +262,37 @@ async function getIotReadings(patientId, { page = 1, limit = 10, testType } = {}
   if (testType) query = query.eq('test_type', testType);
   const { data, count, error } = await query.range(offset, offset + limit - 1);
   if (error) throw error;
-  return { total: count || 0, page, limit, readings: data };
+  return { total: count || 0, page, limit, readings: (data || []).map(normalizeIotReading) };
 }
 
 async function getRecentIotReadings(patientId, take = 3) {
   const { data, error } = await supabase.from('iot_readings').select('*').eq('patient_id', patientId).order('recorded_at', { ascending: false }).limit(take);
   if (error) throw error;
-  return data;
+  return (data || []).map(normalizeIotReading);
 }
 
 async function findIotReadingById(id, patientId) {
   const { data, error } = await supabase.from('iot_readings').select('*').eq('id', id).eq('patient_id', patientId).maybeSingle();
   if (error) throw error;
-  return data;
+  return normalizeIotReading(data);
 }
 
 async function createIotReading(data) {
-  const { data: created, error } = await supabase.from('iot_readings').insert(data).select().maybeSingle();
+  const sensorData = {
+    ...(data.sensorData || {}),
+    resultScore: data.resultScore ?? null,
+    notes: data.notes ?? null,
+  };
+
+  const insertData = {
+    patient_id: data.patientId,
+    test_type: data.testType,
+    sensor_data: sensorData,
+  };
+
+  const { data: created, error } = await supabase.from('iot_readings').insert(insertData).select().maybeSingle();
   if (error) throw error;
-  return created;
+  return normalizeIotReading(created);
 }
 
 // ─── Patient queries ──────────────────────────────────────────────────────────

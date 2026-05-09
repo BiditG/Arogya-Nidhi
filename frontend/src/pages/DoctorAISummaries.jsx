@@ -1,4 +1,5 @@
 import { useContext, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import DoctorSidebar from "../components/DoctorSidebar";
 import { AppContext } from "../context/AppContext";
@@ -55,10 +56,18 @@ Plan: Continue Metformin 1000mg BD. Reinforce dietary advice. Foot examination a
 
 const DoctorAISummaries = () => {
   const { token, backendUrl } = useContext(AppContext);
+  const location = useLocation();
+  const requestedPatient = location.state || null;
   const [loading, setLoading] = useState(false);
   const [summaries, setSummaries] = useState(DUMMY_SUMMARIES);
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    if (requestedPatient?.patientName || requestedPatient?.patientEmail) {
+      setQuery(requestedPatient.patientName || requestedPatient.patientEmail);
+    }
+  }, [requestedPatient?.patientName, requestedPatient?.patientEmail]);
 
   useEffect(() => {
     const load = async () => {
@@ -84,8 +93,19 @@ const DoctorAISummaries = () => {
     (s) =>
       !query ||
       (s.patientName || "").toLowerCase().includes(query.toLowerCase()) ||
+      (s.patientEmail || "").toLowerCase().includes(query.toLowerCase()) ||
       (s.aiSummary || "").toLowerCase().includes(query.toLowerCase())
   );
+
+  useEffect(() => {
+    if (!requestedPatient?.patientName && !requestedPatient?.patientEmail) return;
+    const patientNeedle = String(requestedPatient.patientName || requestedPatient.patientEmail || "").toLowerCase();
+    const match = summaries.find((s) =>
+      String(s.patientName || "").toLowerCase().includes(patientNeedle) ||
+      String(s.patientEmail || "").toLowerCase().includes(patientNeedle)
+    );
+    if (match) setSelected(match);
+  }, [requestedPatient?.patientName, requestedPatient?.patientEmail, summaries]);
 
   return (
     <div className="pp-page">
@@ -105,6 +125,14 @@ const DoctorAISummaries = () => {
                   <div className="pp-ai-subtitle">Auto-generated patient consultation summaries</div>
                 </div>
               </div>
+              {requestedPatient?.patientName && (
+                <div className="pp-panel" style={{ marginBottom: 12, padding: 12 }}>
+                  <div style={{ fontWeight: 700 }}>{requestedPatient.patientName}</div>
+                  <div style={{ fontSize: "0.8125rem", color: "var(--pp-text-muted)" }}>
+                    {requestedPatient.patientEmail || "AI summaries for selected patient"}
+                  </div>
+                </div>
+              )}
               <input
                 className="pp-chat-input"
                 style={{ width: "100%" }}

@@ -72,6 +72,62 @@ const DoctorDashboard = () => {
 
   const doctorName = userData?.name || userData?.user?.name || "Doctor";
 
+  const getPatientName = (appointment) =>
+    appointment?.patient?.users?.name ||
+    appointment?.patient?.user?.name ||
+    appointment?.patient?.users?.email ||
+    appointment?.patient?.user?.email ||
+    appointment?.user?.name ||
+    appointment?.patient_name ||
+    "Unknown Patient";
+
+  const getAppointmentDate = (appointment) => {
+    const date = appointment?.scheduled_at || appointment?.scheduledAt || appointment?.slotDate || appointment?.date;
+    return date ? new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+  };
+
+  const getAppointmentTime = (appointment) => {
+    const date = appointment?.scheduled_at || appointment?.scheduledAt;
+    if (date) {
+      return new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+    return appointment?.slotTime || appointment?.time || "";
+  };
+
+  const getPatientEmail = (appointment) =>
+    appointment?.patient?.users?.email ||
+    appointment?.patient?.user?.email ||
+    appointment?.user?.email ||
+    "";
+
+  const getPatientKey = (appointment) =>
+    appointment?.patient?.id ||
+    appointment?.patient?._id ||
+    appointment?.patient_id ||
+    getPatientEmail(appointment) ||
+    getPatientName(appointment);
+
+  const viewAiSummary = (appointment) => {
+    navigate("/doctor-portal/ai-summaries", {
+      state: {
+        appointmentId: appointment?.id || appointment?._id,
+        patientKey: getPatientKey(appointment),
+        patientName: getPatientName(appointment),
+        patientEmail: getPatientEmail(appointment),
+      },
+    });
+  };
+
+  const startConsultation = (appointment) => {
+    navigate("/doctor-portal/consultations", {
+      state: {
+        appointmentId: appointment?.id || appointment?._id,
+        patientKey: getPatientKey(appointment),
+        intent: "start",
+      },
+    });
+  };
+
   useEffect(() => {
     if (!token) return navigate("/login");
     const role = userData?.role || userData?.user?.role;
@@ -97,11 +153,13 @@ const DoctorDashboard = () => {
   const todays =
     (dash?.latestAppointments || []).length > 0
       ? (dash.latestAppointments || []).slice(0, 5)
-      : DUMMY_APPOINTMENTS;
+      : [];
   const consultations =
-    (dash?.latestAppointments || []).length > 0 ? dash.latestAppointments : DUMMY_CONSULTATIONS;
+    (dash?.recentAppointments || dash?.latestAppointments || []).length > 0
+      ? (dash.recentAppointments || dash.latestAppointments)
+      : DUMMY_CONSULTATIONS;
 
-  const todayCount = dash?.todayAppointments || dash?.appointments || DUMMY_STATS.todayAppointments;
+  const todayCount = dash?.todayAppointments ?? 0;
   const totalConsult = dash?.appointments || DUMMY_STATS.totalConsultations;
   const earning = dash?.earning || DUMMY_STATS.earning;
 
@@ -157,25 +215,43 @@ const DoctorDashboard = () => {
               </div>
             ) : (
               <div className="pp-appointment-list">
-                {todays.map((a) => (
-                  <div key={a._id || a.id} className="pp-appointment-item">
-                    <div className="pp-appointment-icon">
-                      <UserCircleIcon style={{ width: 22, height: 22 }} />
-                    </div>
+                {todays.length === 0 ? (
+                  <div className="pp-appointment-item">
                     <div className="pp-appointment-info">
-                      <div className="pp-appointment-title">
-                        {a.user?.name || a.patient_name || a.user?.email || "Unknown"}
-                      </div>
-                      <div className="pp-appointment-meta">
-                        {a.slotDate || a.date} {a.slotTime || a.time}
-                      </div>
-                    </div>
-                    <div className="pp-appointment-actions">
-                      <button className="pp-btn pp-btn-outline pp-btn-sm">View</button>
-                      <button className="pp-btn pp-btn-primary pp-btn-sm">Start</button>
+                      <div className="pp-appointment-title">No appointments scheduled for today</div>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  todays.map((a) => (
+                    <div key={a._id || a.id} className="pp-appointment-item">
+                      <div className="pp-appointment-icon">
+                        <UserCircleIcon style={{ width: 22, height: 22 }} />
+                      </div>
+                      <div className="pp-appointment-info">
+                        <div className="pp-appointment-title">{getPatientName(a)}</div>
+                        <div className="pp-appointment-meta">
+                          {getAppointmentDate(a)} {getAppointmentTime(a)}
+                        </div>
+                      </div>
+                      <div className="pp-appointment-actions">
+                        <button
+                          type="button"
+                          className="pp-btn pp-btn-outline pp-btn-sm"
+                          onClick={() => viewAiSummary(a)}
+                        >
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="pp-btn pp-btn-primary pp-btn-sm"
+                          onClick={() => startConsultation(a)}
+                        >
+                          Start
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </section>
@@ -227,8 +303,8 @@ const DoctorDashboard = () => {
                   consultations.slice(0, 3).map((c) => (
                     <div key={c._id || c.id} className="pp-history-item">
                       <div className="pp-history-header">
-                        <span className="pp-history-title">{c.user?.name || c.patient_name || "Unknown"}</span>
-                        <span className="pp-history-date">{fmtDate(c.slotDate || c.date)}</span>
+                        <span className="pp-history-title">{getPatientName(c)}</span>
+                        <span className="pp-history-date">{getAppointmentDate(c) || fmtDate(c.slotDate || c.date)}</span>
                       </div>
                       <div className="pp-history-desc">{c.notes || c.summary || "—"}</div>
                     </div>

@@ -1,7 +1,20 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import PatientSidebar from "../components/PatientSidebar";
-import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  BoltIcon,
+  CheckCircleIcon,
+  ChartBarIcon,
+  CloudArrowUpIcon,
+  CursorArrowRaysIcon,
+  DevicePhoneMobileIcon,
+  EyeIcon,
+  PlayIcon,
+  SpeakerWaveIcon,
+  WifiIcon,
+} from "@heroicons/react/24/outline";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { AppContext } from "../context/AppContext";
@@ -118,10 +131,10 @@ const ReactionCard = ({ onSaveResult, lastSaved }) => {
       if (vPhase === "idle")
         return (
           <>
-            <span className="iot-test-icon">👆</span>
-            <span style={{ fontSize: "0.8125rem", color: "var(--iot-text-muted)" }}>
-              Press Start — tap when screen turns green
+            <span className="iot-test-icon">
+              <CursorArrowRaysIcon />
             </span>
+            <span className="iot-interface-hint">Press Start, then tap when the panel turns green.</span>
           </>
         );
       if (vPhase === "countdown")
@@ -147,10 +160,10 @@ const ReactionCard = ({ onSaveResult, lastSaved }) => {
       if (sStatus === "idle")
         return (
           <>
-            <span className="iot-test-icon">🔊</span>
-            <span style={{ fontSize: "0.8125rem", color: "var(--iot-text-muted)" }}>
-              Press Start — tap when you hear the beep
+            <span className="iot-test-icon">
+              <SpeakerWaveIcon />
             </span>
+            <span className="iot-interface-hint">Press Start, then tap when you hear the beep.</span>
           </>
         );
       if (sStatus === "waiting")
@@ -191,7 +204,15 @@ const ReactionCard = ({ onSaveResult, lastSaved }) => {
   return (
     <div className="iot-test-card">
       <div className="iot-test-header">
-        <div className="iot-test-title">⚡ Reaction Time Test</div>
+        <div className="iot-test-title-wrap">
+          <span className="iot-card-icon">
+            <BoltIcon />
+          </span>
+          <div>
+            <div className="iot-test-title">Reaction Time Test</div>
+            <div className="iot-test-kicker">Visual and auditory response</div>
+          </div>
+        </div>
         <span className={`iot-status-badge ${isRunning ? "iot-status-running" : phase === "done" || phase === "done" ? "iot-status-done" : ""}`}>
           {isRunning ? "Running" : result != null ? "Done" : "Ready"}
         </span>
@@ -200,10 +221,10 @@ const ReactionCard = ({ onSaveResult, lastSaved }) => {
       <div className={`iot-test-interface ${isRunning || result != null ? "iot-interface-active" : ""}`}>
         <div className="iot-mode-tabs">
           <button className={`iot-mode-tab ${mode === "visual" ? "iot-mode-active" : ""}`} onClick={() => { setMode("visual"); handleReset(); }} disabled={isRunning}>
-            Visual
+            <EyeIcon /> Visual
           </button>
           <button className={`iot-mode-tab ${mode === "sound" ? "iot-mode-active" : ""}`} onClick={() => { setMode("sound"); handleReset(); }} disabled={isRunning}>
-            Sound
+            <SpeakerWaveIcon /> Sound
           </button>
         </div>
         {renderInterface()}
@@ -248,15 +269,18 @@ const ReactionCard = ({ onSaveResult, lastSaved }) => {
           {result != null ? (
             <>
               <button className="iot-btn iot-btn-primary" onClick={() => onSaveResult({ resultMs: result, mode, score: reactionScore(result) })}>
+                <CloudArrowUpIcon />
                 Save Result
               </button>
               <button className="iot-btn iot-btn-secondary" onClick={handleReset}>
+                <ArrowPathIcon />
                 Retry
               </button>
             </>
           ) : (
             <button className="iot-btn iot-btn-primary" onClick={handleStart} disabled={isRunning}>
-              {isRunning ? "Running..." : "▶ Start Test"}
+              {!isRunning && <PlayIcon />}
+              {isRunning ? "Running..." : "Start Test"}
             </button>
           )}
         </div>
@@ -414,7 +438,7 @@ const TremorCard = ({ onSaveResult, lastSaved }) => {
       } else {
         ctx.fillStyle = "rgba(255,255,255,0.15)";
         ctx.font = "11px sans-serif";
-        ctx.fillText("No sensor data — start the test", 8, h / 2 + 4);
+        ctx.fillText("No sensor data - start the test", 8, h / 2 + 4);
       }
       raf = requestAnimationFrame(draw);
     };
@@ -484,7 +508,15 @@ const TremorCard = ({ onSaveResult, lastSaved }) => {
   return (
     <div className="iot-test-card">
       <div className="iot-test-header">
-        <div className="iot-test-title">〰 Tremor Analysis Test</div>
+        <div className="iot-test-title-wrap">
+          <span className="iot-card-icon iot-card-icon-green">
+            <ChartBarIcon />
+          </span>
+          <div>
+            <div className="iot-test-title">Tremor Analysis Test</div>
+            <div className="iot-test-kicker">Motion and stability tracking</div>
+          </div>
+        </div>
         <span className={`iot-status-badge ${running ? "iot-status-running" : result ? "iot-status-done" : ""}`}>
           {running ? `Recording ${timeLeft}s` : result ? "Done" : "Ready"}
         </span>
@@ -509,12 +541,12 @@ const TremorCard = ({ onSaveResult, lastSaved }) => {
           )}
           {result && !running && (
             <div className="iot-tremor-reading">
-              Amplitude: {amp} · Score: {score}/100 · {result.length} points captured
+              Amplitude: {amp} | Score: {score}/100 | {result.length} points captured
             </div>
           )}
           {!running && !result && (
             <div className="iot-tremor-reading" style={{ color: "var(--iot-text-muted)" }}>
-              Hold device steady · 5 second recording
+              Hold device steady | 5 second recording
             </div>
           )}
           <div ref={containerRef} style={{ height: 100 }}>
@@ -562,15 +594,18 @@ const TremorCard = ({ onSaveResult, lastSaved }) => {
           {result ? (
             <>
               <button className="iot-btn iot-btn-primary" onClick={() => onSaveResult({ data: result, amplitude: amp, score })}>
+                <CloudArrowUpIcon />
                 Save Result
               </button>
               <button className="iot-btn iot-btn-secondary" onClick={() => setResult(null)}>
+                <ArrowPathIcon />
                 Retry
               </button>
             </>
           ) : (
             <button className="iot-btn iot-btn-primary" onClick={start} disabled={running}>
-              {running ? `Recording ${timeLeft}s...` : "▶ Start Test"}
+              {!running && <PlayIcon />}
+              {running ? `Recording ${timeLeft}s...` : "Start Test"}
             </button>
           )}
         </div>
@@ -681,11 +716,11 @@ const IoTPage = () => {
     const t = item.sensorData?.test;
     if (t === "reaction_time") return `${item.sensorData.reactionTimeMs}ms average`;
     if (t === "tremor_analysis") return `${item.sensorData.amplitude}u amplitude`;
-    return item.notes || "—";
+    return item.notes || "-";
   };
 
   const scoreLabel = (score) => {
-    if (score == null) return "—";
+    if (score == null) return "-";
     if (score >= 80) return "Normal";
     if (score >= 50) return "Moderate";
     return "Needs Review";
@@ -701,10 +736,17 @@ const IoTPage = () => {
             <ArrowLeftIcon style={{ width: 16, height: 16 }} /> Back to Dashboard
           </Link>
 
-          <h1 className="iot-page-title">IoT Device Tests</h1>
-          <p className="iot-page-subtitle">
-            Perform real-time health monitoring tests using your connected devices
-          </p>
+          <section className="iot-hero">
+            <div>
+              <div className="iot-eyebrow">
+                <WifiIcon /> Connected health monitoring
+              </div>
+              <h1 className="iot-page-title">IoT Device Tests</h1>
+              <p className="iot-page-subtitle">
+                Run quick reaction and motion checks, then save the readings to your health record.
+              </p>
+            </div>
+          </section>
 
           <h2 className="iot-section-title">Available Tests</h2>
           <div className="iot-tests-grid">
@@ -715,20 +757,20 @@ const IoTPage = () => {
           <h2 className="iot-section-title">How to Perform Tests</h2>
           <div className="iot-instructions-container">
             <div className="iot-instruction-box">
-              <h3>Reaction Time Test Instructions</h3>
+              <h3><BoltIcon /> Reaction Time Test</h3>
               <ol className="iot-instruction-list">
                 <li>Select Visual or Sound mode above the test card</li>
-                <li>Press Start and wait — for visual, tap the green screen; for sound, tap when you hear the beep</li>
+                <li>Press Start and wait. For visual mode, tap the green panel. For sound mode, tap when you hear the beep.</li>
                 <li>Your score is calculated automatically (higher = faster)</li>
                 <li>Press Save Result to store it in your health record</li>
               </ol>
             </div>
             <div className="iot-instruction-box">
-              <h3>Tremor Analysis Test Instructions</h3>
+              <h3><DevicePhoneMobileIcon /> Tremor Analysis Test</h3>
               <ol className="iot-instruction-list">
                 <li>Place your device flat on the palm of your hand</li>
                 <li>Keep your arm extended and as steady as possible</li>
-                <li>Press Start — the device records 5 seconds of motion data</li>
+                <li>Press Start. The device records 5 seconds of motion data.</li>
                 <li>Press Save Result to store the analysis in your health record</li>
               </ol>
             </div>
@@ -747,7 +789,7 @@ const IoTPage = () => {
                     <div className="iot-result-main">
                       <div className="iot-result-label">{testLabel(item)}</div>
                       <div className="iot-result-value">
-                        {fmtDate(item.createdAt)} · {testSummary(item)}
+                        {fmtDate(item.createdAt)} | {testSummary(item)}
                       </div>
                     </div>
                     <div className="iot-result-status">
@@ -756,7 +798,7 @@ const IoTPage = () => {
                   </div>
                   <div className="iot-result-actions">
                     <button className="iot-btn iot-btn-secondary iot-btn-sm">
-                      Score: {item.resultScore ?? "—"}/100
+                      Score: {item.resultScore ?? "-"}/100
                     </button>
                   </div>
                 </div>

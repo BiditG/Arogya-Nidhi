@@ -1,4 +1,5 @@
 import { useEffect, useState, useContext, useCallback, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
@@ -504,6 +505,7 @@ const DUMMY_APPOINTMENTS = [
 
 const DoctorConsultations = () => {
   const { token, backendUrl } = useContext(AppContext);
+  const location = useLocation();
 
   const [appointments, setAppointments] = useState([]);
   const [active, setActive] = useState(null);
@@ -514,10 +516,15 @@ const DoctorConsultations = () => {
   const [patientSearchQ, setPatientSearchQ] = useState("");
   const [selectedPatientKey, setSelectedPatientKey] = useState("");
   const activeIdRef = useRef(null);
+  const routeSelectionRef = useRef(null);
 
   useEffect(() => {
     activeIdRef.current = active?.id || active?._id || null;
   }, [active]);
+
+  useEffect(() => {
+    routeSelectionRef.current = location.state || null;
+  }, [location.state]);
 
   const headers = token
     ? {
@@ -606,6 +613,22 @@ const DoctorConsultations = () => {
         const fetched = data.appointments || [];
         const list = fetched.length > 0 ? fetched : DUMMY_APPOINTMENTS;
         setAppointments(list);
+
+        const routeSelection = routeSelectionRef.current;
+        if (routeSelection?.appointmentId) {
+          const routedAppointment = list.find(
+            (appointment) => (appointment.id || appointment._id) === routeSelection.appointmentId
+          );
+
+          if (routedAppointment) {
+            const prepared = prepareAppointmentForConsultation(routedAppointment);
+            setSelectedPatientKey(routeSelection.patientKey || getPatientKey(routedAppointment));
+            setActive(prepared);
+            setAiSummary(buildAiSummary(prepared));
+            routeSelectionRef.current = null;
+            return;
+          }
+        }
 
         const currentId = activeIdRef.current;
         if (currentId) {
