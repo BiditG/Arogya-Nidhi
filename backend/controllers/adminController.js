@@ -151,24 +151,54 @@ const loginAdmin = async (req, res) => {
 // API for getting all doctors
 const getAllDoctors = async (req, res) => {
   try {
-    // Explicitly joining the 'users' and 'doctor_verifications' tables
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('doctor_profiles')
       .select('*, users!doctor_profiles_user_id_fkey(name, email, avatar_url), doctor_verifications(status)')
       .order('created_at', { ascending: false });
 
     if (error) {
-      return res.status(500).json({ success: false, message: error.message });
+      const withoutVerification = await supabase
+        .from('doctor_profiles')
+        .select('*, users!doctor_profiles_user_id_fkey(name, email, avatar_url)')
+        .order('created_at', { ascending: false });
+
+      if (withoutVerification.error) {
+        const plain = await supabase
+          .from('doctor_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (plain.error) {
+          return res.status(500).json({ success: false, message: error.message });
+        }
+
+        data = plain.data;
+      } else {
+        data = withoutVerification.data;
+      }
     }
 
     const formattedDoctors = data.map(doc => {
       const verifications = doc.doctor_verifications || doc.doctor_verification;
       const verification = Array.isArray(verifications) ? verifications[0] : verifications;
+      const user = doc.users || doc.user || {};
+      const specialty = doc.specialty || doc.speciality || doc.sub_specialty || 'General physician';
+      const licenseNo = doc.license_no || doc.nmc_license_no || null;
       
       return {
         ...doc,
-        users: doc.users || doc.user || {},
-        license_no: doc.nmc_license_no,
+        _id: doc.id,
+        users: user,
+        user,
+        name: doc.name || user.name || user.email || licenseNo || `Dr ${String(doc.id || '').slice(0, 8)}`,
+        image: doc.image || doc.avatar_url || user.avatar_url || null,
+        speciality: specialty,
+        specialty,
+        fees: doc.consultation_fee ?? doc.fees ?? 0,
+        fee: doc.consultation_fee ?? doc.fee ?? doc.fees ?? 0,
+        available: Boolean(doc.available ?? doc.is_available),
+        is_available: Boolean(doc.is_available ?? doc.available),
+        license_no: licenseNo,
         verification_status: (verification?.status || (doc.is_verified ? 'verified' : 'pending')).toLowerCase()
       };
     });

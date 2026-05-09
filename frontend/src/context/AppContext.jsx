@@ -6,6 +6,99 @@ import { assets as adminAssets } from "../assets/assets_admin/assets";
 
 export const AppContext = createContext();
 
+const SPECIALTY_DISPLAY_NAMES = {
+  cardiology: "Cardiologist",
+  cardiologist: "Cardiologist",
+  neurology: "Neurologist",
+  neurologist: "Neurologist",
+  dermatology: "Dermatologist",
+  dermatologist: "Dermatologist",
+  orthopedics: "Orthopedic",
+  orthopedic: "Orthopedic",
+  orthopedist: "Orthopedic",
+  pediatrics: "Pediatricians",
+  pediatrician: "Pediatricians",
+  pediatricians: "Pediatricians",
+  general: "General physician",
+  "general physician": "General physician",
+  "general medicine": "General physician",
+  physician: "General physician",
+  gastroenterology: "Gastroenterologist",
+  gastroenterologist: "Gastroenterologist",
+  gynecology: "Gynecologist",
+  gynecologist: "Gynecologist",
+};
+
+const normalizeSpecialtyLabel = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "General physician";
+  const key = raw.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return SPECIALTY_DISPLAY_NAMES[key] || raw;
+};
+
+const getDoctorUserRow = (row) => {
+  const relation = row?.users || row?.user || row?.profile || null;
+  return Array.isArray(relation) ? relation[0] || null : relation;
+};
+
+const getDoctorLocation = (row) => {
+  const address = row?.address;
+  if (!address) return row?.location || "";
+  if (typeof address === "string") return address;
+  return [address.city, address.state, address.country].filter(Boolean).join(", ");
+};
+
+const normalizeDoctorForCards = (row = {}) => {
+  const userRow = getDoctorUserRow(row);
+  const specialty = normalizeSpecialtyLabel(row.specialty || row.speciality || row.sub_specialty);
+  const fee = Number(row.consultation_fee ?? row.consultationFee ?? row.fee ?? row.fees ?? 0) || 0;
+  const experienceYears = row.experience_years ?? row.experienceYears ?? row.experience;
+
+  return {
+    ...row,
+    _id: row._id || row.id,
+    id: row.id || row._id,
+    user_id: row.user_id || row.userId,
+    license_no: row.license_no || row.licenseNo || row.nmc_license_no || row.nmcLicenseNo,
+    name:
+      row.name ||
+      userRow?.name ||
+      userRow?.email ||
+      row.license_no ||
+      row.nmc_license_no ||
+      `Dr ${String(row.id || "").slice(0, 8)}`,
+    speciality: specialty,
+    specialty,
+    sub_speciality: row.sub_specialty || row.subSpecialty || row.sub_speciality,
+    consultation_fee: fee,
+    consultationFee: fee,
+    fee,
+    qualifications: row.qualifications || row.degree,
+    experience:
+      experienceYears === undefined || experienceYears === null || experienceYears === ""
+        ? row.experience
+        : String(experienceYears).toLowerCase().includes("year")
+          ? String(experienceYears)
+          : `${experienceYears} years`,
+    is_verified: row.is_verified ?? row.isVerified ?? false,
+    available: Boolean(row.available ?? row.is_available ?? row.isAvailable),
+    is_available: Boolean(row.is_available ?? row.isAvailable ?? row.available),
+    image:
+      row.image ||
+      row.avatar_url ||
+      row.avatarUrl ||
+      row.profile_image ||
+      userRow?.avatar_url ||
+      userRow?.avatarUrl ||
+      adminAssets.doctor_icon,
+    location: getDoctorLocation(row),
+    fallbackImage: adminAssets.doctor_icon,
+    users: row.users || row.user || userRow || {},
+    user: row.user || row.users || userRow || {},
+    raw: row.raw || row,
+  };
+};
+
 const AppContextProvider = (props) => {
   // Use Nepali Rupee sign
   const currencySymbol = "रु";
@@ -68,15 +161,33 @@ const AppContextProvider = (props) => {
   // =========================
   const getDoctorsData = useCallback(async () => {
     try {
+      const { data } = await axios.get(backendUrl + "/api/doctor/list");
+      if (data?.success) {
+        setDoctors((data.doctors || []).map(normalizeDoctorForCards));
+        return;
+      }
+    } catch (backendErr) {
+      console.warn("Backend doctor list failed, trying Supabase directly", backendErr);
+    }
+
+    try {
       // 🔹 Supabase (Primary) - include linked `users` row when available
       if (supabase) {
         // select doctor_profiles plus the related users record (name, email, avatar)
         const { data, error } = await supabase
           .from("doctor_profiles")
-          .select("*, users(name, email, avatar_url)")
+          .select("*, users!doctor_profiles_user_id_fkey(name, email, avatar_url)")
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          const plain = await supabase
+            .from("doctor_profiles")
+            .select("*")
+            .order("created_at", { ascending: false });
+          if (plain.error) throw error;
+          setDoctors((plain.data || []).map(normalizeDoctorForCards));
+          return;
+        }
 
         const mapped = (data || []).map((r) => {
           // Supabase returns related row under the relation name (usually 'users')
@@ -106,14 +217,14 @@ const AppContextProvider = (props) => {
           };
         });
 
-        setDoctors(mapped);
+        setDoctors(mapped.map(normalizeDoctorForCards));
         return;
       }
 
       // 🔹 Fallback API
       const { data } = await axios.get(backendUrl + "/api/doctor/list");
       if (data?.success) {
-        setDoctors(data.doctors);
+        setDoctors((data.doctors || []).map(normalizeDoctorForCards));
       }
     } catch (err) {
       console.error(err);

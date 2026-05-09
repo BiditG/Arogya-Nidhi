@@ -1,6 +1,5 @@
 import supabase from "../config/supabase.js";
 import { generateAccessToken } from "../util/token.util.js";
-import repo from "../repository/auth.repository.js";
 import service from "../services/dashboard.service.js";
 
 /**
@@ -60,11 +59,35 @@ async function resolveDoctorProfileId(req) {
 
 const changeAvailability = async (req, res) => {
   try {
-    const docId = await resolveDoctorProfileId(req);
+    const docId = req.body?.docId || req.body?.doctorId || await resolveDoctorProfileId(req);
 
-    const updated = await repo.updateDoctorProfile(docId, {
-      is_available: req.body.is_available,
-    });
+    const { data: existing, error: existingError } = await supabase
+      .from("doctor_profiles")
+      .select("is_available")
+      .eq("id", docId)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor profile not found",
+      });
+    }
+
+    const nextAvailability =
+      typeof req.body?.is_available === "boolean"
+        ? req.body.is_available
+        : !Boolean(existing.is_available);
+
+    const { data: updated, error: updateError } = await supabase
+      .from("doctor_profiles")
+      .update({ is_available: nextAvailability })
+      .eq("id", docId)
+      .select()
+      .maybeSingle();
+
+    if (updateError) throw updateError;
 
     return res.status(200).json({
       success: true,
@@ -81,16 +104,34 @@ const changeAvailability = async (req, res) => {
 
 const doctorList = async (req, res) => {
   try {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("doctor_profiles")
-      .select("*, users(name,email,avatar_url)")
+      .select("*, users!doctor_profiles_user_id_fkey(name,email,avatar_url)")
       .order("created_at", { ascending: false });
 
     if (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      const fallback = await supabase
+        .from("doctor_profiles")
+        .select("*, users(name,email,avatar_url)")
+        .order("created_at", { ascending: false });
+
+      if (fallback.error) {
+        const plain = await supabase
+          .from("doctor_profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (plain.error) {
+          return res.status(500).json({
+            success: false,
+            message: error.message,
+          });
+        }
+
+        data = plain.data;
+      } else {
+        data = fallback.data;
+      }
     }
 
     return res.status(200).json({
