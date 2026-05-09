@@ -165,7 +165,7 @@ async function getAllAppointments(userId, query) {
   return repo.getAllAppointments(patient.id, {
     page:   parseInt(query.page)  || 1,
     limit:  Math.min(parseInt(query.limit) || 10, 50),
-    status: query.status || undefined,
+    status: query.status ? query.status.toUpperCase() : undefined,
   });
 }
 

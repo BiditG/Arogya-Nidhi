@@ -1,4 +1,4 @@
-import service from '../services/dashboard.service.js';
+ import service from '../services/dashboard.service.js';
 import { sendSuccess, sendError } from '../util/response.util.js';
 
 function getAuthUserId(req) {
