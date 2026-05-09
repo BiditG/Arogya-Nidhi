@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
+const APPOINTMENT_STATUSES = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show', 'PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'];
 const VALID_TEST_TYPES = ['blood_pressure', 'blood_glucose', 'heart_rate', 'spo2', 'temperature', 'weight', 'ecg', 'other'];
 const MAX_LIMIT = 50;
 

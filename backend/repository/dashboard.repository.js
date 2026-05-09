@@ -34,7 +34,7 @@ async function getUpcomingAppointmentsCount(patientId) {
     .select('*', { count: 'exact' })
     .eq('patient_id', patientId)
     .gte('scheduled_at', now)
-    .in('status', ['pending', 'confirmed']);
+    .in('status', ['PENDING', 'CONFIRMED']);
   if (error) throw error;
   return count || 0;
 }
@@ -133,7 +133,7 @@ async function getUpcomingAppointments(patientId, { page = 1, limit = 10 } = {})
       .select(`*, doctor:doctor_profiles(id,specialty,consultationFee:consultation_fee, user:users(name,avatar_url)), consultation_summary:consultation_summaries(diagnosis,prescription,followUpDate:followup_date), payment:payments(status,amount,currency)`, { count: 'exact' })
     .eq('patient_id', patientId)
     .gte('scheduled_at', now)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['PENDING', 'CONFIRMED'])
     .order('scheduled_at', { ascending: true })
     .range(offset, offset + limit - 1);
   const { data, count, error } = await base;
@@ -183,7 +183,7 @@ async function findAppointmentsByDoctorBetween(doctorId, startsAt, endsAt) {
     .eq('doctor_id', doctorId)
     .gte('scheduled_at', startsAt)
     .lt('scheduled_at', endsAt)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['PENDING', 'CONFIRMED'])
     .order('scheduled_at', { ascending: true });
   if (error) throw error;
   return data || [];

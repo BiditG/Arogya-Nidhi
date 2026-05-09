@@ -171,7 +171,8 @@ const appointmentsDoctor = async (req, res) => {
         doctor:doctor_profiles(
           *,
           users(name,email,avatar_url)
-        )
+        ),
+        payment:payments(status,amount,paid_at)
       `)
       .eq("doctor_id", docId)
       .order("scheduled_at", { ascending: true });
@@ -311,6 +312,7 @@ const doctorDashboard = async (req, res) => {
   try {
     const docId = await resolveDoctorProfileId(req);
 
+    // Fetch appointments with patient info and payments
     const { data: appointments, error } = await supabase
       .from("appointments")
       .select(`
@@ -318,26 +320,101 @@ const doctorDashboard = async (req, res) => {
         patient:patients(
           *,
           users(name,email,phone,avatar_url)
-        )
+        ),
+        payment:payments(status,amount,paid_at)
       `)
       .eq("doctor_id", docId)
       .order("scheduled_at", { ascending: false });
 
     if (error) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return res.status(500).json({ success: false, message: error.message });
     }
 
-    let earning = 0;
+    const appts = appointments || [];
 
-    (appointments || []).forEach((item) => {
-      if (item.status === "COMPLETED" || item.payment === true) {
-        earning += item.amount || 0;
+    // Total earnings: sum of all PAID payments for this doctor's appointments
+    let totalEarning = 0;
+    appts.forEach((appt) => {
+      (appt.payment || []).forEach((p) => {
+        if (p.status === "PAID") totalEarning += Number(p.amount) || 0;
+      });
+    });
+
+    // This month earnings
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    let thisMonth = 0;
+    appts.forEach((appt) => {
+      (appt.payment || []).forEach((p) => {
+        if (p.status === "PAID" && p.paid_at >= monthStart) {
+          thisMonth += Number(p.amount) || 0;
+        }
+      });
+    });
+
+    // Pending: appointments that are CONFIRMED but no PAID payment yet
+    let pending = 0;
+    appts.forEach((appt) => {
+      if (appt.status === "CONFIRMED") {
+        const hasPaid = (appt.payment || []).some((p) => p.status === "PAID");
+        if (!hasPaid) {
+          // Use doctor's consultation fee as expected amount
+          pending += Number(appt.consultation_fee) || 0;
+        }
       }
     });
 
+<<<<<<< HEAD
+    // Monthly earnings for the last 6 months
+    const monthlyMap = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleString("en-US", { month: "short" });
+      monthlyMap[key] = 0;
+    }
+    appts.forEach((appt) => {
+      (appt.payment || []).forEach((p) => {
+        if (p.status === "PAID" && p.paid_at) {
+          const d = new Date(p.paid_at);
+          const key = d.toLocaleString("en-US", { month: "short" });
+          if (key in monthlyMap) monthlyMap[key] += Number(p.amount) || 0;
+        }
+      });
+    });
+    const monthlyEarnings = Object.entries(monthlyMap).map(([month, earnings]) => ({ month, earnings }));
+
+    // Avg per consultation (paid only)
+    const paidCount = appts.filter((a) => (a.payment || []).some((p) => p.status === "PAID")).length;
+    const avgPerConsultation = paidCount > 0 ? Math.round(totalEarning / paidCount) : 0;
+
+    // Unique patients
+    const patients = Array.from(new Set(appts.map((a) => a.patient_id)));
+
+    // Today's appointments
+    const todayStr = now.toISOString().slice(0, 10);
+    const todayAppointments = appts.filter((a) => (a.scheduled_at || "").slice(0, 10) === todayStr).length;
+
+    // Pending appointments (PENDING status)
+    const pendingAppointments = appts.filter((a) => a.status === "PENDING");
+
+    // Recent confirmed/completed consultations
+    const recentConsultations = appts
+      .filter((a) => a.status === "CONFIRMED" || a.status === "COMPLETED")
+      .slice(0, 5);
+
+    const dashData = {
+      earning: totalEarning,
+      thisMonth,
+      pending,
+      avgPerConsultation,
+      monthlyEarnings,
+      appointments: appts.length,
+      patients: patients.length,
+      todayAppointments,
+      todayAppointmentsList: appts.filter((a) => (a.scheduled_at || "").slice(0, 10) === todayStr),
+      pendingAppointmentsList: pendingAppointments,
+      latestAppointments: recentConsultations,
+=======
     const patients = Array.from(
       new Set((appointments || []).map((a) => a.patient_id))
     );
@@ -354,19 +431,13 @@ const doctorDashboard = async (req, res) => {
       patients: patients.length,
       latestAppointments: todaysAppointments.slice(0, 5),
       recentAppointments: (appointments || []).slice(0, 5),
+>>>>>>> 352ee70822e55df39e704018e54b9408d74ec37e
     };
 
-    return res.status(200).json({
-      success: true,
-      dashData,
-    });
+    return res.status(200).json({ success: true, dashData });
   } catch (error) {
     console.error("doctorDashboard error", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error?.message || "Failed to load dashboard data",
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

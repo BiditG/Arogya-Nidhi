@@ -1,0 +1,297 @@
+/* ─── Layout ─────────────────────────────────────────────────────── */
+.appt-page {
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.appt-main {
+  margin-left: 280px;
+  padding: 2rem 2.5rem;
+  min-height: calc(100vh - 65px);
+  box-sizing: border-box;
+}
+
+/* ─── Page header ────────────────────────────────────────────────── */
+.appt-page-header {
+  margin-bottom: 1.75rem;
+}
+
+.appt-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.appt-page-subtitle {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* ─── Filter tabs ────────────────────────────────────────────────── */
+.appt-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.appt-filter-btn {
+  padding: 6px 18px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.appt-filter-btn:hover {
+  border-color: #1e40af;
+  color: #1e40af;
+}
+
+.appt-filter-btn--active {
+  border-color: #1e40af;
+  background: #1e40af;
+  color: #fff;
+}
+
+/* ─── Empty / loading ────────────────────────────────────────────── */
+.appt-empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: #94a3b8;
+}
+
+.appt-empty p {
+  font-size: 1rem;
+  margin: 0 0 10px;
+}
+
+.appt-book-link {
+  color: #1e40af;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.appt-book-link:hover {
+  text-decoration: underline;
+}
+
+/* ─── Card list ──────────────────────────────────────────────────── */
+.appt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ─── Card ───────────────────────────────────────────────────────── */
+.appt-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.appt-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.appt-card-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* ─── Avatar ─────────────────────────────────────────────────────── */
+.appt-avatar {
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appt-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.appt-avatar svg {
+  width: 36px;
+  height: 36px;
+  color: #cbd5e1;
+}
+
+/* ─── Info ───────────────────────────────────────────────────────── */
+.appt-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.appt-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.appt-doctor-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.appt-specialty {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.appt-meta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.appt-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.appt-meta-icon {
+  width: 15px;
+  height: 15px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.appt-triage {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-style: italic;
+  background: #f8fafc;
+  border-left: 3px solid #dbeafe;
+  padding: 6px 10px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* ─── Badges ─────────────────────────────────────────────────────── */
+.appt-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.appt-badge--confirmed { background: #dcfce7; color: #15803d; }
+.appt-badge--pending   { background: #fef9c3; color: #a16207; }
+.appt-badge--cancelled { background: #fee2e2; color: #dc2626; }
+.appt-badge--completed { background: #dbeafe; color: #1d4ed8; }
+
+/* ─── Actions ────────────────────────────────────────────────────── */
+.appt-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.appt-btn {
+  padding: 7px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+  font-family: inherit;
+}
+
+.appt-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.appt-btn--pay    { background: #1e40af; color: #fff; }
+.appt-btn--join   { background: #15803d; color: #fff; }
+.appt-btn--cancel { background: #fff; color: #dc2626; border: 1.5px solid #fca5a5; }
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .appt-main {
+    padding: 1.5rem 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .appt-main {
+    margin-left: 0;
+    padding: 1.25rem 1rem;
+  }
+
+  .appt-meta {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .appt-main {
+    padding: 1rem 0.75rem;
+  }
+
+  .appt-card {
+    padding: 1rem;
+  }
+
+  .appt-card-body {
+    flex-direction: column;
+  }
+
+  .appt-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .appt-info-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .appt-meta {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .appt-actions {
+    flex-direction: column;
+  }
+
+  .appt-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

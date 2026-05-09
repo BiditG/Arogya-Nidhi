@@ -18,6 +18,7 @@ import publicRoutes from "./routes/public.routes.js"
 import studentsRoutes from "./routes/studentsRoute.js"
 import appointmentRoutes from "./routes/appointment.route.js"
 import consultationSummaryRoute from "./routes/consultationSummary.route.js";
+import paymentRoutes from "./routes/payment.route.js";
 
 
 
@@ -25,6 +26,10 @@ const app = express();
 
 // MongoDB is not used in this project; Supabase client handles DB connections
 
+<<<<<<< HEAD
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'https://rncks4z6-5173.inc1.devtunnels.ms', 'https://arogya-nidhi-qobi5xkae-nirman12s-projects.vercel.app', 'https://arogya-nidhi-git-main-nirman12s-projects.vercel.app', 'https://arogya-nidhi.vercel.app'], credentials: true }));
+// app.use(cors({ origin: ['https://arogya-nidhi.vercel.app'], credentials: true }));
+=======
 //app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'https://arogya-nidhi-qobi5xkae-nirman12s-projects.vercel.app', 'https://arogya-nidhi-git-main-nirman12s-projects.vercel.app', 'https://arogya-nidhi.vercel.app'], credentials: true }));
 app.use(cors({
 	origin: [
@@ -35,6 +40,7 @@ app.use(cors({
 	],
 	credentials: true,
 }));
+>>>>>>> 352ee70822e55df39e704018e54b9408d74ec37e
 app.use(express.json());
 app.use("/api/consultation-summaries", consultationSummaryRoute);
 app.use(express.urlencoded({ extended: false }));
@@ -57,6 +63,7 @@ app.use('/api/doctor', doctorRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/payments', paymentRoutes);
 
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
