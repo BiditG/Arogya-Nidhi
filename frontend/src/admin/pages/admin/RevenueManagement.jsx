@@ -1,30 +1,41 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import { AdminContext } from "../../context/AdminContext";
+
+const formatCurrency = (value) => `Rs ${Number(value || 0).toLocaleString()}`;
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "-");
 
 const RevenueManagement = () => {
-  const [transactions] = useState([
-    { id: "T001", date: "2026-04-28", type: "Subscription", amount: "₹299", status: "Completed", user: "Raj Kumar" },
-    { id: "T002", date: "2026-04-27", type: "Consultation", amount: "₹500", status: "Completed", user: "Priya Sharma" },
-    { id: "T003", date: "2026-04-26", type: "Subscription", amount: "₹99", status: "Completed", user: "Amit Singh" },
-    { id: "T004", date: "2026-04-25", type: "Refund", amount: "-₹300", status: "Pending", user: "Neha Gupta" },
-  ]);
-
+  const { dashData, getDashData } = useContext(AdminContext);
   const [refunds, setRefunds] = useState([
-    { id: "R001", transactionId: "T005", amount: "₹500", reason: "Unsatisfied service", status: "Pending", date: "2026-04-27" },
-    { id: "R002", transactionId: "T006", amount: "₹200", reason: "Technical issue", status: "Approved", date: "2026-04-26" },
+    { id: "R001", transactionId: "T005", amount: "Rs 500", reason: "Unsatisfied service", status: "Pending", date: "2026-04-27" },
+    { id: "R002", transactionId: "T006", amount: "Rs 200", reason: "Technical issue", status: "Approved", date: "2026-04-26" },
   ]);
-
   const [filterStatus, setFilterStatus] = useState("All");
 
+  useEffect(() => {
+    getDashData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const transactions = dashData?.revenueTransactions || [];
+  const totalRevenue = Number(dashData?.totalEarnings || 0);
+  const thisMonthRevenue = Number(dashData?.thisMonthEarnings || 0);
+  const pendingRefundAmount = 0;
+  const netRevenue = totalRevenue - pendingRefundAmount;
+  const visibleRefunds = filterStatus === "All"
+    ? refunds
+    : refunds.filter((refund) => refund.status === filterStatus);
+
   const handleApproveRefund = (refundId) => {
-    setRefunds(prev => prev.map(r =>
+    setRefunds((prev) => prev.map((r) =>
       r.id === refundId ? { ...r, status: "Approved" } : r
     ));
     toast.success("Refund approved!");
   };
 
   const handleRejectRefund = (refundId) => {
-    setRefunds(prev => prev.map(r =>
+    setRefunds((prev) => prev.map((r) =>
       r.id === refundId ? { ...r, status: "Rejected" } : r
     ));
     toast.error("Refund rejected!");
@@ -34,38 +45,36 @@ const RevenueManagement = () => {
     <div>
       <h1 className="ap-page-title">Revenue Management</h1>
 
-      {/* Revenue Stats */}
       <section className="ap-section">
         <h2 className="ap-section-title">Revenue Overview</h2>
         <div className="ap-stats-grid">
           <div className="ap-stat-card">
             <div className="ap-stat-content">
               <p className="ap-stat-label">Total Revenue</p>
-              <p className="ap-stat-value">₹45,230</p>
+              <p className="ap-stat-value">{formatCurrency(totalRevenue)}</p>
             </div>
           </div>
           <div className="ap-stat-card">
             <div className="ap-stat-content">
               <p className="ap-stat-label">This Month</p>
-              <p className="ap-stat-value">₹12,450</p>
+              <p className="ap-stat-value">{formatCurrency(thisMonthRevenue)}</p>
             </div>
           </div>
           <div className="ap-stat-card">
             <div className="ap-stat-content">
-              <p className="ap-stat-label">Pending Refunds</p>
-              <p className="ap-stat-value">₹500</p>
+              <p className="ap-stat-label">Paid Bookings</p>
+              <p className="ap-stat-value">{dashData?.paidBookingCount || 0}</p>
             </div>
           </div>
           <div className="ap-stat-card">
             <div className="ap-stat-content">
               <p className="ap-stat-label">Net Revenue</p>
-              <p className="ap-stat-value">₹44,730</p>
+              <p className="ap-stat-value">{formatCurrency(netRevenue)}</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Transactions */}
       <section className="ap-section">
         <h2 className="ap-section-title">Recent Transactions</h2>
         <div className="ap-table">
@@ -81,16 +90,20 @@ const RevenueManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((trans) => (
-                <tr key={trans.id}>
-                  <td className="ap-list-title">{trans.id}</td>
-                  <td className="ap-list-meta">{trans.date}</td>
-                  <td>{trans.type}</td>
-                  <td className="ap-list-meta">{trans.user}</td>
-                  <td className="ap-list-title">{trans.amount}</td>
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="ap-list-meta">No paid confirmed bookings found.</td>
+                </tr>
+              ) : transactions.map((trans) => (
+                <tr key={trans.id || trans.appointmentId}>
+                  <td className="ap-list-title">{trans.id || trans.appointmentId}</td>
+                  <td className="ap-list-meta">{formatDate(trans.date)}</td>
+                  <td>{trans.specialty || "Consultation"}</td>
+                  <td className="ap-list-meta">{trans.patient || "Patient"} with {trans.doctor || "Doctor"}</td>
+                  <td className="ap-list-title">{formatCurrency(trans.amount)}</td>
                   <td>
-                    <span className={`ap-badge ap-badge-${trans.status.toLowerCase()}`}>
-                      {trans.status}
+                    <span className="ap-badge ap-badge-verified">
+                      {String(trans.status || "PAID").toUpperCase()}
                     </span>
                   </td>
                 </tr>
@@ -100,16 +113,15 @@ const RevenueManagement = () => {
         </div>
       </section>
 
-      {/* Refund Requests */}
       <section className="ap-section">
         <h2 className="ap-section-title">Refund Requests</h2>
-        <div className="ap-card" style={{ marginBottom: '1rem' }}>
+        <div className="ap-card" style={{ marginBottom: "1rem" }}>
           <div className="ap-filter-buttons">
             {["All", "Pending", "Approved", "Rejected"].map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`ap-filter-btn ${filterStatus === status ? 'active' : ''}`}
+                className={`ap-filter-btn ${filterStatus === status ? "active" : ""}`}
               >
                 {status}
               </button>
@@ -131,7 +143,7 @@ const RevenueManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {refunds.map((refund) => (
+              {visibleRefunds.map((refund) => (
                 <tr key={refund.id}>
                   <td className="ap-list-title">{refund.id}</td>
                   <td>{refund.transactionId}</td>

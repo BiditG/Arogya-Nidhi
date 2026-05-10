@@ -12,6 +12,7 @@ const DoctorDashboard = () => {
     cancelAppointment,
   } = useContext(DoctorContext);
   const { currencySymbol, formatDateString } = useContext(AppContext);
+  const totalEarnings = Number(dashData?.earning ?? dashData?.totalEarnings ?? 0);
 
   useEffect(() => {
     if (dToken) {
@@ -27,7 +28,7 @@ const DoctorDashboard = () => {
             <img className="w-14" src={assets.earning_icon} alt="" />
             <div>
               <p className="text-xl font-semibold text-gray-600">
-                {currencySymbol} {dashData.earning}
+                {currencySymbol} {totalEarnings.toLocaleString()}
               </p>
               <p className="text-gray-400">Earnings</p>
             </div>
