@@ -106,6 +106,7 @@ const DoctorDashboard = () => {
   const todays = dash?.latestAppointments || [];
   const recent = dash?.recentAppointments || [];
   const earningsData = dash?.monthlyEarnings || [];
+  const totalEarnings = Number(dash?.earning ?? dash?.totalEarnings ?? 0);
 
   return (
     <div className="pp-page">
@@ -137,7 +138,7 @@ const DoctorDashboard = () => {
                 </div>
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">Earnings</div>
-                  <div className="pp-stat-value">Rs {Number(dash?.earning ?? 0).toLocaleString()}</div>
+                  <div className="pp-stat-value">Rs {totalEarnings.toLocaleString()}</div>
                 </div>
               </div>
             )}

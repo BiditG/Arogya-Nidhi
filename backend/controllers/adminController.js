@@ -247,10 +247,63 @@ const adminDashboard = async (req, res) => {
     ] = await Promise.all([
       supabase.from('doctor_profiles').select('id'),
       supabase.from('users').select('id'),
-      supabase.from('appointments').select('id'),
+      supabase.from('appointments').select(`
+        id,
+        status,
+        scheduled_at,
+        created_at,
+        patient:patients(
+          users(name,email)
+        ),
+        doctor:doctor_profiles(
+          specialty,
+          users(name,email)
+        ),
+        payment:payments(id,status,amount,paid_at,gateway)
+      `),
       supabase.from('student_profiles').select('id'),
       supabase.from('patients').select('id'),
     ]);
+
+    const isEarningAppointment = (appt) =>
+      ['CONFIRMED', 'COMPLETED'].includes(String(appt?.status || '').toUpperCase());
+    const paidPaymentsFor = (appt) =>
+      (appt.payment || []).filter((p) => String(p?.status || '').toUpperCase() === 'PAID');
+    const paidConfirmedPayments = (appointments || [])
+      .filter(isEarningAppointment)
+      .flatMap((appointment) =>
+        paidPaymentsFor(appointment).map((payment) => ({ appointment, payment }))
+      );
+    const totalEarnings = paidConfirmedPayments.reduce(
+      (sum, { payment }) => sum + (Number(payment.amount) || 0),
+      0
+    );
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const thisMonthEarnings = paidConfirmedPayments.reduce((sum, { payment }) => {
+      if (payment.paid_at && payment.paid_at >= monthStart) {
+        return sum + (Number(payment.amount) || 0);
+      }
+      return sum;
+    }, 0);
+    const avgPaidBooking = paidConfirmedPayments.length
+      ? Math.round(totalEarnings / paidConfirmedPayments.length)
+      : 0;
+    const revenueTransactions = paidConfirmedPayments
+      .sort((a, b) => new Date(b.payment.paid_at || b.appointment.scheduled_at || 0) - new Date(a.payment.paid_at || a.appointment.scheduled_at || 0))
+      .slice(0, 10)
+      .map(({ appointment, payment }) => ({
+        id: payment.id,
+        appointmentId: appointment.id,
+        date: payment.paid_at || appointment.scheduled_at || appointment.created_at,
+        amount: Number(payment.amount) || 0,
+        status: payment.status,
+        gateway: payment.gateway,
+        patient: appointment.patient?.users?.name || appointment.patient?.users?.email || 'Patient',
+        doctor: appointment.doctor?.users?.name || appointment.doctor?.users?.email || 'Doctor',
+        specialty: appointment.doctor?.specialty || 'Consultation',
+      }));
 
     const dashData = {
       totalUsers: users?.length || 0,
@@ -258,6 +311,12 @@ const adminDashboard = async (req, res) => {
       totalStudents: students?.length || 0,
       totalPatients: patients?.length || 0,
       totalAppointments: appointments?.length || 0,
+      totalEarnings,
+      earning: totalEarnings,
+      thisMonthEarnings,
+      paidBookingCount: paidConfirmedPayments.length,
+      avgPaidBooking,
+      revenueTransactions,
       latestAppointments: [],
     };
 

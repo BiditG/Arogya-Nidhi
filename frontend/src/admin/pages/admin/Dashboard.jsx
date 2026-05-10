@@ -5,11 +5,13 @@ import {
   AcademicCapIcon,
   HeartIcon,
   CalendarDaysIcon,
-  ChartBarIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import { AdminContext } from "../../context/AdminContext";
 import "../../styles/AdminPortal.css";
+
+const formatCurrency = (value) => `Rs ${Number(value || 0).toLocaleString()}`;
 
 const formatValue = (value) => (value ?? value === 0 ? value : "—");
 
@@ -27,13 +29,15 @@ const Dashboard = () => {
     { label: "Total Doctors", value: formatValue(dashData?.totalDoctors), Icon: UserGroupIcon },
     { label: "Total Students", value: formatValue(dashData?.totalStudents), Icon: AcademicCapIcon },
     { label: "Total Patients", value: formatValue(dashData?.totalPatients), Icon: HeartIcon },
+    { label: "Total Earnings", value: formatCurrency(dashData?.totalEarnings), Icon: BanknotesIcon },
   ];
 
   const systemStats = [
     { label: "Appointments", value: formatValue(dashData?.totalAppointments), Icon: CalendarDaysIcon },
+    { label: "Paid Bookings", value: formatValue(dashData?.paidBookingCount), Icon: BanknotesIcon },
+    { label: "This Month", value: formatCurrency(dashData?.thisMonthEarnings), Icon: BanknotesIcon },
     { label: "Doctors", value: formatValue(dashData?.totalDoctors), Icon: UserGroupIcon },
     { label: "Patients", value: formatValue(dashData?.totalPatients), Icon: HeartIcon },
-    { label: "Students", value: formatValue(dashData?.totalStudents), Icon: AcademicCapIcon },
   ];
 
   const recentUsers = (users || []).slice(0, 6);
@@ -63,7 +67,7 @@ const Dashboard = () => {
 
       <section className="ap-section">
         <h2 className="ap-section-title">System Overview</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
           {overviewStats.map((stat) => (
             <div className="ap-stat-card" key={stat.label}>
               <div className="ap-stat-icon">
@@ -97,7 +101,7 @@ const Dashboard = () => {
             System Statistics
           </h2>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
           {systemStats.map((stat) => (
             <div className="ap-card" key={stat.label}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.875rem" }}>
