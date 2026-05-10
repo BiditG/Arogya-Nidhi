@@ -1132,7 +1132,6 @@ async function processMessage(userId, message, options = {}) {
     }
   }
 
-  const requested = detectRequestedSpecialty(text, plan);
   const currentSpecialty = resolveSpecialtyCandidate(session.draft.specialty);
   const shouldSwitchSpecialty =
     requested?.specialty &&
