@@ -162,7 +162,7 @@ const BookAppointment = () => {
 
     setBooking(true);
     try {
-      const appointmentDateOnly = appointmentDate.toISOString().split("T")[0];
+      const appointmentDateOnly = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDate).padStart(2, "0")}`;
       const { data } = await axios.post(
         `${backendUrl}/api/appointments`,
         {

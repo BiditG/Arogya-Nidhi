@@ -247,6 +247,15 @@ const PatientPortal = () => {
                         </div>
                       </div>
                       <div className="pp-appointment-actions">
+                        {(appointment.status?.toLowerCase() === "pending") && (
+                          <button
+                            type="button"
+                            className="pp-btn pp-btn-primary pp-btn-sm"
+                            onClick={() => navigate(`/payment/${appointment.id}`)}
+                          >
+                            Pay Now
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="pp-btn pp-btn-outline pp-btn-sm"

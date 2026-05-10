@@ -114,7 +114,13 @@ const EditProfile = () => {
           setAvatarUrl(user.avatarUrl || user.avatar_url || null);
           setBloodGroup(p.bloodGroup || "");
           setGender(p.gender || "");
-          if (p.dateOfBirth) setDateOfBirth(new Date(p.dateOfBirth).toISOString().split("T")[0]);
+          if (p.dateOfBirth) {
+            const dob = new Date(p.dateOfBirth);
+            const yyyy = dob.getFullYear();
+            const mm = String(dob.getMonth() + 1).padStart(2, "0");
+            const dd = String(dob.getDate()).padStart(2, "0");
+            setDateOfBirth(`${yyyy}-${mm}-${dd}`);
+          }
           setHeight(p.height || "");
           setWeight(p.weight || "");
           setAllergies(p.allergies || "");

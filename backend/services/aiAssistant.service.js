@@ -144,18 +144,7 @@ function makeTriageDecisionPayload(triage, symptomText) {
   };
 }
 
-function formatTriageDecisionBlock(decision) {
-  if (!decision) return '';
 
-  return [
-    'Triage decision:',
-    `query_id: ${decision.queryId || 'not_saved'}`,
-    `recommended_specialty: ${decision.recommendedSpecialty || '-'}`,
-    `urgency_level: ${decision.urgencyLevel || '-'}`,
-    `confidence_score: ${decision.confidenceScore || '-'}`,
-    `ai_reasoning: ${decision.aiReasoning || '-'}`,
-  ].join('\n');
-}
 
 function cleanDoctorName(name) {
   return String(name || 'Doctor').replace(/^dr\.?\s+/i, '').trim() || 'Doctor';
@@ -822,8 +811,7 @@ async function makeSpecialtyDoctorsReply(session, specialty, triage, options = {
     triageDecision = await recordAssistantTriageDecision(options.userId, options.symptomText, triage);
   }
 
-  const triageDecisionBlock = triageDecision ? formatTriageDecisionBlock(triageDecision) : '';
-  const replyParts = [triageReply, triageDecisionBlock, prompt.reply].filter(Boolean);
+  const replyParts = [triageReply, prompt.reply].filter(Boolean);
 
   return {
     ...prompt,
