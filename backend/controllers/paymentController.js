@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import axios from 'axios';
 import supabase from '../config/supabase.js';
+import { buildAppointmentMeetingLink } from '../util/meeting.util.js';
 
 const trimTrailingSlashes = (value) => String(value || '').replace(/\/+$/, '');
 
@@ -206,12 +207,14 @@ export const esewaSuccess = async (req, res) => {
       paidPayment = Array.isArray(fallbackPayment) ? fallbackPayment[0] : null;
     }
 
-    // Update appointment to CONFIRMED
+    const meetingLink = buildAppointmentMeetingLink(appointmentId);
+
+    // Update appointment to CONFIRMED and attach the consultation meeting link
     const { data: confirmedAppointment, error: apptError } = await supabase
       .from('appointments')
-      .update({ status: 'CONFIRMED' })
+      .update({ status: 'CONFIRMED', meeting_link: meetingLink })
       .eq('id', appointmentId)
-      .select('id,status')
+      .select('id,status,meeting_link')
       .maybeSingle();
 
     if (apptError) {
@@ -232,6 +235,7 @@ export const esewaSuccess = async (req, res) => {
         appointmentStatus: confirmedAppointment.status,
         paymentId: paidPayment?.id || null,
         paymentStatus: 'PAID',
+        meetingLink: confirmedAppointment.meeting_link,
         redirectTo: '/my-appointments',
       },
     });
@@ -400,10 +404,12 @@ export const khaltiPaymentStatus = async (req, res) => {
           return res.status(500).json({ success: false, message: 'Failed to update payment' });
         }
 
-        // Update appointment as confirmed
+        const meetingLink = buildAppointmentMeetingLink(appointmentId);
+
+        // Update appointment as confirmed and attach the consultation meeting link
         await supabase
           .from('appointments')
-          .update({ status: 'CONFIRMED' })
+          .update({ status: 'CONFIRMED', meeting_link: meetingLink })
           .eq('id', appointmentId);
 
         return res.json({ success: true, message: 'Payment successful', status: 'PAID' });

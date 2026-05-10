@@ -401,31 +401,35 @@ const doctorDashboard = async (req, res) => {
 
     const appts = appointments || [];
 
-    // Total earnings: sum of all PAID payments for this doctor's appointments
-    let totalEarning = 0;
-    appts.forEach((appt) => {
-      (appt.payment || []).forEach((p) => {
-        if (p.status === "PAID") totalEarning += Number(p.amount) || 0;
-      });
-    });
+    const isEarningAppointment = (appt) =>
+      ["CONFIRMED", "COMPLETED"].includes(String(appt?.status || "").toUpperCase());
+    const paidPaymentsFor = (appt) =>
+      (appt.payment || []).filter((p) => String(p?.status || "").toUpperCase() === "PAID");
+    const paidConfirmedPayments = appts
+      .filter(isEarningAppointment)
+      .flatMap((appt) => paidPaymentsFor(appt).map((payment) => ({ payment })));
+
+    // Total earnings: sum paid money only from confirmed/completed bookings
+    const totalEarning = paidConfirmedPayments.reduce(
+      (sum, { payment }) => sum + (Number(payment.amount) || 0),
+      0
+    );
 
     // This month earnings
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    let thisMonth = 0;
-    appts.forEach((appt) => {
-      (appt.payment || []).forEach((p) => {
-        if (p.status === "PAID" && p.paid_at >= monthStart) {
-          thisMonth += Number(p.amount) || 0;
-        }
-      });
-    });
+    const thisMonth = paidConfirmedPayments.reduce((sum, { payment }) => {
+      if (payment.paid_at && payment.paid_at >= monthStart) {
+        return sum + (Number(payment.amount) || 0);
+      }
+      return sum;
+    }, 0);
 
     // Pending: appointments that are CONFIRMED but no PAID payment yet
     let pending = 0;
     appts.forEach((appt) => {
-      if (appt.status === "CONFIRMED") {
-        const hasPaid = (appt.payment || []).some((p) => p.status === "PAID");
+      if (String(appt.status || "").toUpperCase() === "CONFIRMED") {
+        const hasPaid = paidPaymentsFor(appt).length > 0;
         if (!hasPaid) {
           // Use doctor's consultation fee as expected amount
           pending += Number(appt.consultation_fee) || 0;
@@ -440,19 +444,17 @@ const doctorDashboard = async (req, res) => {
       const key = d.toLocaleString("en-US", { month: "short" });
       monthlyMap[key] = 0;
     }
-    appts.forEach((appt) => {
-      (appt.payment || []).forEach((p) => {
-        if (p.status === "PAID" && p.paid_at) {
-          const d = new Date(p.paid_at);
-          const key = d.toLocaleString("en-US", { month: "short" });
-          if (key in monthlyMap) monthlyMap[key] += Number(p.amount) || 0;
-        }
-      });
+    paidConfirmedPayments.forEach(({ payment }) => {
+      if (payment.paid_at) {
+        const d = new Date(payment.paid_at);
+        const key = d.toLocaleString("en-US", { month: "short" });
+        if (key in monthlyMap) monthlyMap[key] += Number(payment.amount) || 0;
+      }
     });
     const monthlyEarnings = Object.entries(monthlyMap).map(([month, earnings]) => ({ month, earnings }));
 
     // Avg per consultation (paid only)
-    const paidCount = appts.filter((a) => (a.payment || []).some((p) => p.status === "PAID")).length;
+    const paidCount = appts.filter((a) => isEarningAppointment(a) && paidPaymentsFor(a).length > 0).length;
     const avgPerConsultation = paidCount > 0 ? Math.round(totalEarning / paidCount) : 0;
 
     // Unique patients

@@ -232,12 +232,14 @@ async function findAppointmentsByDoctorBetween(doctorId, startsAt, endsAt) {
 }
 
 async function bookAppointment(data) {
+  const meetingLink = data.meetingLink !== undefined ? data.meetingLink : data.meeting_link;
   const payload = {
     patient_id: data.patientId ?? data.patient_id,
     doctor_id: data.doctorId ?? data.doctor_id,
     scheduled_at: data.scheduledAt ?? data.scheduled_at,
     duration_minutes: data.durationMinutes ?? data.duration_minutes ?? 30,
     status: data.status ?? 'pending',
+    ...(meetingLink !== undefined ? { meeting_link: meetingLink } : {}),
   };
 
   const { data: created, error } = await supabase
@@ -260,6 +262,8 @@ async function updateAppointment(id, data) {
     ...(data.scheduledAt !== undefined ? { scheduled_at: data.scheduledAt } : {}),
     ...(data.status !== undefined ? { status: data.status } : {}),
     ...(data.scheduled_at !== undefined ? { scheduled_at: data.scheduled_at } : {}),
+    ...(data.meetingLink !== undefined ? { meeting_link: data.meetingLink } : {}),
+    ...(data.meeting_link !== undefined ? { meeting_link: data.meeting_link } : {}),
   };
 
   const { data: updated, error } = await supabase.from('appointments').update(payload).eq('id', id).maybeSingle();

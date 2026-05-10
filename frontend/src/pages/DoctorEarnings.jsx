@@ -31,6 +31,25 @@ const DoctorEarnings = () => {
   const [loading, setLoading] = useState(false);
 
   const headers = token ? { Authorization: `Bearer ${token}`, dtoken: token } : {};
+  const earningStatuses = new Set(["CONFIRMED", "COMPLETED"]);
+
+  const paidPaymentsFor = (appointment) => {
+    const payments = Array.isArray(appointment?.payment) ? appointment.payment : [];
+    return payments.filter((payment) => String(payment?.status || "").toUpperCase() === "PAID");
+  };
+
+  const buildTransactionRows = (appointments = []) =>
+    appointments
+      .filter((appointment) => earningStatuses.has(String(appointment?.status || "").toUpperCase()))
+      .flatMap((appointment) =>
+        paidPaymentsFor(appointment).map((payment, index) => ({
+          ...appointment,
+          transactionId: `${appointment.id || "appointment"}-${payment.id || index}`,
+          amount: Number(payment.amount || 0),
+          paid_at: payment.paid_at,
+          paymentStatus: payment.status,
+        }))
+      );
 
   useEffect(() => {
     if (!token) return;
@@ -42,7 +61,7 @@ const DoctorEarnings = () => {
           axios.get(backendUrl + "/api/doctor/appointments", { headers }).catch(() => ({ data: {} })),
         ]);
         setDash(dashData?.success ? dashData.dashData : null);
-        setTransactions(apptData?.success ? (apptData.appointments || []).filter((appointment) => appointment.amount || appointment.payment) : []);
+        setTransactions(apptData?.success ? buildTransactionRows(apptData.appointments || []) : []);
       } catch (err) {
         console.error(err);
         setDash(null);
@@ -63,6 +82,9 @@ const DoctorEarnings = () => {
     else acc.push({ month, earnings: Number(transaction.amount || 0) });
     return acc;
   }, []);
+  const totalEarnings = Number(
+    dash?.earning ?? transactions.reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0)
+  );
 
   const patientName = (transaction) =>
     transaction?.patient?.users?.name || transaction?.patient?.user?.name || transaction?.patient_name || "-";
@@ -88,7 +110,7 @@ const DoctorEarnings = () => {
               <div className="pp-stats-grid">
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">Total Earnings</div>
-                  <div className="pp-stat-value">Rs {Number(dash?.earning ?? 0).toLocaleString()}</div>
+                  <div className="pp-stat-value">Rs {totalEarnings.toLocaleString()}</div>
                 </div>
                 <div className="pp-stat-card">
                   <div className="pp-stat-label">Paid Transactions</div>
@@ -138,14 +160,14 @@ const DoctorEarnings = () => {
                   {transactions.length === 0 ? (
                     <tr><td colSpan="5">No transactions found.</td></tr>
                   ) : transactions.map((transaction) => (
-                    <tr key={transaction.id}>
-                      <td>{transaction.scheduled_at ? new Date(transaction.scheduled_at).toLocaleDateString() : "-"}</td>
+                    <tr key={transaction.transactionId}>
+                      <td>{(transaction.paid_at || transaction.scheduled_at) ? new Date(transaction.paid_at || transaction.scheduled_at).toLocaleDateString() : "-"}</td>
                       <td>{patientName(transaction)}</td>
                       <td>{transaction.type || "Consultation"}</td>
                       <td>Rs {transaction.amount != null ? Number(transaction.amount).toLocaleString() : "0"}</td>
                       <td>
-                        <span className={`pp-status-badge ${transaction.payment ? "pp-status-resolved" : "pp-status-pending"}`}>
-                          {transaction.payment ? "Paid" : "Pending"}
+                        <span className="pp-status-badge pp-status-resolved">
+                          {String(transaction.paymentStatus || "PAID").toUpperCase()}
                         </span>
                       </td>
                     </tr>

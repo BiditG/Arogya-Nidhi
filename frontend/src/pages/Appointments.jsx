@@ -68,6 +68,17 @@ const Appointments = () => {
     return "UNPAID";
   };
 
+  const buildFallbackMeetingLink = (appointmentId) => {
+    if (!appointmentId) return "";
+    const roomName = String(appointmentId).replace(/[^a-zA-Z0-9-]/g, "-");
+    return `https://meet.jit.si/arogyanidhi-${roomName}`;
+  };
+
+  const getMeetingLink = (appointment) =>
+    appointment.meeting_link ||
+    appointment.meetingLink ||
+    buildFallbackMeetingLink(appointment.id);
+
   useEffect(() => {
     if (token) {
       getUserAppointments();
@@ -110,7 +121,8 @@ const Appointments = () => {
                 appointment.doctor?.doctor_profile?.[0]?.specialty ||
                 "General physician";
 
-              const meetingAvailable = Boolean(appointment.meeting_link);
+              const meetingLink = getMeetingLink(appointment);
+              const meetingAvailable = Boolean(meetingLink);
               const paymentState = getPaymentState(appointment);
 
               const dateLabel = formatDateString(
@@ -174,11 +186,11 @@ const Appointments = () => {
                       <div className="myappt-actions">
                         <button
                           type="button"
-                          onClick={() => handleJoinClick(appointment.meeting_link)}
+                          onClick={() => handleJoinClick(meetingLink)}
                           className="myappt-btn myappt-btn--primary"
                           disabled={!meetingAvailable}
                         >
-                          {meetingAvailable ? "Join Meeting" : "Meeting Pending"}
+                          {meetingAvailable ? "Join Meeting" : "Meeting Unavailable"}
                         </button>
 
                         {paymentState !== "PAID" ? (
