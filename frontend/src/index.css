@@ -1,6 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 @import "tailwindcss";
 
+:root {
+  --pp-primary: #1e40af;
+  --pp-primary-dark: #1e3a8a;
+  --pp-primary-light: #dbeafe;
+  --pp-primary-lighter: #eff6ff;
+  --pp-background: #f8fafc;
+  --pp-surface: #ffffff;
+  --pp-text-primary: #0f172a;
+  --pp-text-secondary: #64748b;
+  --pp-text-muted: #94a3b8;
+  --pp-border: #e2e8f0;
+  --pp-border-light: #f1f5f9;
+  --pp-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --pp-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
 @keyframes sp-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }

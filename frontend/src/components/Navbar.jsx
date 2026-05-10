@@ -303,6 +303,13 @@ const PortalNavbar = ({ token, userData, logout }) => {
                         setOpen(false);
                       },
                     },
+                    {
+                      label: "My Appointments",
+                      action: () => {
+                        navigate("/my-appointments");
+                        setOpen(false);
+                      },
+                    },
                     { label: "Logout", action: () => { logoutFunc(); setOpen(false); }, danger: true },
                   ].map(({ label, action, danger }) => (
                     <button

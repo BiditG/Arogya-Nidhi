@@ -54,21 +54,39 @@ const DoctorAISummaries = () => {
   });
 
   useEffect(() => {
-    if (!requestedPatient?.patientName && !requestedPatient?.patientEmail) return;
+    if (!requestedPatient) return;
 
+    const requestedAppointmentId = String(requestedPatient.appointmentId || "").trim();
+    const requestedPatientId = String(requestedPatient.patientId || "").trim();
     const patientName = String(requestedPatient.patientName || "").toLowerCase();
     const patientEmail = String(requestedPatient.patientEmail || "").toLowerCase();
+
     const match = summaries.find((summary) => {
+      const summaryAppointmentId = String(summary.appointmentId || summary.id || "").trim();
+      const summaryPatientId = String(summary.patientId || "").trim();
       const summaryName = String(summary.patientName || "").toLowerCase();
       const summaryEmail = String(summary.patientEmail || "").toLowerCase();
-      return (
-        (patientName && summaryName.includes(patientName)) ||
-        (patientEmail && summaryEmail.includes(patientEmail))
-      );
+
+      if (requestedAppointmentId && summaryAppointmentId === requestedAppointmentId) return true;
+      if (requestedPatientId && summaryPatientId === requestedPatientId) return true;
+      if (patientEmail && summaryEmail && summaryEmail === patientEmail) return true;
+      if (patientName && summaryName && summaryName.includes(patientName)) return true;
+      if (patientEmail && summaryEmail && summaryEmail.includes(patientEmail)) return true;
+      return false;
     });
 
     if (match) setSelected(match);
-  }, [requestedPatient?.patientName, requestedPatient?.patientEmail, summaries]);
+  }, [requestedPatient, summaries]);
+
+  useEffect(() => {
+    if (!selected?.id) return;
+    const id = `ai-summary-${selected.id}`;
+    const t = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    return () => clearTimeout(t);
+  }, [selected?.id]);
 
   return (
     <div className="pp-page">
@@ -125,7 +143,7 @@ const DoctorAISummaries = () => {
                 {filtered.map((summary) => {
                   const isExpanded = selected?.id === summary.id;
                   return (
-                    <div key={summary.id} className="pp-panel">
+                    <div key={summary.id} id={`ai-summary-${summary.id}`} className="pp-panel">
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 700, marginBottom: 4 }}>

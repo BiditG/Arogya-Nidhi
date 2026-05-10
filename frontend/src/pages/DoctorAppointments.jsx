@@ -3,10 +3,12 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import DoctorSidebar from "../components/DoctorSidebar";
 import { AppContext } from "../context/AppContext";
+import { useNavigate } from "react-router-dom";
 import "./PatientPortal.css";
 
 const DoctorAppointments = () => {
   const { token, backendUrl } = useContext(AppContext);
+  const navigate = useNavigate();
 
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,25 @@ const DoctorAppointments = () => {
       appointment?.patient_name ||
       "Unknown Patient"
     );
+  };
+
+  const getPatientEmail = (appointment) => {
+    return appointment?.patient?.users?.email || appointment?.patient?.user?.email || "";
+  };
+
+  const getPatientKey = (appointment) =>
+    appointment?.patient?.id || appointment?.patient_id || getPatientEmail(appointment) || getPatientName(appointment);
+
+  const viewAiSummary = (appointment) => {
+    navigate("/doctor-portal/ai-summaries", {
+      state: {
+        appointmentId: appointment?.id,
+        patientId: appointment?.patient?.id || appointment?.patient_id,
+        patientKey: getPatientKey(appointment),
+        patientName: getPatientName(appointment),
+        patientEmail: getPatientEmail(appointment),
+      },
+    });
   };
 
   const getAppointmentDate = (appointment) => {
@@ -204,7 +225,11 @@ const DoctorAppointments = () => {
                         <td>{appointment.status}</td>
                         <td>
                           <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">
+                            <button
+                              className="pp-btn pp-btn-outline pp-btn-sm"
+                              onClick={() => viewAiSummary(appointment)}
+                              type="button"
+                            >
                               View
                             </button>
 
@@ -255,7 +280,11 @@ const DoctorAppointments = () => {
                         <td>{appointment.diagnosis || "—"}</td>
                         <td>
                           <div className="pp-appointment-actions">
-                            <button className="pp-btn pp-btn-outline pp-btn-sm">
+                            <button
+                              className="pp-btn pp-btn-outline pp-btn-sm"
+                              onClick={() => viewAiSummary(appointment)}
+                              type="button"
+                            >
                               View
                             </button>
                           </div>

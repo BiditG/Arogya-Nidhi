@@ -804,12 +804,10 @@ async function makeSpecialtyDoctorsReply(session, specialty, triage, options = {
   }
 
   const prompt = makeDoctorPrompt(doctors, options);
-  let triageDecision = null;
-  const triageReply = triage && triage.specialty.key === specialty.key ? buildTriageReply(triage) : '';
+  const triageReply = triage && triage.specialty.key === specialty.key ? buildTriageReply(triage) : "";
 
-  if (triageReply) {
-    triageDecision = await recordAssistantTriageDecision(options.userId, options.symptomText, triage);
-  }
+  // The triage decision is now recorded centrally in processMessage
+  const triageDecision = options.triageDecision || null;
 
   const replyParts = [triageReply, prompt.reply].filter(Boolean);
 
@@ -1099,28 +1097,38 @@ async function processMessage(userId, message, options = {}) {
   let plan = null;
 
   try {
-    const geminiPrompt = getChannel(options) === 'voice'
+    const geminiPrompt = getChannel(options) === "voice"
       ? buildGeminiVoicePrompt(session, text)
       : buildGeminiPrompt(session, text);
     plan = normalizeAssistantPlan(await callGeminiJson(geminiPrompt));
-  } catch {
+  } catch (error) {
+    console.error("Gemini call failed:", error);
     plan = null;
   }
+
+  // Detect and record triage decision early
+  const requested = detectRequestedSpecialty(text, plan);
+  let triageDecision = null;
+  if (requested?.triage) {
+    triageDecision = await recordAssistantTriageDecision(userId, text, requested.triage);
+  }
+
+  const enhancedOptions = { ...options, userId, symptomText: text, triageDecision };
 
   if (plan?.restart || ['restart', 'start over', 'reset', 'clear'].some((keyword) => normalized.includes(keyword))) {
     resetSession(sessionKey);
     return makeSpecialtyPrompt(options);
   }
 
-  const generalConversationReply = maybeHandleGeneralConversation(text, session, options);
+  const generalConversationReply = maybeHandleGeneralConversation(text, session, enhancedOptions);
   if (generalConversationReply) {
-    return generalConversationReply;
+    return { ...generalConversationReply, triageDecision };
   }
 
   if (!session.draft.doctorId && !mentionsBookingIntent(text)) {
-    const availabilityReply = await maybeHandleAvailabilityQuestion(text, session, options);
+    const availabilityReply = await maybeHandleAvailabilityQuestion(text, session, enhancedOptions);
     if (availabilityReply) {
-      return availabilityReply;
+      return { ...availabilityReply, triageDecision };
     }
   }
 
@@ -1133,46 +1141,38 @@ async function processMessage(userId, message, options = {}) {
     session.step !== 'confirm';
 
   if (shouldSwitchSpecialty) {
-    return makeSpecialtyDoctorsReply(session, requested.specialty, requested.triage, {
-      ...options,
-      userId,
-      symptomText: text,
-    });
+    return makeSpecialtyDoctorsReply(session, requested.specialty, requested.triage, enhancedOptions);
   }
 
   if (!session.draft.specialty) {
     if (!requested?.specialty) {
-      const prompt = makeSpecialtyPrompt(options);
-      return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+      const prompt = makeSpecialtyPrompt(enhancedOptions);
+      return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
     }
 
-    return makeSpecialtyDoctorsReply(session, requested.specialty, requested.triage, {
-      ...options,
-      userId,
-      symptomText: text,
-    });
+    return makeSpecialtyDoctorsReply(session, requested.specialty, requested.triage, enhancedOptions);
   }
 
   if (!session.draft.doctorId) {
     const doctor = resolveDoctorCandidate(plan, session.doctors, text) ||
       (session.doctors.length === 1 && mentionsBookingIntent(text) ? session.doctors[0] : null);
     if (!doctor) {
-      const prompt = makeDoctorPrompt(session.doctors, options);
-      return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+      const prompt = makeDoctorPrompt(session.doctors, enhancedOptions);
+      return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
     }
 
     session.draft.doctorId = doctor.id;
     session.draft.doctorName = cleanDoctorName(doctor.user?.name || doctor.name || 'Doctor');
     session.step = 'date';
-    const prompt = makeDatePrompt(session, options);
-    return prompt;
+    const prompt = makeDatePrompt(session, enhancedOptions);
+    return { ...prompt, triageDecision };
   }
 
   if (!session.draft.date) {
     const date = resolveDateCandidate(plan, text);
     if (!date) {
-      const prompt = makeDatePrompt(session, options);
-      return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+      const prompt = makeDatePrompt(session, enhancedOptions);
+      return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
     }
 
     session.draft.date = formatDateKey(date);
@@ -1192,8 +1192,8 @@ async function processMessage(userId, message, options = {}) {
     }
 
     session.step = 'time';
-    const prompt = makeTimePrompt(session, options);
-    return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+    const prompt = makeTimePrompt(session, enhancedOptions);
+    return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
   }
 
   if (!session.draft.time) {
@@ -1214,8 +1214,8 @@ async function processMessage(userId, message, options = {}) {
 
     session.draft.time = time;
     session.step = 'notes';
-    const prompt = makeNotesPrompt(options);
-    return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+    const prompt = makeNotesPrompt(enhancedOptions);
+    return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
   }
 
   if (!session.draft.notes && session.step === 'notes') {
@@ -1228,8 +1228,8 @@ async function processMessage(userId, message, options = {}) {
     }
 
     session.step = 'confirm';
-    const prompt = makeSummaryPrompt(session, options);
-    return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+    const prompt = makeSummaryPrompt(session, enhancedOptions);
+    return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
   }
 
   if (session.step === 'confirm') {
@@ -1289,16 +1289,16 @@ async function processMessage(userId, message, options = {}) {
       session.draft.time = null;
       session.draft.notes = null;
       session.availableSlots = [...TIME_SLOTS];
-      const prompt = makeDoctorPrompt(session.doctors, options);
-      return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+      const prompt = makeDoctorPrompt(session.doctors, enhancedOptions);
+      return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
     }
 
-    const prompt = makeSummaryPrompt(session, options);
-    return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+    const prompt = makeSummaryPrompt(session, enhancedOptions);
+    return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
   }
 
-  const prompt = makeSpecialtyPrompt(options);
-  return { ...prompt, reply: replyForStage(plan, prompt.reply) };
+  const prompt = makeSpecialtyPrompt(enhancedOptions);
+  return { ...prompt, reply: replyForStage(plan, prompt.reply), triageDecision };
 }
 
 export default { processMessage, getInitialPrompt, resetSession };
