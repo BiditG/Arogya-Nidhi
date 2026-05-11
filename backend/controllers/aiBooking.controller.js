@@ -162,6 +162,10 @@ export async function confirmBooking(req, res) {
         throw { status: 400, message: 'Slot is already booked' };
       }
 
+      if (!slot.doctor?.is_verified || !slot.doctor?.is_available) {
+        throw { status: 400, message: 'Doctor is not available for booking' };
+      }
+
       if (slot.doctorId !== doctorId) {
         throw { status: 400, message: 'Slot does not belong to the selected doctor' };
       }

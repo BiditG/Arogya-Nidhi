@@ -1,6 +1,7 @@
 import repo from '../repository/dashboard.repository.js';
 import authRepo from '../repository/auth.repository.js';
 import { buildAppointmentMeetingLink } from '../util/meeting.util.js';
+import { createNotificationSafe } from './notification.service.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DEFAULT_BOOKING_TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
@@ -24,6 +25,10 @@ function _forbidden() {
 
 function _notFound(entity = 'Resource') {
   return { status: 404, message: `${entity} not found` };
+}
+
+function cleanDoctorName(doctor) {
+  return String(doctor?.user?.name || doctor?.name || 'Doctor').replace(/^dr\.?\s+/i, '').trim() || 'Doctor';
 }
 
 async function _requireDoctor(userId) {
@@ -200,7 +205,7 @@ async function bookAppointment(userId, body, options = {}) {
   const doctor = await repo.findDoctorById(normalizedDoctorId);
   if (!doctor)             throw _notFound('Doctor');
   if (!doctor.isAvailable) throw { status: 400, message: 'Doctor is not available' };
-  if (!doctor.isVerified && !options.allowUnverifiedDoctor) {
+  if (!doctor.isVerified) {
     throw { status: 400, message: 'Doctor is not verified' };
   }
 
@@ -214,7 +219,7 @@ async function bookAppointment(userId, body, options = {}) {
     throw { status: 400, message: 'Slot already booked. Please choose another time.' };
   }
 
-  return repo.bookAppointment({
+  const appointment = await repo.bookAppointment({
     patientId:       patient.id,
     doctorId:       normalizedDoctorId,
     scheduledAt:     scheduledDate,
@@ -223,6 +228,36 @@ async function bookAppointment(userId, body, options = {}) {
     status,
     meetingLink,
   });
+
+  const doctorName = cleanDoctorName(doctor);
+  await Promise.all([
+    createNotificationSafe({
+      userId,
+      title: 'Appointment booked',
+      message: `Your appointment with Dr. ${doctorName} has been booked.`,
+      type: 'appointment_booked',
+      metadata: {
+        appointmentId: appointment?.id,
+        doctorId: normalizedDoctorId,
+        scheduledAt: scheduledDate.toISOString(),
+        status,
+      },
+    }),
+    createNotificationSafe({
+      userId: doctor.user_id || doctor.user?.id,
+      title: 'New appointment',
+      message: 'A patient booked an appointment with you.',
+      type: 'appointment_booked',
+      metadata: {
+        appointmentId: appointment?.id,
+        patientId: patient.id,
+        scheduledAt: scheduledDate.toISOString(),
+        status,
+      },
+    }),
+  ]);
+
+  return appointment;
 }
 
 async function cancelAppointment(userId, appointmentId) {
@@ -482,7 +517,7 @@ async function getAvailableDoctors(query) {
     page:      parseInt(query.page)  || 1,
     limit:     Math.min(parseInt(query.limit) || 10, 50),
     specialty: query.specialty || undefined,
-    includeUnverified: query.includeUnverified === true,
+    includeUnverified: false,
   });
 }
 

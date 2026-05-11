@@ -6,6 +6,7 @@ import { generateAccessToken } from "../util/token.util.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { buildSystemReports } from "../services/adminReports.service.js";
+import { createNotificationSafe } from "../services/notification.service.js";
 
 // API for adding doctor
 const addDoctor = async (req, res) => {
@@ -105,6 +106,25 @@ const addDoctor = async (req, res) => {
 
     const { error: profErr } = await supabase.from('doctor_profiles').insert(doctorProfileData);
     if (profErr) return res.status(500).json({ success: false, message: "Profile creation failed: " + profErr.message });
+
+    const { error: verificationErr } = await supabase.from('doctor_verifications').insert({
+      id: crypto.randomUUID(),
+      doctor_id: doctorProfileData.id,
+      status: 'verified',
+      verified_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+    });
+    if (verificationErr) {
+      console.warn("Failed to create doctor_verifications record:", verificationErr.message);
+    }
+
+    await createNotificationSafe({
+      userId,
+      title: 'Doctor account approved',
+      message: 'Your doctor account has been created and approved by admin. Patients can book appointments with you.',
+      type: 'doctor_verification',
+      metadata: { doctorId: doctorProfileData.id, status: 'verified' },
+    });
 
     return res.status(201).json({ success: true, message: 'Doctor added successfully' });
   } catch (error) {
@@ -525,6 +545,16 @@ const verifyDoctor = async (req, res) => {
     } catch (vErr) {
       console.warn("Failed to update doctor_verifications record:", vErr.message);
     }
+
+    await createNotificationSafe({
+      userId: profile.user_id,
+      title: isVerified ? 'Doctor profile approved' : 'Doctor profile rejected',
+      message: isVerified
+        ? 'Your doctor profile has been approved by admin. Patients can now book appointments with you.'
+        : 'Your doctor profile was rejected by admin and cannot be booked.',
+      type: 'doctor_verification',
+      metadata: { doctorId, status: normalizedStatus },
+    });
 
     return res.status(200).json({ success: true, message: `Doctor ${normalizedStatus} successfully` });
   } catch (error) {

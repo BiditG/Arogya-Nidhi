@@ -9,6 +9,7 @@ import {
 import patientRepo from '../repository/patient.repository.js';
 import authRepo from '../repository/auth.repository.js';
 import supabase from '../config/supabase.js';
+import { createNotificationSafe } from '../services/notification.service.js';
 
 export const createAppointment = async (req, res) => {
   try {
@@ -55,20 +56,22 @@ export const createAppointment = async (req, res) => {
     let doctorId = req.body.doctor_id;
     const { data: doctorProfile, error: doctorError } = await supabase
       .from('doctor_profiles')
-      .select('id,is_verified,is_available')
+      .select('id,user_id,specialty,is_verified,is_available')
       .eq('id', doctorId)
       .maybeSingle();
     if (doctorError) throw doctorError;
+    let resolvedDoctorProfile = doctorProfile;
     if (!doctorProfile) {
       // Assume doctorId is user_id, find the profile
       const { data: profileByUser, error: userError } = await supabase
         .from('doctor_profiles')
-        .select('id,is_verified,is_available')
+        .select('id,user_id,specialty,is_verified,is_available')
         .eq('user_id', doctorId)
         .maybeSingle();
       if (userError) throw userError;
       if (profileByUser) {
         doctorId = profileByUser.id;
+        resolvedDoctorProfile = profileByUser;
         if (!profileByUser.is_verified || !profileByUser.is_available) {
           return res.status(400).json({ error: 'Doctor is not available for booking' });
         }
@@ -81,6 +84,32 @@ export const createAppointment = async (req, res) => {
     payload.doctor_id = doctorId;
 
     const appointment = await createAppointmentService(payload);
+    await Promise.all([
+      createNotificationSafe({
+        userId,
+        title: 'Appointment booked',
+        message: 'Your appointment has been booked.',
+        type: 'appointment_booked',
+        metadata: {
+          appointmentId: appointment?.id,
+          doctorId,
+          scheduledAt,
+          status: payload.status,
+        },
+      }),
+      createNotificationSafe({
+        userId: resolvedDoctorProfile?.user_id,
+        title: 'New appointment',
+        message: 'A patient booked an appointment with you.',
+        type: 'appointment_booked',
+        metadata: {
+          appointmentId: appointment?.id,
+          patientId,
+          scheduledAt,
+          status: payload.status,
+        },
+      }),
+    ]);
     res.status(201).json(appointment);
   } catch (error) {
     console.error('createAppointment error:', error);

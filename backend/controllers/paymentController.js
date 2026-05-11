@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import axios from 'axios';
 import supabase from '../config/supabase.js';
 import { buildAppointmentMeetingLink } from '../util/meeting.util.js';
+import { createNotificationSafe } from '../services/notification.service.js';
 
 const trimTrailingSlashes = (value) => String(value || '').replace(/\/+$/, '');
 
@@ -28,6 +29,44 @@ const buildEsewaCallbackUrl = (configuredUrl, fallbackPath, appointmentId) => {
     url.searchParams.set('appointmentId', appointmentId);
     return url.toString();
   }
+};
+
+const notifyPaymentConfirmed = async (appointmentId, metadata = {}) => {
+  const { data: appointment, error } = await supabase
+    .from('appointments')
+    .select('id,scheduled_at,patient:patients(user_id),doctor:doctor_profiles(user_id)')
+    .eq('id', appointmentId)
+    .maybeSingle();
+
+  if (error || !appointment) {
+    console.warn('Failed to fetch appointment notification targets:', error?.message || 'Appointment not found');
+    return;
+  }
+
+  await Promise.all([
+    createNotificationSafe({
+      userId: appointment.patient?.user_id,
+      title: 'Payment confirmed',
+      message: 'Your appointment payment was confirmed.',
+      type: 'payment_confirmed',
+      metadata: {
+        appointmentId,
+        scheduledAt: appointment.scheduled_at,
+        ...metadata,
+      },
+    }),
+    createNotificationSafe({
+      userId: appointment.doctor?.user_id,
+      title: 'Appointment confirmed',
+      message: 'A patient completed payment for an appointment with you.',
+      type: 'appointment_confirmed',
+      metadata: {
+        appointmentId,
+        scheduledAt: appointment.scheduled_at,
+        ...metadata,
+      },
+    }),
+  ]);
 };
 
 // eSewa payment initiation
@@ -226,6 +265,12 @@ export const esewaSuccess = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Appointment not found' });
     }
 
+    await notifyPaymentConfirmed(appointmentId, {
+      paymentId: paidPayment?.id || null,
+      gateway: 'esewa',
+      meetingLink: confirmedAppointment.meeting_link,
+    });
+
     console.log('Payment and appointment updated successfully for:', appointmentId);
     res.json({
       success: true,
@@ -411,6 +456,11 @@ export const khaltiPaymentStatus = async (req, res) => {
           .from('appointments')
           .update({ status: 'CONFIRMED', meeting_link: meetingLink })
           .eq('id', appointmentId);
+
+        await notifyPaymentConfirmed(appointmentId, {
+          gateway: 'khalti',
+          meetingLink,
+        });
 
         return res.json({ success: true, message: 'Payment successful', status: 'PAID' });
       } else {

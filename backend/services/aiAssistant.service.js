@@ -780,7 +780,6 @@ async function applySpecialtyToSession(session, specialty) {
     specialty: specialty.key,
     page: 1,
     limit: 10,
-    includeUnverified: true,
   });
   session.doctors = doctorsResult.doctors || [];
   session.step = session.doctors.length ? 'doctor' : 'specialty';
@@ -967,7 +966,6 @@ async function maybeHandleAvailabilityQuestion(text, session, options = {}) {
     specialty: specialty.key,
     page: 1,
     limit: 5,
-    includeUnverified: true,
   });
   const doctors = doctorsResult.doctors || [];
 
@@ -1244,7 +1242,6 @@ async function processMessage(userId, message, options = {}) {
           durationMinutes: 30,
           patientNotes: session.draft.notes || null,
         }, {
-          allowUnverifiedDoctor: true,
           status: 'CONFIRMED',
         });
         resetSession(sessionKey);

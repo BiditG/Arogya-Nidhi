@@ -4,6 +4,7 @@ import { v2 as cloudinary } from "cloudinary";
 import supabase from "../config/supabase.js";
 import repo from "../repository/auth.repository.js";
 import { generateAccessToken } from "../util/token.util.js";
+import { createNotificationSafe } from "../services/notification.service.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -119,6 +120,19 @@ const bookAppointment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'docId must be a valid UUID.' });
     }
 
+    const { data: doctorProfile, error: doctorErr } = await supabase
+      .from('doctor_profiles')
+      .select('id,user_id,is_verified,is_available')
+      .eq('id', normalizedDocId)
+      .maybeSingle();
+    if (doctorErr) return res.status(500).json({ success: false, message: doctorErr.message });
+    if (!doctorProfile) {
+      return res.status(404).json({ success: false, message: 'Doctor profile not found.' });
+    }
+    if (!doctorProfile.is_verified || !doctorProfile.is_available) {
+      return res.status(400).json({ success: false, message: 'Doctor is not available for booking.' });
+    }
+
     // Check existing appointment for this doctor at the same slot
     const { data: existing, error: existErr } = await supabase
       .from('appointments')
@@ -129,8 +143,6 @@ const bookAppointment = async (req, res) => {
       .maybeSingle();
     if (existErr) return res.status(500).json({ success: false, message: existErr.message });
     if (existing) return res.status(400).json({ success: false, message: 'This slot is already booked.' });
-
-    const userData = await repo.findUserById(userId);
 
     const appointmentData = {
       patient_id: userId,
@@ -143,6 +155,33 @@ const bookAppointment = async (req, res) => {
 
     const { data: created, error: createErr } = await supabase.from('appointments').insert(appointmentData).select().maybeSingle();
     if (createErr) return res.status(500).json({ success: false, message: createErr.message });
+
+    await Promise.all([
+      createNotificationSafe({
+        userId,
+        title: 'Appointment booked',
+        message: 'Your appointment has been booked.',
+        type: 'appointment_booked',
+        metadata: {
+          appointmentId: created?.id,
+          doctorId: normalizedDocId,
+          slotDate,
+          slotTime,
+        },
+      }),
+      createNotificationSafe({
+        userId: doctorProfile.user_id,
+        title: 'New appointment',
+        message: 'A patient booked an appointment with you.',
+        type: 'appointment_booked',
+        metadata: {
+          appointmentId: created?.id,
+          patientId: userId,
+          slotDate,
+          slotTime,
+        },
+      }),
+    ]);
 
     return res.status(200).json({ success: true, message: 'Appointment booked successfully.', appointment: created });
   } catch (error) {

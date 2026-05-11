@@ -516,7 +516,7 @@ async function getAvailableDoctors({ page = 1, limit = 10, specialty, includeUnv
   const offset = (page - 1) * limit;
   let query = supabase
     .from('doctor_profiles')
-      .select('id,specialty,subSpecialty:sub_specialty,consultationFee:consultation_fee,qualifications,licenseNo:license_no,isVerified:is_verified,isAvailable:is_available, user:users(name,avatar_url,email)', { count: 'exact' })
+      .select('id,user_id,specialty,subSpecialty:sub_specialty,consultationFee:consultation_fee,qualifications,licenseNo:license_no,isVerified:is_verified,isAvailable:is_available, user:users(id,name,avatar_url,email)', { count: 'exact' })
     .eq('is_available', true)
     .order('id', { ascending: true });
 
@@ -545,7 +545,7 @@ async function getAvailableDoctors({ page = 1, limit = 10, specialty, includeUnv
 async function findDoctorById(id) {
   const { data, error } = await supabase
     .from('doctor_profiles')
-    .select('id,specialty,subSpecialty:sub_specialty,consultationFee:consultation_fee,qualifications,licenseNo:license_no,isVerified:is_verified,isAvailable:is_available, user:users(name,avatar_url,email)')
+    .select('id,user_id,specialty,subSpecialty:sub_specialty,consultationFee:consultation_fee,qualifications,licenseNo:license_no,isVerified:is_verified,isAvailable:is_available, user:users(id,name,avatar_url,email)')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
