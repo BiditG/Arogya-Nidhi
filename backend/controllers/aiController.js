@@ -36,6 +36,144 @@ const FALLBACK_DIAGNOSTIC_CASE = {
   specialty: 'general',
 };
 
+const FALLBACK_DIAGNOSTIC_CASES = [
+  FALLBACK_DIAGNOSTIC_CASE,
+  {
+    id: 'case_fallback_polyuria_thirst',
+    title: 'Excessive thirst and frequent urination',
+    patientIntro: 'I have been very thirsty and going to the bathroom a lot for the past few weeks. I also feel unusually tired.',
+    patientFacts: {
+      age: '45',
+      sex: 'male',
+      chiefComplaint: 'Excessive thirst and frequent urination',
+      duration: '3 weeks',
+      onset: 'Gradual',
+      severity: 'Moderate',
+      associatedSymptoms: ['fatigue', 'blurred vision', 'unintentional weight loss'],
+      negatives: ['no fever', 'no pain passing urine', 'no flank pain'],
+      medications: ['none'],
+      allergies: ['none known'],
+      pastHistory: ['overweight', 'borderline high blood pressure'],
+      familyHistory: ['father has type 2 diabetes'],
+      socialHistory: ['sedentary office work', 'drinks sugary tea frequently'],
+    },
+    diagnosis: 'Type 2 diabetes mellitus',
+    explanation: 'Polyuria, polydipsia, fatigue, blurred vision, weight loss, and family history strongly suggest diabetes mellitus. Confirmation requires blood glucose and HbA1c testing.',
+    differentials: ['urinary tract infection', 'diabetes insipidus', 'hyperthyroidism'],
+    keyQuestions: ['Any increased thirst?', 'Any weight loss?', 'Any blurred vision?', 'Any family history of diabetes?'],
+    redFlags: ['confusion', 'vomiting', 'dehydration', 'rapid breathing'],
+    difficulty: 'easy',
+    specialty: 'endocrinology',
+  },
+  {
+    id: 'case_fallback_wheeze_night',
+    title: 'Night cough and wheeze',
+    patientIntro: 'I keep waking up coughing at night, and sometimes I hear a whistling sound when I breathe.',
+    patientFacts: {
+      age: '17',
+      sex: 'female',
+      chiefComplaint: 'Night cough and wheeze',
+      duration: '1 month',
+      onset: 'Intermittent, worse at night and after exercise',
+      severity: '5/10 during episodes',
+      associatedSymptoms: ['chest tightness', 'shortness of breath with running'],
+      negatives: ['no fever', 'no sputum', 'no chest pain'],
+      medications: ['occasional cough syrup'],
+      allergies: ['dust allergy'],
+      pastHistory: ['eczema in childhood'],
+      familyHistory: ['mother has asthma'],
+      socialHistory: ['lives near a busy road', 'non-smoker'],
+    },
+    diagnosis: 'Bronchial asthma',
+    explanation: 'Episodic wheeze, nocturnal cough, exercise symptoms, atopy, and family history are consistent with asthma. Spirometry can help confirm the diagnosis.',
+    differentials: ['viral bronchitis', 'allergic rhinitis with postnasal drip', 'vocal cord dysfunction'],
+    keyQuestions: ['Any wheezing?', 'Is it worse at night?', 'Any exercise trigger?', 'Any allergy history?'],
+    redFlags: ['breathlessness at rest', 'silent chest', 'cyanosis'],
+    difficulty: 'medium',
+    specialty: 'respiratory',
+  },
+  {
+    id: 'case_fallback_chest_pressure',
+    title: 'Chest pressure on exertion',
+    patientIntro: 'I get a heavy pressure in the middle of my chest when I climb stairs. It goes away after I rest.',
+    patientFacts: {
+      age: '58',
+      sex: 'male',
+      chiefComplaint: 'Exertional chest pressure',
+      duration: '2 months',
+      onset: 'Gradual, triggered by exertion',
+      severity: '6/10',
+      associatedSymptoms: ['sweating during episodes', 'mild shortness of breath'],
+      negatives: ['no fever', 'no cough', 'no sharp pleuritic pain', 'no pain at rest'],
+      medications: ['amlodipine'],
+      allergies: ['none known'],
+      pastHistory: ['hypertension', 'high cholesterol'],
+      familyHistory: ['older brother had a heart attack'],
+      socialHistory: ['former smoker'],
+    },
+    diagnosis: 'Stable angina',
+    explanation: 'Retrosternal exertional pressure relieved by rest with cardiovascular risk factors is typical of stable angina. It requires cardiovascular assessment and risk management.',
+    differentials: ['gastroesophageal reflux disease', 'costochondritis', 'anxiety', 'unstable angina'],
+    keyQuestions: ['Is pain exertional?', 'Does rest relieve it?', 'Any radiation?', 'Any cardiac risk factors?'],
+    redFlags: ['pain at rest', 'syncope', 'persistent chest pain', 'new neurologic symptoms'],
+    difficulty: 'hard',
+    specialty: 'cardiology',
+  },
+  {
+    id: 'case_fallback_dysuria_frequency',
+    title: 'Burning urination',
+    patientIntro: 'It burns when I urinate, and I need to go much more often than usual.',
+    patientFacts: {
+      age: '26',
+      sex: 'female',
+      chiefComplaint: 'Burning urination and frequency',
+      duration: '2 days',
+      onset: 'Sudden',
+      severity: '4/10',
+      associatedSymptoms: ['urgency', 'lower abdominal discomfort'],
+      negatives: ['no flank pain', 'no fever', 'no vaginal discharge'],
+      medications: ['none'],
+      allergies: ['none known'],
+      pastHistory: ['one similar episode last year'],
+      familyHistory: ['non-contributory'],
+      socialHistory: ['sexually active'],
+    },
+    diagnosis: 'Acute uncomplicated cystitis',
+    explanation: 'Dysuria, urinary frequency, urgency, and suprapubic discomfort without fever or flank pain fit uncomplicated cystitis. Urinalysis can support the diagnosis.',
+    differentials: ['pyelonephritis', 'urethritis', 'vaginitis'],
+    keyQuestions: ['Any fever?', 'Any flank pain?', 'Any vaginal discharge?', 'Any previous UTIs?'],
+    redFlags: ['fever', 'flank pain', 'pregnancy', 'blood in urine'],
+    difficulty: 'easy',
+    specialty: 'urology',
+  },
+];
+
+let lastFallbackCaseKey = '';
+
+const cloneDiagnosticCase = (caseData) => ({
+  ...caseData,
+  id: `${caseData.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+  patientFacts: { ...(caseData.patientFacts || {}) },
+  differentials: [...(caseData.differentials || [])],
+  keyQuestions: [...(caseData.keyQuestions || [])],
+  redFlags: [...(caseData.redFlags || [])],
+});
+
+const pickFallbackDiagnosticCase = ({ difficulty, specialty } = {}) => {
+  const diff = String(difficulty || '').toLowerCase();
+  const spec = String(specialty || '').trim().toLowerCase();
+  const matching = FALLBACK_DIAGNOSTIC_CASES.filter((caseData) => {
+    const difficultyMatch = SAFE_DIFFICULTY.has(diff) ? caseData.difficulty === diff : true;
+    const specialtyMatch = spec ? String(caseData.specialty || '').toLowerCase().includes(spec) : true;
+    return difficultyMatch && specialtyMatch;
+  });
+  const pool = matching.length ? matching : FALLBACK_DIAGNOSTIC_CASES;
+  const candidates = pool.length > 1 ? pool.filter((caseData) => caseData.id !== lastFallbackCaseKey) : pool;
+  const selected = candidates[Math.floor(Math.random() * candidates.length)] || pool[0];
+  lastFallbackCaseKey = selected.id;
+  return cloneDiagnosticCase(selected);
+};
+
 const SAFE_DIFFICULTY = new Set(['easy', 'medium', 'hard']);
 
 const safeText = (value, fallback = '') => (typeof value === 'string' ? value.trim() : fallback);
@@ -109,6 +247,7 @@ const normalizeDiagnosticCase = (raw) => {
 const buildCasePrompt = ({ difficulty, specialty }) => {
   const diff = SAFE_DIFFICULTY.has(String(difficulty || '').toLowerCase()) ? String(difficulty).toLowerCase() : 'medium';
   const spec = safeText(specialty, 'general');
+  const freshnessSeed = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
   return [
     'You create medical training cases for students to diagnose.',
     'Return ONLY valid JSON (no markdown).',
@@ -144,7 +283,10 @@ const buildCasePrompt = ({ difficulty, specialty }) => {
     '- PatientIntro is a short first-person opener (1-2 sentences).',
     '- Keep symptoms realistic and safe for training (no graphic details).',
     '- Do not include tests or imaging results in patientFacts.',
+    '- Create a fresh patient case each time. Vary the complaint, demographic details, timing, diagnosis, and clues.',
+    '- Make the id include the freshness seed so repeated requests do not reuse the same case id.',
     `Difficulty: ${diff}. Specialty focus: ${spec}.`,
+    `Freshness seed: ${freshnessSeed}.`,
   ].join('\n');
 };
 
@@ -166,6 +308,73 @@ const buildPatientPrompt = (caseData, messages) => {
     'Conversation:',
     ...lines,
   ].join('\n');
+};
+
+const includesAny = (text, terms) => terms.some((term) => text.includes(term));
+
+const formatList = (value, fallback = 'I am not sure') => {
+  const values = toArray(value);
+  return values.length ? values.join(', ') : fallback;
+};
+
+const fallbackPatientReply = (caseData, messages = []) => {
+  const facts = caseData.patientFacts || {};
+  const latest = [...messages].reverse().find((message) =>
+    String(message?.role || '').toLowerCase() === 'student' && String(message?.text || '').trim()
+  );
+  const question = String(latest?.text || '').toLowerCase();
+
+  if (!question) return caseData.patientIntro || 'I am not feeling well.';
+
+  if (includesAny(question, ['diagnosis', 'diagnose', 'condition', 'what do i have', 'what is it'])) {
+    return "I do not know what it is. That is why I came to you.";
+  }
+
+  if (includesAny(question, ['age', 'old'])) return `I am ${facts.age || 'not sure'} years old.`;
+  if (includesAny(question, ['sex', 'gender', 'male', 'female'])) return `I am ${facts.sex || 'not sure'}.`;
+  if (includesAny(question, ['why', 'complaint', 'problem', 'symptom', 'brought'])) {
+    return facts.chiefComplaint || caseData.patientIntro || 'I am not feeling well.';
+  }
+  if (includesAny(question, ['how long', 'duration', 'when did', 'started', 'start'])) {
+    return `It has been going on for ${facts.duration || 'a little while'}. ${facts.onset ? `It ${facts.onset}.` : ''}`.trim();
+  }
+  if (includesAny(question, ['pain', 'where', 'location'])) {
+    return facts.chiefComplaint || 'I mostly notice the main symptom I mentioned.';
+  }
+  if (includesAny(question, ['scale', 'severe', 'severity', 'bad'])) {
+    return `I would rate it around ${facts.severity || 'moderate'}.`;
+  }
+  if (includesAny(question, ['associated', 'other symptoms', 'anything else', 'nausea', 'fever', 'cough', 'breath', 'vision', 'urination', 'urinate', 'wheeze'])) {
+    const positives = formatList(facts.associatedSymptoms, 'I have not noticed much else');
+    const negatives = formatList(facts.negatives, '');
+    return negatives ? `I have noticed ${positives}. I have not had ${negatives}.` : `I have noticed ${positives}.`;
+  }
+  if (includesAny(question, ['not have', 'negative', 'deny', 'rash', 'vomit', 'diarrhea', 'chest pain', 'flank', 'fever'])) {
+    return `I have not had ${formatList(facts.negatives, 'anything specific that I can remember')}.`;
+  }
+  if (includesAny(question, ['medicine', 'medication', 'drug', 'tablet', 'taking'])) {
+    return `I am taking ${formatList(facts.medications, 'no regular medicines')}.`;
+  }
+  if (includesAny(question, ['allergy', 'allergies'])) {
+    return `My allergies are ${formatList(facts.allergies, 'none that I know of')}.`;
+  }
+  if (includesAny(question, ['past', 'history', 'illness', 'disease', 'medical problems'])) {
+    return `My past history is ${formatList(facts.pastHistory, 'not significant')}.`;
+  }
+  if (includesAny(question, ['family'])) {
+    return `In my family history, ${formatList(facts.familyHistory, 'nothing important comes to mind')}.`;
+  }
+  if (includesAny(question, ['smoke', 'alcohol', 'work', 'social', 'lifestyle'])) {
+    return `For social history: ${formatList(facts.socialHistory, 'nothing special')}.`;
+  }
+  if (includesAny(question, ['test', 'lab', 'x-ray', 'scan', 'imaging', 'blood'])) {
+    return 'I have not had any tests done yet.';
+  }
+  if (includesAny(question, ['examine', 'exam', 'tender', 'pulse', 'bp', 'temperature'])) {
+    return 'No one has examined me yet, so I am not sure about those findings.';
+  }
+
+  return 'I am not sure about that. I can tell you more about what I have been feeling.';
 };
 
 const buildEvaluatePrompt = (caseData, guess) => {
@@ -389,7 +598,7 @@ export const generateDiagnosticCase = async (req, res) => {
     const prompt = buildCasePrompt({ difficulty, specialty });
     const text = await generateGeminiText(prompt, { temperature: 0.4, maxOutputTokens: 800 });
     const parsed = extractJson(text);
-    const data = normalizeDiagnosticCase(parsed || FALLBACK_DIAGNOSTIC_CASE);
+    const data = normalizeDiagnosticCase(parsed || pickFallbackDiagnosticCase({ difficulty, specialty }));
     return res.json({ success: true, data });
   } catch (error) {
     console.error('aiController.generateDiagnosticCase error:', error);
@@ -405,7 +614,7 @@ export const diagnosticReply = async (req, res) => {
     const text = await generateGeminiText(prompt, { temperature: 0.3, maxOutputTokens: 512 });
 
     if (!text) {
-      const fallback = caseData.patientIntro || 'I am not sure how to describe it.';
+      const fallback = fallbackPatientReply(caseData, messages);
       return res.json({ success: true, reply: fallback });
     }
 
