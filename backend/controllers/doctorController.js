@@ -639,6 +639,16 @@ const buildPatientAiSummary = async (appointment) => {
 const doctorAiSummaries = async (req, res) => {
   try {
     const docId = await resolveDoctorProfileId(req);
+    const summaryStatuses = [
+      "pending",
+      "confirmed",
+      "scheduled",
+      "completed",
+      "PENDING",
+      "CONFIRMED",
+      "SCHEDULED",
+      "COMPLETED",
+    ];
 
     const { data: appointments, error } = await supabase
       .from("appointments")
@@ -648,7 +658,6 @@ const doctorAiSummaries = async (req, res) => {
         scheduled_at,
         status,
         ai_triage_summary,
-        patient_notes,
         patient:patients(
           id,
           medical_history,
@@ -660,7 +669,7 @@ const doctorAiSummaries = async (req, res) => {
         )
       `)
       .eq("doctor_id", docId)
-      .in("status", ["pending", "confirmed", "PENDING", "CONFIRMED"])
+      .in("status", summaryStatuses)
       .order("scheduled_at", { ascending: false });
 
     if (error) throw error;
@@ -682,6 +691,7 @@ const doctorAiSummaries = async (req, res) => {
         patientId: appointment.patient_id || patient.id,
         patientName: user?.name || "Unknown Patient",
         patientEmail: user?.email || "",
+        status: appointment.status || "",
         date: appointment.scheduled_at
           ? new Date(appointment.scheduled_at).toLocaleDateString("en-US", {
               month: "short",

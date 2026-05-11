@@ -15,6 +15,7 @@ const DoctorAISummaries = () => {
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState("");
   const [queryDraft, setQueryDraft] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (requestedPatient?.patientName || requestedPatient?.patientEmail) {
@@ -27,17 +28,20 @@ const DoctorAISummaries = () => {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setError("");
       try {
         const headers = token ? { dtoken: token, Authorization: `Bearer ${token}` } : {};
-        const { data } = await axios
-          .get(backendUrl + "/api/doctor/ai-summaries", { headers })
-          .catch(() => ({ data: null }));
+        const { data } = await axios.get(backendUrl + "/api/doctor/ai-summaries", { headers });
 
         if (data?.success && Array.isArray(data.summaries)) {
           setSummaries(data.summaries);
+        } else {
+          setSummaries([]);
+          setError(data?.message || "Failed to load summaries.");
         }
-      } catch {
+      } catch (err) {
         setSummaries([]);
+        setError(err?.response?.data?.message || "Failed to load summaries.");
       } finally {
         setLoading(false);
       }
@@ -175,6 +179,8 @@ const DoctorAISummaries = () => {
               <div className="pp-panel">
                 <div className="pp-stat-label">Loading summaries...</div>
               </div>
+            ) : error ? (
+              <div className="pp-panel">{error}</div>
             ) : filtered.length === 0 ? (
               <div className="pp-panel">
                 No summaries found. A summary will appear here after a patient books with you and has medical history or allergies saved in their profile.
