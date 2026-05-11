@@ -26,6 +26,29 @@ async function getDoctorProfileIdFromUser(userId) {
   return data?.id;
 }
 
+function cleanOptionalText(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeFollowupDate(value) {
+  const cleaned = cleanOptionalText(value);
+  if (!cleaned) return null;
+
+  const dateKey = cleaned.slice(0, 10);
+  const parsed = new Date(`${dateKey}T00:00:00`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || Number.isNaN(parsed.getTime())) {
+    throw { status: 400, message: "Follow-up date must be a valid date" };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (parsed < today) {
+    throw { status: 400, message: "Follow-up date cannot be in the past" };
+  }
+
+  return dateKey;
+}
+
 // Doctor creates/updates prescription after consultation
 router.post("/", authenticate, async (req, res) => {
   try {
@@ -42,6 +65,7 @@ router.post("/", authenticate, async (req, res) => {
       prescription,
       followupDate,
       doctorNotes,
+      complete,
     } = req.body;
 
     if (!appointmentId) {
@@ -64,12 +88,24 @@ router.post("/", authenticate, async (req, res) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
+    const normalizedDiagnosis = cleanOptionalText(diagnosis);
+    const normalizedPrescription = cleanOptionalText(prescription);
+    const normalizedDoctorNotes = cleanOptionalText(doctorNotes);
+    const normalizedFollowupDate = normalizeFollowupDate(followupDate);
+
+    if (!normalizedDiagnosis && !normalizedPrescription && !normalizedDoctorNotes && !normalizedFollowupDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Add notes, diagnosis, prescription, tests, or a valid follow-up date before saving.",
+      });
+    }
+
     const payload = {
       appointment_id: appointmentId,
-      diagnosis: diagnosis || null,
-      prescription: prescription || null,
-      followup_date: followupDate || null,
-      doctor_notes: doctorNotes || null,
+      diagnosis: normalizedDiagnosis,
+      prescription: normalizedPrescription,
+      followup_date: normalizedFollowupDate,
+      doctor_notes: normalizedDoctorNotes,
       updated_at: new Date().toISOString(),
     };
 
@@ -81,19 +117,23 @@ router.post("/", authenticate, async (req, res) => {
 
     if (error) throw error;
 
-    await supabase
-      .from("appointments")
-      .update({ status: "COMPLETED" })
-      .eq("id", appointmentId);
+    if (complete === true || complete === "true") {
+      await supabase
+        .from("appointments")
+        .update({ status: "COMPLETED" })
+        .eq("id", appointmentId);
+    }
 
     return res.status(200).json({
       success: true,
-      message: "Prescription saved successfully",
+      message: complete === true || complete === "true"
+        ? "Consultation completed successfully"
+        : "Consultation details saved successfully",
       summary: data,
     });
   } catch (error) {
     console.error("Save consultation summary error:", error);
-    return res.status(500).json({
+    return res.status(error.status || 500).json({
       success: false,
       message: error.message || "Failed to save prescription",
     });

@@ -258,6 +258,15 @@ const appointmentsDoctor = async (req, res) => {
           *,
           users(name,email,avatar_url)
         ),
+        consultation_summary:consultation_summaries(
+          id,
+          diagnosis,
+          prescription,
+          followup_date,
+          doctor_notes,
+          created_at,
+          updated_at
+        ),
         payment:payments(status,amount,paid_at)
       `)
       .eq("doctor_id", docId)

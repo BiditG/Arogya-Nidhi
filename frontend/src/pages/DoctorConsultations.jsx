@@ -15,6 +15,16 @@ const FORM_FIELDS = [
   { label: "Follow-up Date", key: "followUp", rows: 1 },
 ];
 
+const getTodayDateInputValue = () => {
+  const today = new Date();
+  today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+  return today.toISOString().slice(0, 10);
+};
+
+const cleanText = (value) => String(value || "").trim();
+
+const cleanDateValue = (value) => cleanText(value).slice(0, 10);
+
 // ─── IoT Device Panel ─────────────────────────────────────────────────────────
 
 const scoreColor = (score) => {
@@ -175,7 +185,7 @@ const IoTDevicePanel = ({ patientId, backendUrl, token }) => {
     (v, i) => ({ val: v, score: Math.round(80 - v * 20), date: null, label: `Sample ${i + 1}` })
   );
   const demoReactionBars = [320, 280, 310, 260, 295, 340, 275, 300, 285, 310, 265, 290].map(
-    (v, i) => ({ val: v, score: Math.max(0, Math.round(100 - (v - 150) / 5)), date: null, label: `${v}ms` })
+    (v) => ({ val: v, score: Math.max(0, Math.round(100 - (v - 150) / 5)), date: null, label: `${v}ms` })
   );
 
   const chartBars = tab === "tremor"
@@ -470,8 +480,10 @@ const DoctorConsultations = () => {
   const [searchQ, setSearchQ] = useState("");
   const [patientSearchQ, setPatientSearchQ] = useState("");
   const [selectedPatientKey, setSelectedPatientKey] = useState("");
+  const [selectedHistory, setSelectedHistory] = useState(null);
   const activeIdRef = useRef(null);
   const routeSelectionRef = useRef(null);
+  const minFollowUpDate = getTodayDateInputValue();
 
   useEffect(() => {
     activeIdRef.current = active?.id || active?._id || null;
@@ -542,15 +554,21 @@ const DoctorConsultations = () => {
     return appointment?.type || appointment?.reason || appointment?.patient_notes || "Consultation";
   };
 
+  const getConsultationSummary = (appointment) => {
+    const summary = appointment?.consultation_summary || appointment?.consultationSummary;
+    return Array.isArray(summary) ? summary[0] : summary || null;
+  };
+
   const prepareAppointmentForConsultation = (appointment) => {
+    const summary = getConsultationSummary(appointment);
     return {
       ...appointment,
       chiefComplaint: appointment?.chiefComplaint || "",
       symptoms: appointment?.symptoms || "",
-      diagnosis: appointment?.diagnosis || "",
-      prescription: appointment?.prescription || "",
+      diagnosis: appointment?.diagnosis || summary?.diagnosis || "",
+      prescription: appointment?.prescription || summary?.prescription || "",
       recommendedTests: appointment?.recommendedTests || "",
-      followUp: appointment?.followUp || "",
+      followUp: cleanDateValue(appointment?.followUp || summary?.followup_date || summary?.followUpDate),
     };
   };
 
@@ -650,6 +668,35 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
     }));
   };
 
+  const buildDoctorNotes = (appointment) => [
+    cleanText(appointment?.chiefComplaint) ? `Chief Complaint: ${cleanText(appointment.chiefComplaint)}` : "",
+    cleanText(appointment?.symptoms) ? `Symptoms: ${cleanText(appointment.symptoms)}` : "",
+    cleanText(appointment?.recommendedTests)
+      ? `Recommended Tests: ${cleanText(appointment.recommendedTests)}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const validateConsultationInput = () => {
+    const diagnosis = cleanText(active?.diagnosis);
+    const prescription = cleanText(active?.prescription);
+    const followUp = cleanDateValue(active?.followUp);
+    const doctorNotes = buildDoctorNotes(active);
+
+    if (followUp && followUp < minFollowUpDate) {
+      toast.error("Follow-up date cannot be in the past");
+      return null;
+    }
+
+    if (!diagnosis && !prescription && !followUp && !doctorNotes) {
+      toast.error("Please add notes, diagnosis, prescription, tests, or a follow-up date before saving");
+      return null;
+    }
+
+    return { diagnosis, prescription, followUp, doctorNotes };
+  };
+
   const selectAppointment = (appointment) => {
     const prepared = prepareAppointmentForConsultation(appointment);
     setActive(prepared);
@@ -731,6 +778,9 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
       return;
     }
 
+    const validated = validateConsultationInput();
+    if (!validated) return;
+
     setSaving(true);
 
     try {
@@ -738,18 +788,11 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
         `${backendUrl}/api/consultation-summaries`,
         {
           appointmentId: active.id || active._id,
-          diagnosis: active.diagnosis || null,
-          prescription: active.prescription || null,
-          followupDate: active.followUp || null,
-          doctorNotes: [
-            active.chiefComplaint ? `Chief Complaint: ${active.chiefComplaint}` : "",
-            active.symptoms ? `Symptoms: ${active.symptoms}` : "",
-            active.recommendedTests
-              ? `Recommended Tests: ${active.recommendedTests}`
-              : "",
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          diagnosis: validated.diagnosis || null,
+          prescription: validated.prescription || null,
+          followupDate: validated.followUp || null,
+          doctorNotes: validated.doctorNotes || null,
+          complete: shouldEndConsultation,
         },
         { headers }
       );
@@ -1009,6 +1052,7 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
                             type="date"
                             className="pp-chat-input"
                             style={{ width: "100%" }}
+                            min={minFollowUpDate}
                             value={active?.[key] || ""}
                             onChange={(e) => changeField(key, e.target.value)}
                           />
@@ -1131,7 +1175,7 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
                           <div className="pp-appointment-actions">
                             <button
                               className="pp-btn pp-btn-outline pp-btn-sm"
-                              onClick={() => selectAppointment(appointment)}
+                              onClick={() => setSelectedHistory(appointment)}
                             >
                               View
                             </button>
@@ -1144,6 +1188,83 @@ ${appointment.patient_notes || appointment.reason || "No patient notes available
               </table>
             </div>
               </section>
+
+              {selectedHistory && (() => {
+                const summary = getConsultationSummary(selectedHistory) || {};
+                const notes = summary.doctor_notes || summary.doctorNotes || selectedHistory.doctor_notes || "";
+                const diagnosis = summary.diagnosis || selectedHistory.diagnosis || "";
+                const prescription = summary.prescription || selectedHistory.prescription || "";
+                const followUp = cleanDateValue(summary.followup_date || summary.followUpDate || selectedHistory.followUp);
+
+                return (
+                  <div
+                    style={{
+                      position: "fixed",
+                      inset: 0,
+                      zIndex: 1000,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 16,
+                      background: "rgba(15, 23, 42, 0.45)",
+                    }}
+                    onClick={(event) => {
+                      if (event.target === event.currentTarget) setSelectedHistory(null);
+                    }}
+                  >
+                    <div
+                      className="pp-panel"
+                      style={{
+                        width: "min(680px, 100%)",
+                        maxHeight: "85vh",
+                        overflowY: "auto",
+                        margin: 0,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
+                        <div>
+                          <h3 className="pp-section-title" style={{ marginBottom: 4 }}>
+                            Consultation Details
+                          </h3>
+                          <p style={{ color: "var(--pp-text-secondary)", fontSize: "0.875rem" }}>
+                            {getPatientName(selectedHistory)} - {getDate(selectedHistory)} at {getTime(selectedHistory)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="pp-btn pp-btn-outline pp-btn-sm"
+                          onClick={() => setSelectedHistory(null)}
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+                        <div>
+                          <div className="pp-panel-title">Type</div>
+                          <p>{getType(selectedHistory)}</p>
+                        </div>
+                        <div>
+                          <div className="pp-panel-title">Diagnosis</div>
+                          <p>{diagnosis || "No diagnosis recorded."}</p>
+                        </div>
+                        <div>
+                          <div className="pp-panel-title">Prescription</div>
+                          <p style={{ whiteSpace: "pre-wrap" }}>{prescription || "No prescription recorded."}</p>
+                        </div>
+                        <div>
+                          <div className="pp-panel-title">Doctor Notes</div>
+                          <p style={{ whiteSpace: "pre-wrap" }}>{notes || "No notes recorded."}</p>
+                        </div>
+                        <div>
+                          <div className="pp-panel-title">Follow-up Date</div>
+                          <p>{followUp || "No follow-up date recorded."}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </main>

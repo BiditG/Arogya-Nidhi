@@ -12,7 +12,7 @@ import { DoctorContext } from "../admin/context/DoctorContext";
 import { DOCTOR_SPECIALIZATIONS } from "../constants/doctorSpecializations";
 
 const Login = () => {
-  const { backendUrl, setToken, token, userData, getDoctorsData } = useContext(AppContext);
+  const { backendUrl, setToken, token, userData } = useContext(AppContext);
   const { setAToken } = useContext(AdminContext);
   const { setDToken } = useContext(DoctorContext);
   const navigate = useNavigate();
@@ -91,18 +91,15 @@ const Login = () => {
         try {
           const { data } = await axios.post(backendUrl + "/api/auth/register", payload);
           if (data?.success) {
-            const accessToken = data.data?.accessToken || data.data?.access_token || data.data?.accessToken;
-            if (accessToken) {
-              localStorage.setItem("token", accessToken);
-              syncPortalTokenForRole(role, accessToken);
-              setToken(accessToken);
-            }
-            // Refresh doctor list immediately for newly-registered doctors
-            if (role === 'doctor' && typeof getDoctorsData === 'function') {
-              try { getDoctorsData(); } catch (_) {}
-            }
-            toast.success("Account created successfully");
-            navigate(getDashboardPathForRole(role), { replace: true });
+            localStorage.removeItem("token");
+            localStorage.removeItem("aToken");
+            localStorage.removeItem("dToken");
+            setToken("");
+            syncPortalTokenForRole("", "");
+            setPassword("");
+            setState("Login");
+            toast.success("Account created successfully. Please log in.");
+            navigate("/login", { replace: true });
           } else {
             toast.error(data?.message || "Failed to create account");
           }
